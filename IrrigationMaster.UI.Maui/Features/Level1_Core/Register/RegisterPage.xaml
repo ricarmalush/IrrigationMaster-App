@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodel="clr-namespace:IrrigationMaster.UI.Maui.Features.Level1_Core.Register"
+             x:Class="IrrigationMaster.UI.Maui.Features.Level1_Core.Register.RegisterPage"
+             Title="Registro de Vecinos"
+             BackgroundColor="#F5F5F5"
+             x:DataType="viewmodel:RegisterViewModel">
+
+    <Grid HorizontalOptions="Center" VerticalOptions="Center">
+        <ScrollView>
+            <VerticalStackLayout Spacing="12" 
+                                 Padding="20" 
+                                 WidthRequest="320" 
+                                 HorizontalOptions="Center"
+                                 VerticalOptions="Center">
+
+                <Label x:Name="RegisterTitleLabel" 
+                       Text="Crear Nueva Cuenta" 
+                       FontSize="22" 
+                       FontAttributes="Bold" 
+                       TextColor="#2E7D32" 
+                       HorizontalOptions="Center" />
+
+                <Label x:Name="OrganizationSubtitleLabel" 
+                       Text="Completa tus datos de acceso" 
+                       FontSize="13" 
+                       TextColor="Gray" 
+                       HorizontalOptions="Center" 
+                       Margin="0,0,0,5" />
+
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Nombre:" FontAttributes="Bold" TextColor="#333333" FontSize="14"/>
+                    <Entry Text="{Binding FirstName}" Placeholder="Tu nombre" HeightRequest="45" BackgroundColor="White" TextColor="Black"/>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Apellidos:" FontAttributes="Bold" TextColor="#333333" FontSize="14"/>
+                    <Entry Text="{Binding LastName}" Placeholder="Tus apellidos" HeightRequest="45" BackgroundColor="White" TextColor="Black"/>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Correo Electrónico:" FontAttributes="Bold" TextColor="#333333" FontSize="14"/>
+                    <Entry Text="{Binding Email}" Placeholder="ejemplo@correo.com" Keyboard="Email" HeightRequest="45" BackgroundColor="White" TextColor="Black"/>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Contraseña:" FontAttributes="Bold" TextColor="#333333" FontSize="14"/>
+                    <Entry Text="{Binding Password}" Placeholder="********" IsPassword="True" HeightRequest="45" BackgroundColor="White" TextColor="Black"/>
+                </VerticalStackLayout>
+
+                <BoxView HeightRequest="1" Color="LightGray" Margin="0,5" />
+
+                <VerticalStackLayout Spacing="4">
+                    <Label x:Name="ZoneLabel" Text="Selecciona Zona / Andador:" FontAttributes="Bold" TextColor="#333333" FontSize="14"/>
+                    <Picker ItemsSource="{Binding WalkwaysList}" 
+                            SelectedItem="{Binding SelectedWalkway}" 
+                            Title="Seleccionar..." HeightRequest="45" BackgroundColor="White" TextColor="Black"/>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="4">
+                    <Label x:Name="SubZoneLabel" Text="Número de Casa o Parcela:" FontAttributes="Bold" TextColor="#333333" FontSize="14"/>
+                    <Entry Text="{Binding PlotNumber}" Placeholder="Ej: Casa 14B" HeightRequest="45" BackgroundColor="White" TextColor="Black"/>
+                </VerticalStackLayout>
+
+                <Button Text="Confirmar Registro" 
+                        Command="{Binding RegisterCommand}"
+                        BackgroundColor="#2E7D32" 
+                        TextColor="White" 
+                        FontAttributes="Bold" 
+                        HeightRequest="50" 
+                        CornerRadius="8" 
+                        Margin="0,15,0,0" />
+
+                <ActivityIndicator IsRunning="{Binding IsBusy}" 
+                                   IsVisible="{Binding IsBusy}" 
+                                   Color="#2E7D32" 
+                                   HorizontalOptions="Center" />
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

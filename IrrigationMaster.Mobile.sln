@@ -1,0 +1,56 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36915.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IrrigationMaster.UI.Maui", "IrrigationMaster.UI.Maui\IrrigationMaster.UI.Maui.csproj", "{A3F2E084-3F88-4DF0-ADA5-6CD1C05A77D2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IrrigationMaster.Mobile.Core", "IrrigationMaster.Mobile.Core\IrrigationMaster.Mobile.Core.csproj", "{0F324893-CA79-4B4D-B5E3-99FEFFF73AE0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IrrigationMaster.Mobile.Infrastructure", "IrrigationMaster.Mobile.Infrastructure\IrrigationMaster.Mobile.Infrastructure.csproj", "{9D1BB951-FB03-4A52-92DF-DDE60F0034ED}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IrrigationMaster.Domain", "IrrigationMaster.Domain\IrrigationMaster.Domain.csproj", "{76B86EA4-8999-49A2-AFBB-F309BCD4AF1B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IrrigationMaster.Mobile.UnitTests", "IrrigationMaster.Mobile.UnitTests\IrrigationMaster.Mobile.UnitTests.csproj", "{B1F9C42A-0679-4756-8ADE-E46EEE1ECEC0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IrrigationMaster.Mobile.IntegrationTests", "IrrigationMaster.Mobile.IntegrationTests\IrrigationMaster.Mobile.IntegrationTests.csproj", "{7115F953-EFA9-4064-961A-5BF24D5ED613}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A3F2E084-3F88-4DF0-ADA5-6CD1C05A77D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3F2E084-3F88-4DF0-ADA5-6CD1C05A77D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A3F2E084-3F88-4DF0-ADA5-6CD1C05A77D2}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{A3F2E084-3F88-4DF0-ADA5-6CD1C05A77D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A3F2E084-3F88-4DF0-ADA5-6CD1C05A77D2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F324893-CA79-4B4D-B5E3-99FEFFF73AE0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F324893-CA79-4B4D-B5E3-99FEFFF73AE0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F324893-CA79-4B4D-B5E3-99FEFFF73AE0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F324893-CA79-4B4D-B5E3-99FEFFF73AE0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9D1BB951-FB03-4A52-92DF-DDE60F0034ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9D1BB951-FB03-4A52-92DF-DDE60F0034ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9D1BB951-FB03-4A52-92DF-DDE60F0034ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9D1BB951-FB03-4A52-92DF-DDE60F0034ED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{76B86EA4-8999-49A2-AFBB-F309BCD4AF1B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76B86EA4-8999-49A2-AFBB-F309BCD4AF1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76B86EA4-8999-49A2-AFBB-F309BCD4AF1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76B86EA4-8999-49A2-AFBB-F309BCD4AF1B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1F9C42A-0679-4756-8ADE-E46EEE1ECEC0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1F9C42A-0679-4756-8ADE-E46EEE1ECEC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1F9C42A-0679-4756-8ADE-E46EEE1ECEC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1F9C42A-0679-4756-8ADE-E46EEE1ECEC0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7115F953-EFA9-4064-961A-5BF24D5ED613}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7115F953-EFA9-4064-961A-5BF24D5ED613}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7115F953-EFA9-4064-961A-5BF24D5ED613}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7115F953-EFA9-4064-961A-5BF24D5ED613}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1AC74353-8C15-4108-BE82-7D94C1F9F3A2}
+	EndGlobalSection
+EndGlobal

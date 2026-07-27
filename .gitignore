@@ -1,0 +1,16 @@
+## .NET / MAUI
+bin/
+obj/
+*.user
+*.userosscache
+*.suo
+
+## Visual Studio
+.vs/
+
+## Test / build artifacts
+TestResults/
+[Dd]ebug/
+[Rr]elease/
+*.dll
+*.pdb

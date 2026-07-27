@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Common\Behaviors\" />
+    <Folder Include="Common\Dtos\" />
+    <Folder Include="Features\Level1_Core\Login\" />
+    <Folder Include="Features\Level3_Functional\" />
+    <Folder Include="Features\Level4_Operational\" />
+    <Folder Include="Services\" />
+  </ItemGroup>
+
+</Project>

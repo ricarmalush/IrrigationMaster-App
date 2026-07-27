@@ -1,0 +1,130 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:IrrigationMaster.UI.Maui.Features.Level1_Core.Login"
+             x:Class="IrrigationMaster.UI.Maui.Features.Level1_Core.Login.MainPage"
+             BackgroundColor="#F5F5F5"
+             Shell.NavBarIsVisible="False"
+             x:DataType="local:LoginViewModel">
+
+    <Grid>
+
+        <ScrollView HorizontalOptions="Center" VerticalOptions="Center">
+            <VerticalStackLayout Spacing="18" 
+                                 Padding="20" 
+                                 WidthRequest="320" 
+                                 HorizontalOptions="Center"
+                                 VerticalOptions="Center">
+
+                <Label Text="GESTIÓN DE RIEGO - EL SASO"
+                       FontSize="18"
+                       FontAttributes="Bold"
+                       TextColor="Black"
+                       HorizontalTextAlignment="Center"
+                       HorizontalOptions="Center"
+                       Margin="0,10,0,15" />
+
+                <Image Source="logo_saso.png" 
+                       HeightRequest="110" 
+                       HorizontalOptions="Center" 
+                       Margin="0,0,0,5"/>
+
+                <Label Text="Control de Riego Comunitario"
+                       FontSize="20"
+                       FontAttributes="Bold"
+                       TextColor="#2E7D32"
+                       HorizontalTextAlignment="Center"
+                       HorizontalOptions="Center" />
+
+                <Label Text="Introduce tus credenciales para gestionar la tajadera"
+                       FontSize="13"
+                       TextColor="Gray"
+                       HorizontalTextAlignment="Center"
+                       HorizontalOptions="Center"
+                       Margin="0,0,0,10" />
+
+                <VerticalStackLayout Spacing="5" HorizontalOptions="Fill">
+                    <Label Text="Correo Electrónico:" FontAttributes="Bold" TextColor="#333333" FontSize="14"/>
+                    <Entry Text="{Binding Email, Mode=TwoWay}"
+                           Placeholder="ejemplo@correo.com"
+                           Keyboard="Email"
+                           HeightRequest="45"
+                           BackgroundColor="White"
+                           TextColor="Black"/>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="5" HorizontalOptions="Fill">
+                    <Label Text="Contraseña:" FontAttributes="Bold" TextColor="#333333" FontSize="14"/>
+                    <Entry Text="{Binding Password, Mode=TwoWay}"
+                           Placeholder="********"
+                           IsPassword="True"
+                           HeightRequest="45"
+                           BackgroundColor="White"
+                           TextColor="Black"/>
+                </VerticalStackLayout>
+
+                <Button Text="Iniciar Sesión"
+                        Command="{Binding LoginCommand}"
+                        IsEnabled="{Binding IsNotLoading}"
+                        BackgroundColor="#2E7D32"
+                        TextColor="White"
+                        FontAttributes="Bold"
+                        HeightRequest="50"
+                        CornerRadius="8"
+                        HorizontalOptions="Fill"
+                        Margin="0,15,0,0" />
+
+                <Button Text="¿No tienes cuenta? Regístrate aquí"
+                        Command="{Binding NavigateToRegisterCommand}"
+                        TextColor="#4CAF50"
+                        BackgroundColor="Transparent"
+                        FontSize="13"
+                        HorizontalOptions="Center"
+                        Margin="0,5,0,0" />
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Grid BackgroundColor="#80FFFFFF" 
+              IsVisible="{Binding IsLoading}" 
+              HorizontalOptions="Fill" 
+              VerticalOptions="Fill">
+
+            <Border BackgroundColor="White"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center"
+                    WidthRequest="160"
+                    Padding="24">
+
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12"/>
+                </Border.StrokeShape>
+
+                <Border.Stroke>
+                    <SolidColorBrush Color="#E0E0E0"/>
+                </Border.Stroke>
+
+                <Border.Shadow>
+                    <Shadow Brush="Black"
+                            Offset="0,4"
+                            Radius="8"
+                            Opacity="0.1" />
+                </Border.Shadow>
+
+                <VerticalStackLayout Spacing="12" HorizontalOptions="Center" VerticalOptions="Center">
+                    <ActivityIndicator IsRunning="{Binding IsLoading}"
+                                       Color="#2E7D32"
+                                       HeightRequest="40"
+                                       WidthRequest="40"
+                                       HorizontalOptions="Center"/>
+                    <Label Text="Conectando..." 
+                           TextColor="#333333" 
+                           FontSize="14" 
+                           FontAttributes="Bold"
+                           HorizontalTextAlignment="Center"/>
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+
+    </Grid>
+</ContentPage>

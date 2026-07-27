@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="IrrigationMaster.UI.Maui.Features.Level4_Operational.AdminConsole.AdminMenuPage"
+             BackgroundColor="#F5F5F5"
+             Shell.NavBarIsVisible="False">
+
+    <Grid HorizontalOptions="Center" VerticalOptions="Center">
+        <ScrollView>
+            <VerticalStackLayout Spacing="15" 
+                                 Padding="20" 
+                                 WidthRequest="340" 
+                                 HorizontalOptions="Center"
+                                 VerticalOptions="Center">
+
+                <Label Text="CONSOLA DE CONTROL MAESTRO" FontSize="12" FontAttributes="Bold" TextColor="#2E7D32" HorizontalOptions="Center" CharacterSpacing="1.5"/>
+                <Label Text="Gestión Operativa - El Saso" FontSize="20" FontAttributes="Bold" TextColor="Black" HorizontalOptions="Center" Margin="0,0,0,10"/>
+
+                <Label Text="Monitoreo de Campo" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,5,0,0"/>
+
+                <Button Text="📊 Estado de Andadores (Tiempo Real)" 
+                        Clicked="OnLiveStatusClicked"
+                        BackgroundColor="#2E7D32" TextColor="White" FontAttributes="Bold" HeightRequest="48" CornerRadius="8" />
+
+                <Button Text="👥 Supervisión de Colas FIFO" 
+                        Clicked="OnManageQueuesClicked"
+                        BackgroundColor="Transparent" TextColor="#2E7D32" BorderColor="#2E7D32" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
+
+                <Label Text="Configuración y Alertas" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
+
+                <Button Text="🌊 Configurar Caudal y Tiempos" 
+                        Clicked="OnCaudalConfigClicked"
+                        BackgroundColor="Transparent" TextColor="#2E7D32" BorderColor="#2E7D32" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
+
+                <Button Text="📢 Publicar Alertas e Incidencias" 
+                        Clicked="OnPublishIncidentsClicked"
+                        BackgroundColor="Transparent" TextColor="#2E7D32" BorderColor="#2E7D32" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
+
+                <Label Text="Historial y Estructura" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
+
+                <Button Text="📜 Historial de Turnos y Consumos" 
+                        Clicked="OnHistoryLogClicked"
+                        BackgroundColor="Transparent" TextColor="#2E7D32" BorderColor="#2E7D32" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
+
+                <Button Text="🏢 Infraestructura (Orgs / Andadores)" 
+                        Clicked="OnInfrastructureClicked"
+                        BackgroundColor="Transparent" TextColor="#2E7D32" BorderColor="#2E7D32" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
+
+                <Label Text="Ajustes de la Aplicación" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
+
+                <Button x:Name="SystemSettingsButton"
+                        Text="⚙️ Configuración del Sistema" 
+                        Clicked="OnSettingsButtonClicked"
+                        BackgroundColor="Transparent" 
+                        TextColor="#374151" 
+                        BorderColor="#374151" 
+                        BorderWidth="1.5" 
+                        HeightRequest="48" 
+                        CornerRadius="8" 
+                        FontAttributes="Bold"/>
+
+                <BoxView x:Name="SettingsSeparator" HeightRequest="1" Color="LightGray" Margin="0,10,0,5" />
+
+                <Button Text="Cerrar Consola" 
+                        Clicked="OnCloseConsoleClicked"
+                        TextColor="Gray" BackgroundColor="Transparent" FontSize="13" HorizontalOptions="Center" />
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>
