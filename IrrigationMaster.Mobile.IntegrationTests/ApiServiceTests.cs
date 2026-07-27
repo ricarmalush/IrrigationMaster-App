@@ -8,6 +8,7 @@ namespace IrrigationMaster.Mobile.IntegrationTests;
 public class ApiServiceTests
 {
     private const string FakeBaseUrl = "https://fake-backend.test/api/v1/";
+    private const string CreatedResponseJson = """{ "isSuccess": true, "message": "Operación completada exitosamente.", "data": "3fa85f64-5717-4562-b3fc-2c963f66afa6" }""";
 
     private static ApiService CreateSut(FakeHttpMessageHandler handler, string? storedToken = "token-123")
     {
@@ -19,11 +20,11 @@ public class ApiServiceTests
     [Fact]
     public async Task CreateOrganizationAsync_PostsToCreateRoute_WithAuthHeaderAndNestedAddress()
     {
-        var handler = new FakeHttpMessageHandler(HttpStatusCode.Created);
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.Created, CreatedResponseJson);
         var sut = CreateSut(handler);
         var countryId = Guid.NewGuid();
 
-        var (isSuccess, _) = await sut.CreateOrganizationAsync(new CreateOrganizationRequest
+        var result = await sut.CreateOrganizationAsync(new CreateOrganizationRequest
         {
             Name = "Regantes El Saso",
             TaxId = "G50123456",
@@ -37,7 +38,7 @@ public class ApiServiceTests
             }
         });
 
-        Assert.True(isSuccess);
+        Assert.True(result.IsSuccess);
         Assert.EndsWith("organizations/Create", handler.LastRequest!.RequestUri!.ToString());
         Assert.Equal("Bearer", handler.LastRequest.Headers.Authorization!.Scheme);
         Assert.Equal("token-123", handler.LastRequest.Headers.Authorization.Parameter);
@@ -48,16 +49,16 @@ public class ApiServiceTests
     [Fact]
     public async Task CreateHydraulicSectorAsync_PostsToCreateRoute_WithAuthHeader_AndNoOrganizationId()
     {
-        var handler = new FakeHttpMessageHandler(HttpStatusCode.Created);
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.Created, CreatedResponseJson);
         var sut = CreateSut(handler);
 
-        var (isSuccess, _) = await sut.CreateHydraulicSectorAsync(new CreateHydraulicSectorRequest
+        var result = await sut.CreateHydraulicSectorAsync(new CreateHydraulicSectorRequest
         {
             Name = "Sector Norte",
             AreaSize = 150.5m
         });
 
-        Assert.True(isSuccess);
+        Assert.True(result.IsSuccess);
         Assert.EndsWith("hydraulicsectors/Create", handler.LastRequest!.RequestUri!.ToString());
         Assert.Equal("token-123", handler.LastRequest.Headers.Authorization!.Parameter);
         Assert.DoesNotContain("organizationId", handler.LastRequestBody, StringComparison.OrdinalIgnoreCase);
@@ -66,34 +67,57 @@ public class ApiServiceTests
     [Fact]
     public async Task CreateWalkwayAsync_PostsToCreateRoute_WithAuthHeader()
     {
-        var handler = new FakeHttpMessageHandler(HttpStatusCode.Created);
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.Created, CreatedResponseJson);
         var sut = CreateSut(handler);
         var sectorId = Guid.NewGuid();
 
-        var (isSuccess, _) = await sut.CreateWalkwayAsync(new CreateWalkwayRequest
+        var result = await sut.CreateWalkwayAsync(new CreateWalkwayRequest
         {
             Code = "A-01",
             Length = 400m,
             HydraulicSectorId = sectorId
         });
 
-        Assert.True(isSuccess);
+        Assert.True(result.IsSuccess);
         Assert.EndsWith("walkways/Create", handler.LastRequest!.RequestUri!.ToString());
         Assert.Equal("token-123", handler.LastRequest.Headers.Authorization!.Parameter);
         Assert.Contains(sectorId.ToString(), handler.LastRequestBody);
     }
 
-    [Theory]
-    [InlineData(HttpStatusCode.BadRequest)]
-    [InlineData(HttpStatusCode.InternalServerError)]
-    public async Task CreateOrganizationAsync_OnFailureStatus_ReturnsIsSuccessFalse(HttpStatusCode statusCode)
+    [Fact]
+    public async Task CreateOrganizationAsync_OnValidationFailure_ReturnsBackendErrors()
     {
-        var handler = new FakeHttpMessageHandler(statusCode);
+        const string responseJson = """
+        {
+            "isSuccess": false,
+            "message": "Datos inválidos",
+            "errors": [
+                { "propertyMessage": "TaxId", "errorMessage": "El NIF ya está registrado" }
+            ]
+        }
+        """;
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.BadRequest, responseJson);
         var sut = CreateSut(handler);
 
-        var (isSuccess, _) = await sut.CreateOrganizationAsync(new CreateOrganizationRequest());
+        var result = await sut.CreateOrganizationAsync(new CreateOrganizationRequest());
 
-        Assert.False(isSuccess);
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Datos inválidos", result.Message);
+        Assert.NotNull(result.Errors);
+        Assert.Single(result.Errors!);
+        Assert.Equal("TaxId", result.Errors![0].PropertyMessage);
+    }
+
+    [Fact]
+    public async Task CreateOrganizationAsync_OnServerError_ReturnsIsSuccessFalse()
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.InternalServerError);
+        var sut = CreateSut(handler);
+
+        var result = await sut.CreateOrganizationAsync(new CreateOrganizationRequest());
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("500", result.Message);
     }
 
     [Fact]

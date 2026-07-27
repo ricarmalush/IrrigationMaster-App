@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IrrigationMaster.Mobile.Uni
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IrrigationMaster.Mobile.IntegrationTests", "IrrigationMaster.Mobile.IntegrationTests\IrrigationMaster.Mobile.IntegrationTests.csproj", "{7115F953-EFA9-4064-961A-5BF24D5ED613}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IrrigationMaster.UI.Maui.Tests", "IrrigationMaster.UI.Maui.Tests\IrrigationMaster.UI.Maui.Tests.csproj", "{4E9A1C2B-6F3D-4A8E-9C1F-2D5B7A3E8F01}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -46,6 +48,10 @@ Global
 		{7115F953-EFA9-4064-961A-5BF24D5ED613}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7115F953-EFA9-4064-961A-5BF24D5ED613}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7115F953-EFA9-4064-961A-5BF24D5ED613}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4E9A1C2B-6F3D-4A8E-9C1F-2D5B7A3E8F01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E9A1C2B-6F3D-4A8E-9C1F-2D5B7A3E8F01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E9A1C2B-6F3D-4A8E-9C1F-2D5B7A3E8F01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E9A1C2B-6F3D-4A8E-9C1F-2D5B7A3E8F01}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

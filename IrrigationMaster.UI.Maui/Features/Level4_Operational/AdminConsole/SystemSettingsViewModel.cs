@@ -1,7 +1,10 @@
-﻿using IrrigationMaster.Mobile.Application.Features.Models.Structure;
+using IrrigationMaster.Mobile.Application.Common.Dtos;
+using IrrigationMaster.Mobile.Application.Features.Models.Structure;
 using IrrigationMaster.Mobile.Application.Interfaces;
 using IrrigationMaster.UI.Maui.Common;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Windows.Input;
 
 namespace IrrigationMaster.UI.Maui.Features.Level4_Operational.AdminConsole;
@@ -13,10 +16,26 @@ public class CountryItem
     public string Name { get; set; } = string.Empty;
 }
 
-public partial class SystemSettingsViewModel : BindableObject
+// Clase auxiliar para el desplegable de sectores hidráulicos
+public class HydraulicSectorItem
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+}
+
+// INotifyPropertyChanged en vez de BindableObject: XAML se enlaza igual (no usa
+// BindableProperty), pero así el ViewModel se puede instanciar en tests sin una
+// app MAUI corriendo (BindableObject exige un Dispatcher de WinUI en su constructor).
+public partial class SystemSettingsViewModel : INotifyPropertyChanged
 {
     private readonly IStructureService _structureService;
+    private readonly IAlertService _alertService;
     private bool _isLoading;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
     // --- PESTAÑA 1: ENTIDAD RAÍZ ---
     private string _orgName = string.Empty;
@@ -54,8 +73,18 @@ public partial class SystemSettingsViewModel : BindableObject
     // --- PESTAÑA 3: ANDADORES ---
     private string _walkwayCode = string.Empty;
     private string _walkwayLength = string.Empty;
+    private HydraulicSectorItem? _selectedHydraulicSector;
     public string WalkwayCode { get => _walkwayCode; set { _walkwayCode = value; OnPropertyChanged(); } }
     public string WalkwayLength { get => _walkwayLength; set { _walkwayLength = value; OnPropertyChanged(); } }
+
+    // Colección para alimentar el Picker de XAML
+    public ObservableCollection<HydraulicSectorItem> HydraulicSectors { get; } = [];
+
+    public HydraulicSectorItem? SelectedHydraulicSector
+    {
+        get => _selectedHydraulicSector;
+        set { _selectedHydraulicSector = value; OnPropertyChanged(); }
+    }
 
     // --- ESTADOS ---
     public bool IsLoading { get => _isLoading; set { _isLoading = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsNotLoading)); } }
@@ -66,31 +95,32 @@ public partial class SystemSettingsViewModel : BindableObject
     public ICommand SaveHydraulicSectorCommand { get; }
     public ICommand SaveWalkwayCommand { get; }
     public ICommand LoadCountriesCommand { get; }
+    public ICommand LoadHydraulicSectorsCommand { get; }
 
-    public SystemSettingsViewModel(IStructureService structureService)
+    public SystemSettingsViewModel(IStructureService structureService, IAlertService alertService)
     {
         _structureService = structureService;
+        _alertService = alertService;
 
         SaveOrganizationCommand = new Command(async () => await ExecuteSaveOrganizationAsync());
         SaveHydraulicSectorCommand = new Command(async () => await ExecuteSaveHydraulicSectorAsync());
         SaveWalkwayCommand = new Command(async () => await ExecuteSaveWalkwayAsync());
         LoadCountriesCommand = new Command(async () => await LoadCountriesAsync());
+        LoadHydraulicSectorsCommand = new Command(async () => await LoadHydraulicSectorsAsync());
 
-        // Cargamos los países al instanciar el ViewModel
+        // Cargamos los catálogos al instanciar el ViewModel
         LoadCountriesCommand.Execute(null);
+        LoadHydraulicSectorsCommand.Execute(null);
     }
 
     private async Task LoadCountriesAsync()
     {
         try
         {
-            // 1. Llamada real a la infraestructura (tu API)
             var countriesFromApi = await _structureService.GetCountriesAsync();
 
-            // 2. Limpiamos la lista actual por si se vuelve a cargar la pantalla
             Countries.Clear();
 
-            // 3. Verificamos que llegaron datos y llenamos el Desplegable (Picker)
             if (countriesFromApi != null)
             {
                 foreach (var country in countriesFromApi)
@@ -106,28 +136,50 @@ public partial class SystemSettingsViewModel : BindableObject
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[Error Loading Countries]: {ex.Message}");
-
-            // Opcional: Avisar al usuario si falla la carga del catálogo
-            // await Shell.Current.DisplayAlert(AppStrings.ErrorTitle, AppStrings.ApiConnectionError, "OK");
         }
     }
 
-    private async Task ExecuteSaveOrganizationAsync()
+    private async Task LoadHydraulicSectorsAsync()
+    {
+        try
+        {
+            var sectorsFromApi = await _structureService.GetHydraulicSectorsAsync();
+
+            HydraulicSectors.Clear();
+
+            if (sectorsFromApi != null)
+            {
+                foreach (var sector in sectorsFromApi)
+                {
+                    HydraulicSectors.Add(new HydraulicSectorItem
+                    {
+                        Id = sector.Id,
+                        Name = sector.Name
+                    });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Error Loading HydraulicSectors]: {ex.Message}");
+        }
+    }
+
+    internal async Task ExecuteSaveOrganizationAsync()
     {
         if (string.IsNullOrWhiteSpace(OrgName) || string.IsNullOrWhiteSpace(OrgTaxId) ||
             string.IsNullOrWhiteSpace(OrgStreet) || string.IsNullOrWhiteSpace(OrgCity) ||
             string.IsNullOrWhiteSpace(OrgStateOrProvince) || string.IsNullOrWhiteSpace(OrgPostalCode) ||
             SelectedCountry == null)
         {
-            // Uso de recursos centralizados
-            await Shell.Current.DisplayAlert(AppStrings.AttentionTitle, AppStrings.MsgMissingOrgData, "OK");
+            await _alertService.ShowAsync(AppStrings.AttentionTitle, AppStrings.MsgMissingOrgData);
             return;
         }
 
         IsLoading = true;
         try
         {
-            var orgPayload = new CreateOrganizationRequest
+            var result = await _structureService.CreateOrganizationAsync(new CreateOrganizationRequest
             {
                 Name = OrgName.Trim(),
                 TaxId = OrgTaxId.Trim(),
@@ -140,60 +192,107 @@ public partial class SystemSettingsViewModel : BindableObject
                     CountryId = SelectedCountry.Id, // ID dinámico del Picker
                     LocationDetail = OrgLocationDetail?.Trim()
                 }
-            };
+            });
 
-            // TODO: Enviar a tu API (Ej: await _structureService.CreateOrganizationAsync(orgPayload))
-            await Task.Delay(800);
-
-            await Shell.Current.DisplayAlert(AppStrings.SuccessTitle, string.Format(AppStrings.OrgCreatedSuccess, OrgName), "OK");
+            if (result.IsSuccess)
+            {
+                await _alertService.ShowAsync(AppStrings.SuccessTitle, string.Format(AppStrings.OrgCreatedSuccess, OrgName));
+            }
+            else
+            {
+                await _alertService.ShowAsync(AppStrings.ErrorTitle, BuildFailureMessage(result));
+            }
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[Error Org]: {ex.Message}");
-            await Shell.Current.DisplayAlert(AppStrings.ErrorTitle, AppStrings.ApiConnectionError, "OK");
+            await _alertService.ShowAsync(AppStrings.ErrorTitle, AppStrings.ApiConnectionError);
         }
         finally { IsLoading = false; }
     }
 
-    private async Task ExecuteSaveHydraulicSectorAsync()
+    internal async Task ExecuteSaveHydraulicSectorAsync()
     {
-        if (string.IsNullOrWhiteSpace(SectorName) || string.IsNullOrWhiteSpace(SectorAreaSize))
+        if (string.IsNullOrWhiteSpace(SectorName) || !decimal.TryParse(SectorAreaSize, out var area))
         {
-            await Shell.Current.DisplayAlert(AppStrings.AttentionTitle, AppStrings.MsgMissingSectorData, "OK");
+            await _alertService.ShowAsync(AppStrings.AttentionTitle, AppStrings.MsgMissingSectorData);
             return;
         }
 
         IsLoading = true;
         try
         {
-            double.TryParse(SectorAreaSize, out double area);
-            // TODO: Enviar a tu API (Ej: await _structureService.CreateHydraulicSectorAsync(sectorPayload))
-            await Task.Delay(800);
-            await Shell.Current.DisplayAlert(AppStrings.SuccessTitle, string.Format(AppStrings.SectorCreatedSuccess, SectorName), "OK");
-            SectorName = string.Empty; SectorAreaSize = string.Empty;
+            var result = await _structureService.CreateHydraulicSectorAsync(new CreateHydraulicSectorRequest
+            {
+                Name = SectorName.Trim(),
+                AreaSize = area
+            });
+
+            if (result.IsSuccess)
+            {
+                await _alertService.ShowAsync(AppStrings.SuccessTitle, string.Format(AppStrings.SectorCreatedSuccess, SectorName));
+                SectorName = string.Empty;
+                SectorAreaSize = string.Empty;
+
+                // El sector recién creado debe poder elegirse ya en la pestaña de Andadores
+                await LoadHydraulicSectorsAsync();
+            }
+            else
+            {
+                await _alertService.ShowAsync(AppStrings.ErrorTitle, BuildFailureMessage(result));
+            }
         }
-        catch (Exception) { await Shell.Current.DisplayAlert(AppStrings.ErrorTitle, AppStrings.ApiConnectionError, "OK"); }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Error Sector]: {ex.Message}");
+            await _alertService.ShowAsync(AppStrings.ErrorTitle, AppStrings.ApiConnectionError);
+        }
         finally { IsLoading = false; }
     }
 
-    private async Task ExecuteSaveWalkwayAsync()
+    internal async Task ExecuteSaveWalkwayAsync()
     {
-        if (string.IsNullOrWhiteSpace(WalkwayCode) || string.IsNullOrWhiteSpace(WalkwayLength))
+        if (string.IsNullOrWhiteSpace(WalkwayCode) || !decimal.TryParse(WalkwayLength, out var length) ||
+            SelectedHydraulicSector == null)
         {
-            await Shell.Current.DisplayAlert(AppStrings.AttentionTitle, AppStrings.MsgMissingWalkwayData, "OK");
+            await _alertService.ShowAsync(AppStrings.AttentionTitle, AppStrings.MsgMissingWalkwayData);
             return;
         }
 
         IsLoading = true;
         try
         {
-            double.TryParse(WalkwayLength, out double length);
-            // TODO: Enviar a tu API (Ej: await _structureService.CreateWalkwayAsync(walkwayPayload))
-            await Task.Delay(800);
-            await Shell.Current.DisplayAlert(AppStrings.SuccessTitle, string.Format(AppStrings.WalkwayCreatedSuccess, WalkwayCode), "OK");
-            WalkwayCode = string.Empty; WalkwayLength = string.Empty;
+            var result = await _structureService.CreateWalkwayAsync(new CreateWalkwayRequest
+            {
+                Code = WalkwayCode.Trim(),
+                Length = length,
+                HydraulicSectorId = SelectedHydraulicSector.Id
+            });
+
+            if (result.IsSuccess)
+            {
+                await _alertService.ShowAsync(AppStrings.SuccessTitle, string.Format(AppStrings.WalkwayCreatedSuccess, WalkwayCode));
+                WalkwayCode = string.Empty;
+                WalkwayLength = string.Empty;
+            }
+            else
+            {
+                await _alertService.ShowAsync(AppStrings.ErrorTitle, BuildFailureMessage(result));
+            }
         }
-        catch (Exception) { await Shell.Current.DisplayAlert(AppStrings.ErrorTitle, AppStrings.ApiConnectionError, "OK"); }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Error Walkway]: {ex.Message}");
+            await _alertService.ShowAsync(AppStrings.ErrorTitle, AppStrings.ApiConnectionError);
+        }
         finally { IsLoading = false; }
+    }
+
+    private static string BuildFailureMessage(StructureOperationResult result)
+    {
+        if (result.Errors is { Count: > 0 })
+            return string.Join("\n", result.Errors.Select(e => $"{e.PropertyMessage}: {e.ErrorMessage}"));
+
+        return string.IsNullOrWhiteSpace(result.Message) ? AppStrings.ApiConnectionError : result.Message;
     }
 }

@@ -1,4 +1,5 @@
-﻿using IrrigationMaster.Mobile.Application.Constants;
+﻿using IrrigationMaster.Mobile.Application.Common.Dtos;
+using IrrigationMaster.Mobile.Application.Constants;
 using IrrigationMaster.Mobile.Application.Features.Models.Auth;
 using IrrigationMaster.Mobile.Application.Features.Models.Structure;
 using IrrigationMaster.Mobile.Application.Features.Models.Structure.Country;
@@ -57,64 +58,80 @@ public class ApiService : IAuthService, IStructureService
 
     // ─── 2. CONFIGURACIÓN DE ESTRUCTURA (DOMINIO FÍSICO) ───
 
-    public async Task<(bool IsSuccess, string Message)> CreateOrganizationAsync(CreateOrganizationRequest request)
+    public async Task<StructureOperationResult> CreateOrganizationAsync(CreateOrganizationRequest request)
     {
         try
         {
             await AttachAuthHeadersAsync();
 
             var response = await _httpClient.PostAsJsonAsync(ApiEndpoints.Organizations, request);
-
-            if (response.IsSuccessStatusCode)
-                return (true, ServiceMessages.OrgCreatedSuccess);
-
-            return (false, ServiceMessages.OrgCreatedError);
+            return await ReadStructureResultAsync(response);
+        }
+        catch (HttpRequestException)
+        {
+            return new StructureOperationResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[API Error - Org]: {ex.Message}");
-            return (false, ServiceMessages.ApiConnectionError);
+            return new StructureOperationResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
         }
     }
 
-    public async Task<(bool IsSuccess, string Message)> CreateHydraulicSectorAsync(CreateHydraulicSectorRequest request)
+    public async Task<StructureOperationResult> CreateHydraulicSectorAsync(CreateHydraulicSectorRequest request)
     {
         try
         {
             await AttachAuthHeadersAsync();
 
             var response = await _httpClient.PostAsJsonAsync(ApiEndpoints.HydraulicSectors, request);
-
-            if (response.IsSuccessStatusCode)
-                return (true, ServiceMessages.SectorCreatedSuccess);
-
-            return (false, ServiceMessages.SectorCreatedError);
+            return await ReadStructureResultAsync(response);
+        }
+        catch (HttpRequestException)
+        {
+            return new StructureOperationResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[API Error - Sector]: {ex.Message}");
-            return (false, ServiceMessages.ApiConnectionError);
+            return new StructureOperationResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
         }
     }
 
-    public async Task<(bool IsSuccess, string Message)> CreateWalkwayAsync(CreateWalkwayRequest request)
+    public async Task<StructureOperationResult> CreateWalkwayAsync(CreateWalkwayRequest request)
     {
         try
         {
             await AttachAuthHeadersAsync();
 
             var response = await _httpClient.PostAsJsonAsync(ApiEndpoints.Walkways, request);
-
-            if (response.IsSuccessStatusCode)
-                return (true, ServiceMessages.WalkwayCreatedSuccess);
-
-            return (false, ServiceMessages.WalkwayCreatedError);
+            return await ReadStructureResultAsync(response);
+        }
+        catch (HttpRequestException)
+        {
+            return new StructureOperationResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[API Error - Walkway]: {ex.Message}");
-            return (false, ServiceMessages.ApiConnectionError);
+            return new StructureOperationResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
         }
+    }
+
+    // El backend también manda un body parseable en 400 (errores de validación), no solo en 2xx.
+    private static async Task<StructureOperationResult> ReadStructureResultAsync(HttpResponseMessage response)
+    {
+        if (response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+        {
+            var result = await response.Content.ReadFromJsonAsync<StructureOperationResult>();
+            return result ?? new StructureOperationResult { IsSuccess = false, Message = ServiceMessages.UnexpectedError };
+        }
+
+        return new StructureOperationResult
+        {
+            IsSuccess = false,
+            Message = $"{ServiceMessages.ServerErrorCode} {(int)response.StatusCode})"
+        };
     }
 
     private async Task AttachAuthHeadersAsync()
@@ -144,6 +161,29 @@ public class ApiService : IAuthService, IStructureService
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[API Error - Countries]: {ex.Message}");
+            return null;
+        }
+    }
+
+    public async Task<List<HydraulicSectorDto>?> GetHydraulicSectorsAsync()
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.GetAsync($"{ApiEndpoints.HydraulicSectorsPagination}?PageNumber=1&PageSize=200");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var paged = await response.Content.ReadFromJsonAsync<PagedResponse<List<HydraulicSectorDto>>>();
+                return paged?.Data;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - HydraulicSectors]: {ex.Message}");
             return null;
         }
     }

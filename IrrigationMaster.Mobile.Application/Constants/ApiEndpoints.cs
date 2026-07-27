@@ -11,6 +11,7 @@ namespace IrrigationMaster.Mobile.Application.Constants
         public const string Login = "Auth/Login";
         public const string Organizations = "organizations/Create";
         public const string HydraulicSectors = "hydraulicsectors/Create";
+        public const string HydraulicSectorsPagination = "hydraulicsectors/pagination";
         public const string Walkways = "walkways/Create";
         public const string Countries = "Countries/pagination";
     }

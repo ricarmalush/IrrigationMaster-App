@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Único proyecto de test que referencia IrrigationMaster.UI.Maui (donde viven los ViewModels).
+    UI.Maui solo compila para TFMs de plataforma (UseMaui=true), así que este proyecto apunta
+    exactamente a net9.0-windows10.0.19041.0, el único que esta máquina de desarrollo compila,
+    para poder resolver la referencia. Por eso vive separado de UnitTests/IntegrationTests
+    (esos sí son net9.0 puro y corren en cualquier plataforma/CI).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <OutputType>Library</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <WindowsPackageType>None</WindowsPackageType>
+    <!-- Este proyecto no necesita generar íconos/splash; evita que el Resizetizer de MAUI
+         (heredado transitivamente vía UI.Maui) reprocese los assets de UI.Maui y choque. -->
+    <EnableMauiImageProcessing>false</EnableMauiImageProcessing>
+    <EnableMauiFontsProcessing>false</EnableMauiFontsProcessing>
+    <EnableMauiSplashScreenProcessing>false</EnableMauiSplashScreenProcessing>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Sin PackageReference propio a Microsoft.Maui.Controls: llega transitivamente vía el
+         ProjectReference a UI.Maui. Añadirlo aquí directamente dispara el pipeline de
+         Resizetizer (íconos/splash) también en este proyecto, que choca con el de UI.Maui. -->
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- SetTargetFramework: UI.Maui multi-targetea (android/ios/windows); sin fijar el TFM,
+         MSBuild intenta construir sus varios targets a la vez y el Resizetizer de MAUI
+         termina viendo el mismo ícono dos veces ("duplicate file names"). -->
+    <ProjectReference Include="..\IrrigationMaster.UI.Maui\IrrigationMaster.UI.Maui.csproj"
+                       SetTargetFramework="TargetFramework=net9.0-windows10.0.19041.0" />
+    <ProjectReference Include="..\IrrigationMaster.Mobile.Application\IrrigationMaster.Mobile.Application.csproj" />
+    <ProjectReference Include="..\IrrigationMaster.Mobile.Infrastructure\IrrigationMaster.Mobile.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
