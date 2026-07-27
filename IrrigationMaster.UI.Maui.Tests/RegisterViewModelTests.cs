@@ -1,6 +1,5 @@
 using IrrigationMaster.Mobile.Application.Common.Dtos;
 using IrrigationMaster.Mobile.Application.Constants;
-using IrrigationMaster.Mobile.Application.Features.Models.Structure;
 using IrrigationMaster.Mobile.Infrastructure;
 using IrrigationMaster.UI.Maui.Common;
 using IrrigationMaster.UI.Maui.Features.Level1_Core.Register;
@@ -103,38 +102,11 @@ public class RegisterViewModelTests
         Assert.Equal(ServiceMessages.NetworkConnectionError, alert.Message);
     }
 
-    // ─── SELECTOR DE ANDADOR (WALKWAY) ───
-
     [Fact]
-    public async Task LoadWalkwaysAsync_PopulatesWalkwaysFromApi()
+    public async Task RegisterAsync_AlwaysSendsNullWalkwayId()
     {
-        var (vm, registration, _, _) = CreateSut();
-        var walkwayId = Guid.NewGuid();
-        registration.WalkwaysToReturn = [new PublicWalkwayDto { Id = walkwayId, Code = "A-01" }];
-
-        await vm.LoadWalkwaysAsync();
-
-        var walkway = Assert.Single(vm.Walkways);
-        Assert.Equal(walkwayId, walkway.Id);
-        Assert.Equal("A-01", walkway.Code);
-    }
-
-    [Fact]
-    public async Task RegisterAsync_WithSelectedWalkway_SendsWalkwayId()
-    {
-        var (vm, registration, _, _) = CreateSut();
-        SetValidFields(vm);
-        var walkwayId = Guid.NewGuid();
-        vm.SelectedWalkway = new WalkwayItem { Id = walkwayId, Code = "A-01" };
-
-        await vm.RegisterAsync();
-
-        Assert.Equal(walkwayId, registration.LastRequest!.WalkwayId);
-    }
-
-    [Fact]
-    public async Task RegisterAsync_WithoutSelectedWalkway_SendsNullWalkwayId()
-    {
+        // El registro anónimo ya no ofrece selector de Andador: la asignación queda para
+        // cuando el Presidente apruebe al usuario, no para este flujo.
         var (vm, registration, _, _) = CreateSut();
         SetValidFields(vm);
 

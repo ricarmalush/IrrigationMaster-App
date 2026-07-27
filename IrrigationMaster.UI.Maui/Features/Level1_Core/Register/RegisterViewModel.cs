@@ -5,17 +5,8 @@ using IrrigationMaster.Mobile.Application.Features.Models.Users;
 using IrrigationMaster.Mobile.Application.Interfaces;
 using IrrigationMaster.Mobile.Infrastructure;
 using IrrigationMaster.UI.Maui.Common;
-using System.Collections.ObjectModel;
-using System.Windows.Input;
 
 namespace IrrigationMaster.UI.Maui.Features.Level1_Core.Register;
-
-// Clase auxiliar para el desplegable de andadores
-public class WalkwayItem
-{
-    public Guid Id { get; set; }
-    public string Code { get; set; } = string.Empty;
-}
 
 public partial class RegisterViewModel : ObservableObject
 {
@@ -27,45 +18,13 @@ public partial class RegisterViewModel : ObservableObject
     [ObservableProperty] public partial string LastName { get; set; } = string.Empty;
     [ObservableProperty] public partial string Email { get; set; } = string.Empty;
     [ObservableProperty] public partial string Password { get; set; } = string.Empty;
-    [ObservableProperty] public partial WalkwayItem? SelectedWalkway { get; set; }
     [ObservableProperty] public partial bool IsBusy { get; set; }
-
-    // Colección para alimentar el Picker de XAML. La organización a la que se une el vecino
-    // (TenantConfig.DefaultOrganizationId) nunca se muestra ni se pide: es fija por despliegue.
-    public ObservableCollection<WalkwayItem> Walkways { get; } = [];
-
-    public ICommand LoadWalkwaysCommand { get; }
 
     public RegisterViewModel(IRegistrationService registrationService, IAlertService alertService, INavigationService navigationService)
     {
         _registrationService = registrationService;
         _alertService = alertService;
         _navigationService = navigationService;
-
-        LoadWalkwaysCommand = new Command(async () => await LoadWalkwaysAsync());
-        LoadWalkwaysCommand.Execute(null);
-    }
-
-    internal async Task LoadWalkwaysAsync()
-    {
-        try
-        {
-            var walkwaysFromApi = await _registrationService.GetPublicWalkwaysAsync(TenantConfig.DefaultOrganizationId);
-
-            Walkways.Clear();
-
-            if (walkwaysFromApi != null)
-            {
-                foreach (var walkway in walkwaysFromApi)
-                {
-                    Walkways.Add(new WalkwayItem { Id = walkway.Id, Code = walkway.Code });
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[Error Loading Walkways]: {ex.Message}");
-        }
     }
 
     [RelayCommand]
@@ -81,6 +40,9 @@ public partial class RegisterViewModel : ObservableObject
         IsBusy = true;
         try
         {
+            // WalkwayId queda sin asignar (es opcional en CreateUserCommand): la asignación de
+            // andador pasa a ser responsabilidad del Presidente al aprobar al usuario, no del
+            // propio registro anónimo.
             var result = await _registrationService.RegisterAsync(new CreateUserRequest
             {
                 FirstName = FirstName.Trim(),
@@ -88,8 +50,7 @@ public partial class RegisterViewModel : ObservableObject
                 Email = Email.Trim(),
                 Password = Password,
                 OrganizationId = TenantConfig.DefaultOrganizationId,
-                RoleId = TenantConfig.DefaultVecinoRoleId,
-                WalkwayId = SelectedWalkway?.Id
+                RoleId = TenantConfig.DefaultVecinoRoleId
             });
 
             if (result.IsSuccess)

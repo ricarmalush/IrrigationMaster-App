@@ -49,16 +49,6 @@
                     <Entry Text="{Binding Password}" Placeholder="********" IsPassword="True" HeightRequest="45" BackgroundColor="White" TextColor="Black"/>
                 </VerticalStackLayout>
 
-                <BoxView HeightRequest="1" Color="LightGray" Margin="0,5" />
-
-                <VerticalStackLayout Spacing="4">
-                    <Label x:Name="ZoneLabel" Text="Selecciona Zona / Andador (opcional):" FontAttributes="Bold" TextColor="#333333" FontSize="14"/>
-                    <Picker ItemsSource="{Binding Walkways}"
-                            ItemDisplayBinding="{Binding Code}"
-                            SelectedItem="{Binding SelectedWalkway}"
-                            Title="Seleccionar..." HeightRequest="45" BackgroundColor="White" TextColor="Black"/>
-                </VerticalStackLayout>
-
                 <Button Text="Confirmar Registro"
                         Command="{Binding RegisterCommand}"
                         BackgroundColor="#2E7D32" 
