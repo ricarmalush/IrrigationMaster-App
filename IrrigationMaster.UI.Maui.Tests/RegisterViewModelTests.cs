@@ -26,10 +26,11 @@ public class RegisterViewModelTests
         vm.LastName = "García";
         vm.Email = "ana@correo.test";
         vm.Password = "clave12345";
+        vm.InvitationCode = "7XQZ9MKT";
     }
 
     [Fact]
-    public async Task RegisterAsync_OnSuccess_UsesConfiguredTenantValues_AndNavigatesBack()
+    public async Task RegisterAsync_OnSuccess_SendsInvitationCode_AndNavigatesBack()
     {
         var (vm, registration, alerts, navigation) = CreateSut();
         registration.ResponseToReturn = new StructureOperationResult { IsSuccess = true };
@@ -39,13 +40,81 @@ public class RegisterViewModelTests
 
         Assert.False(vm.IsBusy);
         Assert.NotNull(registration.LastRequest);
-        Assert.Equal(TenantConfig.DefaultOrganizationId, registration.LastRequest!.OrganizationId);
+        Assert.Equal("7XQZ9MKT", registration.LastRequest!.InvitationCode);
         Assert.Equal(TenantConfig.DefaultVecinoRoleId, registration.LastRequest.RoleId);
         Assert.Equal("Ana", registration.LastRequest.FirstName);
         Assert.Equal("García", registration.LastRequest.LastName);
         Assert.Equal("ana@correo.test", registration.LastRequest.Email);
         Assert.Equal([".."], navigation.Routes);
         Assert.Contains(alerts.Calls, a => a.Title == AppStrings.SuccessTitle);
+    }
+
+    [Fact]
+    public async Task RegisterAsync_TrimsInvitationCodeBeforeSending()
+    {
+        var (vm, registration, _, _) = CreateSut();
+        registration.ResponseToReturn = new StructureOperationResult { IsSuccess = true };
+        SetValidFields(vm);
+        vm.InvitationCode = "  7XQZ9MKT  ";
+
+        await vm.RegisterAsync();
+
+        Assert.Equal("7XQZ9MKT", registration.LastRequest!.InvitationCode);
+    }
+
+    [Fact]
+    public async Task RegisterAsync_OnInvalidInvitationCode_ShowsBackendMessage_AndDoesNotNavigate()
+    {
+        // El backend es quien valida si el código existe/es válido; aquí simulamos exactamente
+        // el rechazo que devolvería (ValidateInvitationCodeQuery / CreateUserCommand anónimo).
+        var (vm, registration, alerts, navigation) = CreateSut();
+        registration.ResponseToReturn = new StructureOperationResult
+        {
+            IsSuccess = false,
+            Message = "El código de invitación no es válido."
+        };
+        SetValidFields(vm);
+        vm.InvitationCode = "NOEXISTE";
+
+        await vm.RegisterAsync();
+
+        Assert.False(vm.IsBusy);
+        Assert.Empty(navigation.Routes); // no se crea ni navega a ningún lado
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.ErrorTitle, alert.Title);
+        Assert.Equal("El código de invitación no es válido.", alert.Message);
+    }
+
+    [Fact]
+    public async Task RegisterAsync_WithEmptyInvitationCode_DoesNotCallApi()
+    {
+        var (vm, registration, alerts, navigation) = CreateSut();
+        SetValidFields(vm);
+        vm.InvitationCode = string.Empty;
+
+        await vm.RegisterAsync();
+
+        Assert.Null(registration.LastRequest);
+        Assert.Empty(navigation.Routes);
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.AttentionTitle, alert.Title);
+        Assert.Equal(AppStrings.MsgMissingRegisterData, alert.Message);
+    }
+
+    [Fact]
+    public async Task RegisterAsync_WithTooShortInvitationCode_DoesNotCallApi_AndShowsSpecificMessage()
+    {
+        var (vm, registration, alerts, navigation) = CreateSut();
+        SetValidFields(vm);
+        vm.InvitationCode = "ABC12"; // menos de 8 caracteres
+
+        await vm.RegisterAsync();
+
+        Assert.Null(registration.LastRequest);
+        Assert.Empty(navigation.Routes);
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.AttentionTitle, alert.Title);
+        Assert.Equal(AppStrings.MsgInvalidInvitationCode, alert.Message);
     }
 
     [Fact]

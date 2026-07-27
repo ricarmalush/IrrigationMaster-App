@@ -30,6 +30,11 @@
                        Margin="0,0,0,5" />
 
                 <VerticalStackLayout Spacing="4">
+                    <Label Text="Código de tu comunidad:" FontAttributes="Bold" TextColor="#333333" FontSize="14"/>
+                    <Entry Text="{Binding InvitationCode}" Placeholder="Código compartido por tu Presidente/Coordinador" HeightRequest="45" BackgroundColor="White" TextColor="Black"/>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="4">
                     <Label Text="Nombre:" FontAttributes="Bold" TextColor="#333333" FontSize="14"/>
                     <Entry Text="{Binding FirstName}" Placeholder="Tu nombre" HeightRequest="45" BackgroundColor="White" TextColor="Black"/>
                 </VerticalStackLayout>

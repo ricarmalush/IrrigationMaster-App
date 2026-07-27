@@ -10,6 +10,11 @@ namespace IrrigationMaster.UI.Maui.Features.Level1_Core.Register;
 
 public partial class RegisterViewModel : ObservableObject
 {
+    // Longitud mínima del código de invitación antes de intentar la llamada de red -- el formato
+    // real (alfabeto, existencia) siempre lo valida el backend; esto solo evita un viaje de red
+    // inútil con un campo vacío o claramente incompleto.
+    private const int MinInvitationCodeLength = 8;
+
     private readonly IRegistrationService _registrationService;
     private readonly IAlertService _alertService;
     private readonly INavigationService _navigationService;
@@ -18,6 +23,7 @@ public partial class RegisterViewModel : ObservableObject
     [ObservableProperty] public partial string LastName { get; set; } = string.Empty;
     [ObservableProperty] public partial string Email { get; set; } = string.Empty;
     [ObservableProperty] public partial string Password { get; set; } = string.Empty;
+    [ObservableProperty] public partial string InvitationCode { get; set; } = string.Empty;
     [ObservableProperty] public partial bool IsBusy { get; set; }
 
     public RegisterViewModel(IRegistrationService registrationService, IAlertService alertService, INavigationService navigationService)
@@ -31,9 +37,16 @@ public partial class RegisterViewModel : ObservableObject
     internal async Task RegisterAsync()
     {
         if (string.IsNullOrWhiteSpace(FirstName) || string.IsNullOrWhiteSpace(LastName) ||
-            string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
+            string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password) ||
+            string.IsNullOrWhiteSpace(InvitationCode))
         {
             await _alertService.ShowAsync(AppStrings.AttentionTitle, AppStrings.MsgMissingRegisterData);
+            return;
+        }
+
+        if (InvitationCode.Trim().Length < MinInvitationCodeLength)
+        {
+            await _alertService.ShowAsync(AppStrings.AttentionTitle, AppStrings.MsgInvalidInvitationCode);
             return;
         }
 
@@ -49,7 +62,7 @@ public partial class RegisterViewModel : ObservableObject
                 LastName = LastName.Trim(),
                 Email = Email.Trim(),
                 Password = Password,
-                OrganizationId = TenantConfig.DefaultOrganizationId,
+                InvitationCode = InvitationCode.Trim(),
                 RoleId = TenantConfig.DefaultVecinoRoleId
             });
 

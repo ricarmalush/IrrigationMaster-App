@@ -184,7 +184,7 @@ public class ApiServiceTests
     {
         var handler = new FakeHttpMessageHandler(HttpStatusCode.Created, CreatedResponseJson);
         var sut = CreateSut(handler, storedToken: null);
-        var organizationId = Guid.NewGuid();
+        const string invitationCode = "7XQZ9MKT";
         var roleId = Guid.NewGuid();
 
         var result = await sut.RegisterAsync(new CreateUserRequest
@@ -193,15 +193,16 @@ public class ApiServiceTests
             LastName = "García",
             Email = "ana@correo.test",
             Password = "clave12345",
-            OrganizationId = organizationId,
+            InvitationCode = invitationCode,
             RoleId = roleId
         });
 
         Assert.True(result.IsSuccess);
         Assert.EndsWith("Users/Create", handler.LastRequest!.RequestUri!.ToString());
         Assert.Null(handler.LastRequest.Headers.Authorization);
-        Assert.Contains(organizationId.ToString(), handler.LastRequestBody);
+        Assert.Contains(invitationCode, handler.LastRequestBody);
         Assert.Contains(roleId.ToString(), handler.LastRequestBody);
+        Assert.DoesNotContain("organizationId", handler.LastRequestBody, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

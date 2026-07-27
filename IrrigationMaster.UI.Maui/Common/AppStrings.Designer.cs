@@ -140,7 +140,16 @@ namespace IrrigationMaster.UI.Maui.Common {
                 return ResourceManager.GetString("LoginValidationWarning", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a Introduce un código de invitación válido (mínimo 8 caracteres)..
+        /// </summary>
+        public static string MsgInvalidInvitationCode {
+            get {
+                return ResourceManager.GetString("MsgInvalidInvitationCode", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Busca una cadena traducida similar a Abriendo la Supervisión de Colas FIFO por Andador....
         /// </summary>
