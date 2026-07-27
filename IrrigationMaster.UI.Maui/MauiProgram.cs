@@ -36,6 +36,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IAuthService>(sp => sp.GetRequiredService<ApiService>());
         builder.Services.AddSingleton<IStructureService>(sp => sp.GetRequiredService<ApiService>());
         builder.Services.AddSingleton<IAlertService, ShellAlertService>();
+        builder.Services.AddSingleton<INavigationService, ShellNavigationService>();
 
         // ─── NIVEL 1: CORE (Autenticación) ───
         builder.Services.AddTransient<MainPage>(); // Asumo que esta es tu página de Login principal

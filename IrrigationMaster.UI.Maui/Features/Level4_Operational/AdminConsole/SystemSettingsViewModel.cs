@@ -1,10 +1,9 @@
+using CommunityToolkit.Mvvm.ComponentModel;
 using IrrigationMaster.Mobile.Application.Common.Dtos;
 using IrrigationMaster.Mobile.Application.Features.Models.Structure;
 using IrrigationMaster.Mobile.Application.Interfaces;
 using IrrigationMaster.UI.Maui.Common;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Windows.Input;
 
 namespace IrrigationMaster.UI.Maui.Features.Level4_Operational.AdminConsole;
@@ -23,71 +22,45 @@ public class HydraulicSectorItem
     public string Name { get; set; } = string.Empty;
 }
 
-// INotifyPropertyChanged en vez de BindableObject: XAML se enlaza igual (no usa
-// BindableProperty), pero así el ViewModel se puede instanciar en tests sin una
-// app MAUI corriendo (BindableObject exige un Dispatcher de WinUI en su constructor).
-public partial class SystemSettingsViewModel : INotifyPropertyChanged
+// ObservableObject (CommunityToolkit.Mvvm) en vez de BindableObject: XAML se enlaza igual,
+// pero así el ViewModel se puede instanciar en tests sin una app MAUI corriendo
+// (BindableObject exige un Dispatcher de WinUI en su constructor). Mismo patrón que
+// RegisterViewModel, ahora estándar para toda la App.
+public partial class SystemSettingsViewModel : ObservableObject
 {
     private readonly IStructureService _structureService;
     private readonly IAlertService _alertService;
-    private bool _isLoading;
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
     // --- PESTAÑA 1: ENTIDAD RAÍZ ---
-    private string _orgName = string.Empty;
-    private string _orgTaxId = string.Empty;
-    private string _orgStreet = string.Empty;
-    private string _orgCity = string.Empty;
-    private string _orgStateOrProvince = string.Empty;
-    private string _orgPostalCode = string.Empty;
-    private string _orgLocationDetail = string.Empty;
-    private CountryItem? _selectedCountry;
-
-    public string OrgName { get => _orgName; set { _orgName = value; OnPropertyChanged(); } }
-    public string OrgTaxId { get => _orgTaxId; set { _orgTaxId = value; OnPropertyChanged(); } }
-    public string OrgStreet { get => _orgStreet; set { _orgStreet = value; OnPropertyChanged(); } }
-    public string OrgCity { get => _orgCity; set { _orgCity = value; OnPropertyChanged(); } }
-    public string OrgStateOrProvince { get => _orgStateOrProvince; set { _orgStateOrProvince = value; OnPropertyChanged(); } }
-    public string OrgPostalCode { get => _orgPostalCode; set { _orgPostalCode = value; OnPropertyChanged(); } }
-    public string OrgLocationDetail { get => _orgLocationDetail; set { _orgLocationDetail = value; OnPropertyChanged(); } }
+    [ObservableProperty] public partial string OrgName { get; set; } = string.Empty;
+    [ObservableProperty] public partial string OrgTaxId { get; set; } = string.Empty;
+    [ObservableProperty] public partial string OrgStreet { get; set; } = string.Empty;
+    [ObservableProperty] public partial string OrgCity { get; set; } = string.Empty;
+    [ObservableProperty] public partial string OrgStateOrProvince { get; set; } = string.Empty;
+    [ObservableProperty] public partial string OrgPostalCode { get; set; } = string.Empty;
+    [ObservableProperty] public partial string OrgLocationDetail { get; set; } = string.Empty;
+    [ObservableProperty] public partial CountryItem? SelectedCountry { get; set; }
 
     // Colección para alimentar el Picker de XAML
     public ObservableCollection<CountryItem> Countries { get; } = [];
 
-    public CountryItem? SelectedCountry
-    {
-        get => _selectedCountry;
-        set { _selectedCountry = value; OnPropertyChanged(); }
-    }
-
     // --- PESTAÑA 2: SECTORES HIDRÁULICOS ---
-    private string _sectorName = string.Empty;
-    private string _sectorAreaSize = string.Empty;
-    public string SectorName { get => _sectorName; set { _sectorName = value; OnPropertyChanged(); } }
-    public string SectorAreaSize { get => _sectorAreaSize; set { _sectorAreaSize = value; OnPropertyChanged(); } }
+    [ObservableProperty] public partial string SectorName { get; set; } = string.Empty;
+    [ObservableProperty] public partial string SectorAreaSize { get; set; } = string.Empty;
 
     // --- PESTAÑA 3: ANDADORES ---
-    private string _walkwayCode = string.Empty;
-    private string _walkwayLength = string.Empty;
-    private HydraulicSectorItem? _selectedHydraulicSector;
-    public string WalkwayCode { get => _walkwayCode; set { _walkwayCode = value; OnPropertyChanged(); } }
-    public string WalkwayLength { get => _walkwayLength; set { _walkwayLength = value; OnPropertyChanged(); } }
+    [ObservableProperty] public partial string WalkwayCode { get; set; } = string.Empty;
+    [ObservableProperty] public partial string WalkwayLength { get; set; } = string.Empty;
+    [ObservableProperty] public partial HydraulicSectorItem? SelectedHydraulicSector { get; set; }
 
     // Colección para alimentar el Picker de XAML
     public ObservableCollection<HydraulicSectorItem> HydraulicSectors { get; } = [];
 
-    public HydraulicSectorItem? SelectedHydraulicSector
-    {
-        get => _selectedHydraulicSector;
-        set { _selectedHydraulicSector = value; OnPropertyChanged(); }
-    }
-
     // --- ESTADOS ---
-    public bool IsLoading { get => _isLoading; set { _isLoading = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsNotLoading)); } }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotLoading))]
+    public partial bool IsLoading { get; set; }
+
     public bool IsNotLoading => !IsLoading;
 
     // --- COMANDOS ---

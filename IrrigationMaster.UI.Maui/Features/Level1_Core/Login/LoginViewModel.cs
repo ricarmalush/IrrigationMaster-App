@@ -1,40 +1,28 @@
-﻿using IrrigationMaster.Mobile.Application.Interfaces;
+using CommunityToolkit.Mvvm.ComponentModel;
+using IrrigationMaster.Mobile.Application.Interfaces;
 using IrrigationMaster.UI.Maui.Common;
-using IrrigationMaster.UI.Maui.Features.Level1_Core.Register;
-using System.Diagnostics;
 using System.Windows.Input;
 
 namespace IrrigationMaster.UI.Maui.Features.Level1_Core.Login;
 
-public partial class LoginViewModel : BindableObject
+// ObservableObject (CommunityToolkit.Mvvm), estándar de la App: ver SystemSettingsViewModel.
+public partial class LoginViewModel : ObservableObject
 {
     private readonly IAuthService _authService;
     private readonly ICurrentSession _currentSession;
-    private string _email = string.Empty;
-    private string _password = string.Empty;
-    private bool _isLoading;
+    private readonly IAlertService _alertService;
+    private readonly INavigationService _navigationService;
 
     // Rutas de navegación centralizadas en constantes
     private const string AdminMenuRoute = "//AdminMenuPage";
     private const string RegisterRoute = "RegisterPage";
 
-    public string Email
-    {
-        get => _email;
-        set { _email = value; OnPropertyChanged(); }
-    }
+    [ObservableProperty] public partial string Email { get; set; } = string.Empty;
+    [ObservableProperty] public partial string Password { get; set; } = string.Empty;
 
-    public string Password
-    {
-        get => _password;
-        set { _password = value; OnPropertyChanged(); }
-    }
-
-    public bool IsLoading
-    {
-        get => _isLoading;
-        set { _isLoading = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsNotLoading)); }
-    }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotLoading))]
+    public partial bool IsLoading { get; set; }
 
     public bool IsNotLoading => !IsLoading;
 
@@ -42,22 +30,24 @@ public partial class LoginViewModel : BindableObject
     public ICommand NavigateToRegisterCommand { get; }
     public ICommand NavigateToSettingsCommand { get; }
 
-    public LoginViewModel(IAuthService authService, ICurrentSession currentSession)
+    public LoginViewModel(IAuthService authService, ICurrentSession currentSession, IAlertService alertService, INavigationService navigationService)
     {
         _authService = authService;
         _currentSession = currentSession;
+        _alertService = alertService;
+        _navigationService = navigationService;
 
         LoginCommand = new Command(async () => await ExecuteLoginAsync());
         NavigateToRegisterCommand = new Command(async () => await ExecuteNavigateToRegisterAsync());
-        NavigateToSettingsCommand = new Command(async () => await Shell.Current.GoToAsync(AdminMenuRoute));
+        NavigateToSettingsCommand = new Command(async () => await _navigationService.GoToAsync(AdminMenuRoute));
     }
 
-    private async Task ExecuteLoginAsync()
+    internal async Task ExecuteLoginAsync()
     {
         // 1. Validación previa en el cliente
         if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
         {
-            await Shell.Current.DisplayAlert(AppStrings.AttentionTitle, AppStrings.LoginValidationWarning, "OK");
+            await _alertService.ShowAsync(AppStrings.AttentionTitle, AppStrings.LoginValidationWarning);
             return;
         }
 
@@ -71,84 +61,24 @@ public partial class LoginViewModel : BindableObject
         // 3. LÓGICA PURA Y PROFESIONAL: Confiamos ciegamente en el contrato de la API
         if (loginResult?.IsSuccess == true)
         {
-            try
+            // GUARDAMOS LA SESIÓN COMPLETA (token + organización + rol)
+            if (loginResult.Data != null)
             {
-                // GUARDAMOS LA SESIÓN COMPLETA (token + organización + rol)
-                if (loginResult.Data != null)
-                {
-                    await _currentSession.EstablishAsync(loginResult.Data.ToString()!);
-                }
-
-                // Intentamos la navegación limpia por Shell
-                await Shell.Current.GoToAsync(AdminMenuRoute);
+                await _currentSession.EstablishAsync(loginResult.Data.ToString()!);
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[Shell Navigation Error]: {ex.Message}");
 
-                // PLAN DE RESPALDO: Navegación jerárquica si el Shell falla
-                if (Shell.Current.CurrentPage != null)
-                {
-                    await Shell.Current.CurrentPage.Navigation.PushAsync(
-                        new Features.Level4_Operational.AdminConsole.AdminMenuPage()
-                    );
-                }
-                else
-                {
-                    await Shell.Current.DisplayAlert(AppStrings.SystemErrorTitle, AppStrings.NavigationFallbackError, "OK");
-                }
-            }
+            await _navigationService.GoToAsync(AdminMenuRoute);
         }
         else
         {
             // El inicio de sesión falló. Pintamos el mensaje que viene del backend o el de respaldo de red.
             string errorMsg = loginResult?.Message ?? AppStrings.NetworkFallbackError;
-            await Shell.Current.DisplayAlert(AppStrings.ErrorTitle, errorMsg, "OK");
+            await _alertService.ShowAsync(AppStrings.ErrorTitle, errorMsg);
         }
     }
 
-    private async Task ExecuteNavigateToRegisterAsync()
+    internal async Task ExecuteNavigateToRegisterAsync()
     {
-        try
-        {
-            // 1. Intentamos la navegación limpia por el Shell de MAUI
-            await Shell.Current.GoToAsync(RegisterRoute);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[Register Navigation Error]: {ex.Message}");
-
-            if (Shell.Current.CurrentPage != null)
-            {
-                // 2. SOLUCIÓN MODERNA: Extraemos el contenedor de servicios
-                var services = Shell.Current.Handler?.MauiContext?.Services;
-                var registerViewModel = services?.GetService<RegisterViewModel>();
-
-                if (registerViewModel != null)
-                {
-                    await Shell.Current.CurrentPage.Navigation.PushAsync(new RegisterPage(registerViewModel));
-                }
-                else
-                {
-                    try
-                    {
-                        // 3. PLAN DE RESCATE MÁXIMO
-                        if (Activator.CreateInstance<RegisterViewModel>() is RegisterViewModel fallbackVm)
-                        {
-                            await Shell.Current.CurrentPage.Navigation.PushAsync(new RegisterPage(fallbackVm));
-                        }
-                        else
-                        {
-                            await Shell.Current.DisplayAlert(AppStrings.SystemErrorTitle, AppStrings.NavigationFallbackError, "OK");
-                        }
-                    }
-                    catch (Exception innerEx)
-                    {
-                        Debug.WriteLine($"[Fallback Instantiation Error]: {innerEx.Message}");
-                        await Shell.Current.DisplayAlert(AppStrings.SystemErrorTitle, AppStrings.NavigationFallbackError, "OK");
-                    }
-                }
-            }
-        }
+        await _navigationService.GoToAsync(RegisterRoute);
     }
 }
