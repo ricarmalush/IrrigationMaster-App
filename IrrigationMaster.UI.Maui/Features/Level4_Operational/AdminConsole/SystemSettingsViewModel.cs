@@ -1,4 +1,4 @@
-﻿using IrrigationMaster.Mobile.Infrastructure;
+﻿using IrrigationMaster.Mobile.Application.Interfaces;
 using IrrigationMaster.UI.Maui.Common;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
@@ -14,7 +14,7 @@ public class CountryItem
 
 public partial class SystemSettingsViewModel : BindableObject
 {
-    private readonly ApiService _apiService;
+    private readonly IStructureService _structureService;
     private bool _isLoading;
 
     // --- PESTAÑA 1: ENTIDAD RAÍZ ---
@@ -66,9 +66,9 @@ public partial class SystemSettingsViewModel : BindableObject
     public ICommand SaveWalkwayCommand { get; }
     public ICommand LoadCountriesCommand { get; }
 
-    public SystemSettingsViewModel(ApiService apiService)
+    public SystemSettingsViewModel(IStructureService structureService)
     {
-        _apiService = apiService;
+        _structureService = structureService;
 
         SaveOrganizationCommand = new Command(async () => await ExecuteSaveOrganizationAsync());
         SaveHydraulicSectorCommand = new Command(async () => await ExecuteSaveHydraulicSectorAsync());
@@ -84,7 +84,7 @@ public partial class SystemSettingsViewModel : BindableObject
         try
         {
             // 1. Llamada real a la infraestructura (tu API)
-            var countriesFromApi = await _apiService.GetCountriesAsync();
+            var countriesFromApi = await _structureService.GetCountriesAsync();
 
             // 2. Limpiamos la lista actual por si se vuelve a cargar la pantalla
             Countries.Clear();
@@ -141,7 +141,7 @@ public partial class SystemSettingsViewModel : BindableObject
                 }
             };
 
-            // TODO: Enviar a tu API (Ej: await _apiService.CreateOrganizationAsync(orgPayload))
+            // TODO: Enviar a tu API (Ej: await _structureService.CreateOrganizationAsync(orgPayload))
             await Task.Delay(800);
 
             await Shell.Current.DisplayAlert(AppStrings.SuccessTitle, string.Format(AppStrings.OrgCreatedSuccess, OrgName), "OK");
@@ -166,7 +166,7 @@ public partial class SystemSettingsViewModel : BindableObject
         try
         {
             double.TryParse(SectorAreaSize, out double area);
-            // TODO: Enviar a tu API (Ej: await _apiService.CreateSectorAsync(sectorPayload))
+            // TODO: Enviar a tu API (Ej: await _structureService.CreateHydraulicSectorAsync(sectorPayload))
             await Task.Delay(800);
             await Shell.Current.DisplayAlert(AppStrings.SuccessTitle, string.Format(AppStrings.SectorCreatedSuccess, SectorName), "OK");
             SectorName = string.Empty; SectorAreaSize = string.Empty;
@@ -187,7 +187,7 @@ public partial class SystemSettingsViewModel : BindableObject
         try
         {
             double.TryParse(WalkwayLength, out double length);
-            // TODO: Enviar a tu API (Ej: await _apiService.CreateWalkwayAsync(walkwayPayload))
+            // TODO: Enviar a tu API (Ej: await _structureService.CreateWalkwayAsync(walkwayPayload))
             await Task.Delay(800);
             await Shell.Current.DisplayAlert(AppStrings.SuccessTitle, string.Format(AppStrings.WalkwayCreatedSuccess, WalkwayCode), "OK");
             WalkwayCode = string.Empty; WalkwayLength = string.Empty;

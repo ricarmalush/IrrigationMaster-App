@@ -2,7 +2,7 @@
 <TabbedPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
             xmlns:viewmodel="clr-namespace:IrrigationMaster.UI.Maui.Features.Level4_Operational.AdminConsole"
-            xmlns:resources="clr-namespace:IrrigationMaster.Mobile.Core.Common;assembly=IrrigationMaster.Mobile.Core"
+            xmlns:resources="clr-namespace:IrrigationMaster.Mobile.Application.Common;assembly=IrrigationMaster.Mobile.Application"
             x:Class="IrrigationMaster.UI.Maui.Features.Level4_Operational.AdminConsole.SystemSettingsPage"
             x:DataType="viewmodel:SystemSettingsViewModel"
             BarBackgroundColor="#2E7D32"

@@ -1,4 +1,4 @@
-﻿using IrrigationMaster.Mobile.Core.Interfaces;
+﻿using IrrigationMaster.Mobile.Application.Interfaces;
 using IrrigationMaster.Mobile.Infrastructure;
 using IrrigationMaster.UI.Maui.Features.Level1_Core.Login;
 using IrrigationMaster.UI.Maui.Features.Level1_Core.Register;
@@ -24,10 +24,12 @@ public static class MauiProgram
         // ─── INFRAESTRUCTURA ───
         // El almacenamiento seguro de sesión (token + organización + rol)
         builder.Services.AddSingleton<ITokenStorage, SecureTokenStorage>();
-        // El motor de red: una única instancia, resuelta tanto por su contrato IAuthService
-        // como por el tipo concreto (algunos ViewModels aún necesitan métodos fuera de IAuthService).
+        // Fuente única de verdad de la sesión activa (parsea el JWT una sola vez, en Infrastructure)
+        builder.Services.AddSingleton<ICurrentSession, CurrentSession>();
+        // El motor de red: una única instancia, resuelta por sus dos contratos (Auth y Structure)
         builder.Services.AddSingleton<ApiService>();
         builder.Services.AddSingleton<IAuthService>(sp => sp.GetRequiredService<ApiService>());
+        builder.Services.AddSingleton<IStructureService>(sp => sp.GetRequiredService<ApiService>());
 
         // ─── NIVEL 1: CORE (Autenticación) ───
         builder.Services.AddTransient<MainPage>(); // Asumo que esta es tu página de Login principal

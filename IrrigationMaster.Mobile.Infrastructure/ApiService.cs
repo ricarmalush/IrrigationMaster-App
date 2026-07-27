@@ -1,13 +1,13 @@
-﻿using IrrigationMaster.Mobile.Core.Constants;
-using IrrigationMaster.Mobile.Core.Features.Models.Auth;
-using IrrigationMaster.Mobile.Core.Features.Models.Structure;
-using IrrigationMaster.Mobile.Core.Features.Models.Structure.Country;
-using IrrigationMaster.Mobile.Core.Interfaces;
+﻿using IrrigationMaster.Mobile.Application.Constants;
+using IrrigationMaster.Mobile.Application.Features.Models.Auth;
+using IrrigationMaster.Mobile.Application.Features.Models.Structure;
+using IrrigationMaster.Mobile.Application.Features.Models.Structure.Country;
+using IrrigationMaster.Mobile.Application.Interfaces;
 using System.Net.Http.Json;
 
 namespace IrrigationMaster.Mobile.Infrastructure;
 
-public class ApiService : IAuthService
+public class ApiService : IAuthService, IStructureService
 {
     private readonly HttpClient _httpClient;
     private readonly ITokenStorage _tokenStorage;

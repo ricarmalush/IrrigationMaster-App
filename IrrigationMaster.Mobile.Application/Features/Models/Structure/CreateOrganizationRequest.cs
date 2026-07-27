@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace IrrigationMaster.Mobile.Core.Features.Models.Structure
+namespace IrrigationMaster.Mobile.Application.Features.Models.Structure
 {
     public class CreateOrganizationRequest
     {

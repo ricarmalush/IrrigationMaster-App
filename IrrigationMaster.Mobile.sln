@@ -5,7 +5,7 @@ VisualStudioVersion = 17.14.36915.13
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IrrigationMaster.UI.Maui", "IrrigationMaster.UI.Maui\IrrigationMaster.UI.Maui.csproj", "{A3F2E084-3F88-4DF0-ADA5-6CD1C05A77D2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IrrigationMaster.Mobile.Core", "IrrigationMaster.Mobile.Core\IrrigationMaster.Mobile.Core.csproj", "{0F324893-CA79-4B4D-B5E3-99FEFFF73AE0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IrrigationMaster.Mobile.Application", "IrrigationMaster.Mobile.Application\IrrigationMaster.Mobile.Application.csproj", "{0F324893-CA79-4B4D-B5E3-99FEFFF73AE0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IrrigationMaster.Mobile.Infrastructure", "IrrigationMaster.Mobile.Infrastructure\IrrigationMaster.Mobile.Infrastructure.csproj", "{9D1BB951-FB03-4A52-92DF-DDE60F0034ED}"
 EndProject

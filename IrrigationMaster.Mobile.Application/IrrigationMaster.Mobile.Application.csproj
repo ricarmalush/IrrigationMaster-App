@@ -15,4 +15,8 @@
     <Folder Include="Services\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\IrrigationMaster.Domain\IrrigationMaster.Domain.csproj" />
+  </ItemGroup>
+
 </Project>

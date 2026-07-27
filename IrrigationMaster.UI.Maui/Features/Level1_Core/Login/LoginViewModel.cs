@@ -1,4 +1,4 @@
-﻿using IrrigationMaster.Mobile.Core.Interfaces;
+﻿using IrrigationMaster.Mobile.Application.Interfaces;
 using IrrigationMaster.UI.Maui.Common;
 using IrrigationMaster.UI.Maui.Features.Level1_Core.Register;
 using System.Diagnostics;
@@ -9,7 +9,7 @@ namespace IrrigationMaster.UI.Maui.Features.Level1_Core.Login;
 public partial class LoginViewModel : BindableObject
 {
     private readonly IAuthService _authService;
-    private readonly ITokenStorage _tokenStorage;
+    private readonly ICurrentSession _currentSession;
     private string _email = string.Empty;
     private string _password = string.Empty;
     private bool _isLoading;
@@ -42,10 +42,10 @@ public partial class LoginViewModel : BindableObject
     public ICommand NavigateToRegisterCommand { get; }
     public ICommand NavigateToSettingsCommand { get; }
 
-    public LoginViewModel(IAuthService authService, ITokenStorage tokenStorage)
+    public LoginViewModel(IAuthService authService, ICurrentSession currentSession)
     {
         _authService = authService;
-        _tokenStorage = tokenStorage;
+        _currentSession = currentSession;
 
         LoginCommand = new Command(async () => await ExecuteLoginAsync());
         NavigateToRegisterCommand = new Command(async () => await ExecuteNavigateToRegisterAsync());
@@ -76,14 +76,7 @@ public partial class LoginViewModel : BindableObject
                 // GUARDAMOS LA SESIÓN COMPLETA (token + organización + rol)
                 if (loginResult.Data != null)
                 {
-                    var jwtToken = loginResult.Data.ToString()!;
-                    var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
-                    var parsedToken = handler.ReadJwtToken(jwtToken);
-
-                    var organizationId = parsedToken.Claims.FirstOrDefault(c => c.Type == "organizationId")?.Value ?? string.Empty;
-                    var role = parsedToken.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value ?? string.Empty;
-
-                    await _tokenStorage.SaveSessionAsync(jwtToken, organizationId, role);
+                    await _currentSession.EstablishAsync(loginResult.Data.ToString()!);
                 }
 
                 // Intentamos la navegación limpia por Shell

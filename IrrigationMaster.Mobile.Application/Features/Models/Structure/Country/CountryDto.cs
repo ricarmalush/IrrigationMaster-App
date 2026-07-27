@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace IrrigationMaster.Mobile.Core.Features.Models.Structure.Country;
+namespace IrrigationMaster.Mobile.Application.Features.Models.Structure.Country;
 
 public class CountryDto
 {

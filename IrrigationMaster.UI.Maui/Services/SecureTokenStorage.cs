@@ -1,5 +1,5 @@
 ﻿// UI.Maui/Services/SecureTokenStorage.cs
-using IrrigationMaster.Mobile.Core.Interfaces;
+using IrrigationMaster.Mobile.Application.Interfaces;
 
 namespace IrrigationMaster.UI.Maui.Services;
 

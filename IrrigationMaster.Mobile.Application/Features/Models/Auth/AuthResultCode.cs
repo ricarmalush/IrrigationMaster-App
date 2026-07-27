@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace IrrigationMaster.Mobile.Core.Features.Models.Auth
+namespace IrrigationMaster.Mobile.Application.Features.Models.Auth
 {
     public enum AuthResultCode
     {

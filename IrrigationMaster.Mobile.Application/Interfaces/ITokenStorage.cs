@@ -1,4 +1,4 @@
-﻿namespace IrrigationMaster.Mobile.Core.Interfaces;
+﻿namespace IrrigationMaster.Mobile.Application.Interfaces;
 
 public interface ITokenStorage
 {

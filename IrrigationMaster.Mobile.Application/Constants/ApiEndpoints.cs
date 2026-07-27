@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace IrrigationMaster.Mobile.Core.Constants
+namespace IrrigationMaster.Mobile.Application.Constants
 {
     public static class ApiEndpoints
     {

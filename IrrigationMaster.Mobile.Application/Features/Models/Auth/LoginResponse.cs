@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace IrrigationMaster.Mobile.Core.Features.Models.Auth;
+namespace IrrigationMaster.Mobile.Application.Features.Models.Auth;
 
 public class LoginResponse
 {

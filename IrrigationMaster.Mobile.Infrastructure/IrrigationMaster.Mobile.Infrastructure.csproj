@@ -11,7 +11,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\IrrigationMaster.Mobile.Core\IrrigationMaster.Mobile.Core.csproj" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.19.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\IrrigationMaster.Mobile.Application\IrrigationMaster.Mobile.Application.csproj" />
   </ItemGroup>
 
 </Project>
