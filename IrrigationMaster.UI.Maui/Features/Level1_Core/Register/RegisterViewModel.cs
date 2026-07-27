@@ -1,71 +1,123 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using IrrigationMaster.Mobile.Application.Common.Dtos;
+using IrrigationMaster.Mobile.Application.Features.Models.Users;
+using IrrigationMaster.Mobile.Application.Interfaces;
+using IrrigationMaster.Mobile.Infrastructure;
+using IrrigationMaster.UI.Maui.Common;
 using System.Collections.ObjectModel;
-using System.Threading.Tasks;
+using System.Windows.Input;
 
 namespace IrrigationMaster.UI.Maui.Features.Level1_Core.Register;
 
+// Clase auxiliar para el desplegable de andadores
+public class WalkwayItem
+{
+    public Guid Id { get; set; }
+    public string Code { get; set; } = string.Empty;
+}
+
 public partial class RegisterViewModel : ObservableObject
 {
-    // =========================================================================
-    // PROPIEDADES OBSERVABLES (Estándar C# 13 / .NET 9 compatible con AOT)
-    // =========================================================================
+    private readonly IRegistrationService _registrationService;
+    private readonly IAlertService _alertService;
+    private readonly INavigationService _navigationService;
 
     [ObservableProperty] public partial string FirstName { get; set; } = string.Empty;
     [ObservableProperty] public partial string LastName { get; set; } = string.Empty;
     [ObservableProperty] public partial string Email { get; set; } = string.Empty;
     [ObservableProperty] public partial string Password { get; set; } = string.Empty;
-    [ObservableProperty] public partial string PlotNumber { get; set; } = string.Empty;
-    [ObservableProperty] public partial string SelectedWalkway { get; set; } = string.Empty;
+    [ObservableProperty] public partial WalkwayItem? SelectedWalkway { get; set; }
     [ObservableProperty] public partial bool IsBusy { get; set; }
 
-    // =========================================================================
-    // COLECCIONES Y MAESTROS
-    // =========================================================================
+    // Colección para alimentar el Picker de XAML. La organización a la que se une el vecino
+    // (TenantConfig.DefaultOrganizationId) nunca se muestra ni se pide: es fija por despliegue.
+    public ObservableCollection<WalkwayItem> Walkways { get; } = [];
 
-    // Colección observable para rellenar de forma dinámica las zonas/andadores de El Saso
-    public ObservableCollection<string> WalkwaysList { get; } =
-    [
-        "Andador 1", "Andador 2", "Andador 3", "Andador 4",
-        "Andador 5", "Andador 6", "Andador 7", "Andador 8", "Andador 9"
-    ];
+    public ICommand LoadWalkwaysCommand { get; }
 
-    // =========================================================================
-    // COMANDOS DE ACCIÓN (MVVM)
-    // =========================================================================
+    public RegisterViewModel(IRegistrationService registrationService, IAlertService alertService, INavigationService navigationService)
+    {
+        _registrationService = registrationService;
+        _alertService = alertService;
+        _navigationService = navigationService;
+
+        LoadWalkwaysCommand = new Command(async () => await LoadWalkwaysAsync());
+        LoadWalkwaysCommand.Execute(null);
+    }
+
+    internal async Task LoadWalkwaysAsync()
+    {
+        try
+        {
+            var walkwaysFromApi = await _registrationService.GetPublicWalkwaysAsync(TenantConfig.DefaultOrganizationId);
+
+            Walkways.Clear();
+
+            if (walkwaysFromApi != null)
+            {
+                foreach (var walkway in walkwaysFromApi)
+                {
+                    Walkways.Add(new WalkwayItem { Id = walkway.Id, Code = walkway.Code });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Error Loading Walkways]: {ex.Message}");
+        }
+    }
 
     [RelayCommand]
-    private async Task RegisterAsync()
+    internal async Task RegisterAsync()
     {
-        // Validación limpia usando las propiedades automáticas generadas por el Toolkit
-        if (string.IsNullOrWhiteSpace(FirstName) || string.IsNullOrWhiteSpace(Email) ||
-            string.IsNullOrWhiteSpace(Password) || string.IsNullOrWhiteSpace(SelectedWalkway))
+        if (string.IsNullOrWhiteSpace(FirstName) || string.IsNullOrWhiteSpace(LastName) ||
+            string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
         {
-            await Shell.Current.DisplayAlert("Atención", "Por favor, rellena los campos obligatorios.", "OK");
+            await _alertService.ShowAsync(AppStrings.AttentionTitle, AppStrings.MsgMissingRegisterData);
             return;
         }
 
         IsBusy = true;
-
         try
         {
-            // TODO: Mapear a tu DTO e invocar tu ApiService de forma asíncrona, ej:
-            // var result = await _accountApi.RegisterAsync(new RegisterDto(...));
+            var result = await _registrationService.RegisterAsync(new CreateUserRequest
+            {
+                FirstName = FirstName.Trim(),
+                LastName = LastName.Trim(),
+                Email = Email.Trim(),
+                Password = Password,
+                OrganizationId = TenantConfig.DefaultOrganizationId,
+                RoleId = TenantConfig.DefaultVecinoRoleId,
+                WalkwayId = SelectedWalkway?.Id
+            });
 
-            await Task.Delay(1500); // Simulación de carga de red
-
-            await Shell.Current.DisplayAlert("Registro Exitoso", "Enviando datos a la API de El Saso... Cuenta creada.", "OK");
-
-            // Regresa una pantalla atrás en la navegación
-            await Shell.Current.GoToAsync("..");
+            if (result.IsSuccess)
+            {
+                await _alertService.ShowAsync(AppStrings.SuccessTitle, AppStrings.UserRegisteredSuccess);
+                await _navigationService.GoToAsync("..");
+            }
+            else
+            {
+                await _alertService.ShowAsync(AppStrings.ErrorTitle, BuildFailureMessage(result));
+            }
         }
         catch (Exception ex)
         {
-            await Shell.Current.DisplayAlert("Error de Registro", ex.Message, "OK");
+            System.Diagnostics.Debug.WriteLine($"[Error Register]: {ex.Message}");
+            await _alertService.ShowAsync(AppStrings.ErrorTitle, AppStrings.ApiConnectionError);
         }
         finally
         {
             IsBusy = false;
         }
+    }
+
+    private static string BuildFailureMessage(StructureOperationResult result)
+    {
+        if (result.Errors is { Count: > 0 })
+            return string.Join("\n", result.Errors.Select(e => $"{e.PropertyMessage}: {e.ErrorMessage}"));
+
+        return string.IsNullOrWhiteSpace(result.Message) ? AppStrings.ApiConnectionError : result.Message;
     }
 }

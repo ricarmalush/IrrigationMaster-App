@@ -150,6 +150,9 @@
   <data name="MsgMissingOrgData" xml:space="preserve">
     <value>Por favor, completa todos los datos de la organización.</value>
   </data>
+  <data name="MsgMissingRegisterData" xml:space="preserve">
+    <value>Por favor, completa todos los datos obligatorios del registro.</value>
+  </data>
   <data name="MsgMissingSectorData" xml:space="preserve">
     <value>Por favor, completa todos los datos del sector hidráulico.</value>
   </data>
@@ -194,6 +197,9 @@
   </data>
   <data name="UnexpectedError" xml:space="preserve">
     <value>Ocurrió un error inesperado al procesar la solicitud.</value>
+  </data>
+  <data name="UserRegisteredSuccess" xml:space="preserve">
+    <value>Tu cuenta fue creada. Un administrador debe aprobarla antes de que puedas iniciar sesión.</value>
   </data>
   <data name="WalkwayCreatedError" xml:space="preserve">
     <value>Error al registrar el andador.</value>

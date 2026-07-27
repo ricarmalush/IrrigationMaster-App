@@ -3,12 +3,13 @@ using IrrigationMaster.Mobile.Application.Constants;
 using IrrigationMaster.Mobile.Application.Features.Models.Auth;
 using IrrigationMaster.Mobile.Application.Features.Models.Structure;
 using IrrigationMaster.Mobile.Application.Features.Models.Structure.Country;
+using IrrigationMaster.Mobile.Application.Features.Models.Users;
 using IrrigationMaster.Mobile.Application.Interfaces;
 using System.Net.Http.Json;
 
 namespace IrrigationMaster.Mobile.Infrastructure;
 
-public class ApiService : IAuthService, IStructureService
+public class ApiService : IAuthService, IStructureService, IRegistrationService
 {
     private readonly HttpClient _httpClient;
     private readonly ITokenStorage _tokenStorage;
@@ -184,6 +185,47 @@ public class ApiService : IAuthService, IStructureService
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[API Error - HydraulicSectors]: {ex.Message}");
+            return null;
+        }
+    }
+
+    // ─── 3. AUTO-REGISTRO (ANÓNIMO) ───
+
+    public async Task<StructureOperationResult> RegisterAsync(CreateUserRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync(ApiEndpoints.Users, request);
+            return await ReadStructureResultAsync(response);
+        }
+        catch (HttpRequestException)
+        {
+            return new StructureOperationResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - Register]: {ex.Message}");
+            return new StructureOperationResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
+        }
+    }
+
+    public async Task<List<PublicWalkwayDto>?> GetPublicWalkwaysAsync(Guid organizationId)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"{ApiEndpoints.WalkwaysPublic}?organizationId={organizationId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<PublicWalkwaysResponse>();
+                return result?.Data;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - PublicWalkways]: {ex.Message}");
             return null;
         }
     }

@@ -52,18 +52,14 @@
                 <BoxView HeightRequest="1" Color="LightGray" Margin="0,5" />
 
                 <VerticalStackLayout Spacing="4">
-                    <Label x:Name="ZoneLabel" Text="Selecciona Zona / Andador:" FontAttributes="Bold" TextColor="#333333" FontSize="14"/>
-                    <Picker ItemsSource="{Binding WalkwaysList}" 
-                            SelectedItem="{Binding SelectedWalkway}" 
+                    <Label x:Name="ZoneLabel" Text="Selecciona Zona / Andador (opcional):" FontAttributes="Bold" TextColor="#333333" FontSize="14"/>
+                    <Picker ItemsSource="{Binding Walkways}"
+                            ItemDisplayBinding="{Binding Code}"
+                            SelectedItem="{Binding SelectedWalkway}"
                             Title="Seleccionar..." HeightRequest="45" BackgroundColor="White" TextColor="Black"/>
                 </VerticalStackLayout>
 
-                <VerticalStackLayout Spacing="4">
-                    <Label x:Name="SubZoneLabel" Text="Número de Casa o Parcela:" FontAttributes="Bold" TextColor="#333333" FontSize="14"/>
-                    <Entry Text="{Binding PlotNumber}" Placeholder="Ej: Casa 14B" HeightRequest="45" BackgroundColor="White" TextColor="Black"/>
-                </VerticalStackLayout>
-
-                <Button Text="Confirmar Registro" 
+                <Button Text="Confirmar Registro"
                         Command="{Binding RegisterCommand}"
                         BackgroundColor="#2E7D32" 
                         TextColor="White" 

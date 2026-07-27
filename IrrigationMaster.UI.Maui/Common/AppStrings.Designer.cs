@@ -158,7 +158,16 @@ namespace IrrigationMaster.UI.Maui.Common {
                 return ResourceManager.GetString("MsgMissingOrgData", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a Por favor, completa todos los datos obligatorios del registro..
+        /// </summary>
+        public static string MsgMissingRegisterData {
+            get {
+                return ResourceManager.GetString("MsgMissingRegisterData", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Busca una cadena traducida similar a Por favor, completa todos los datos del sector hidráulico..
         /// </summary>
@@ -293,7 +302,16 @@ namespace IrrigationMaster.UI.Maui.Common {
                 return ResourceManager.GetString("UnexpectedError", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tu cuenta fue creada. Un administrador debe aprobarla antes de que puedas iniciar sesión..
+        /// </summary>
+        public static string UserRegisteredSuccess {
+            get {
+                return ResourceManager.GetString("UserRegisteredSuccess", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Busca una cadena traducida similar a Error al registrar el andador..
         /// </summary>

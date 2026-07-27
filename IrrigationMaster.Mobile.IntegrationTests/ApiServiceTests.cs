@@ -1,4 +1,5 @@
 using IrrigationMaster.Mobile.Application.Features.Models.Structure;
+using IrrigationMaster.Mobile.Application.Features.Models.Users;
 using IrrigationMaster.Mobile.IntegrationTests.TestDoubles;
 using IrrigationMaster.Mobile.Infrastructure;
 using System.Net;
@@ -174,5 +175,104 @@ public class ApiServiceTests
         Assert.NotNull(result);
         Assert.False(result!.IsSuccess);
         Assert.Contains("500", result.Message);
+    }
+
+    // ─── AUTO-REGISTRO (ANÓNIMO) ───
+
+    [Fact]
+    public async Task RegisterAsync_PostsToUsersCreateRoute_WithoutAuthHeader_AndTenantValues()
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.Created, CreatedResponseJson);
+        var sut = CreateSut(handler, storedToken: null);
+        var organizationId = Guid.NewGuid();
+        var roleId = Guid.NewGuid();
+
+        var result = await sut.RegisterAsync(new CreateUserRequest
+        {
+            FirstName = "Ana",
+            LastName = "García",
+            Email = "ana@correo.test",
+            Password = "clave12345",
+            OrganizationId = organizationId,
+            RoleId = roleId
+        });
+
+        Assert.True(result.IsSuccess);
+        Assert.EndsWith("Users/Create", handler.LastRequest!.RequestUri!.ToString());
+        Assert.Null(handler.LastRequest.Headers.Authorization);
+        Assert.Contains(organizationId.ToString(), handler.LastRequestBody);
+        Assert.Contains(roleId.ToString(), handler.LastRequestBody);
+    }
+
+    [Fact]
+    public async Task RegisterAsync_OnValidationFailure_ReturnsBackendErrors()
+    {
+        const string responseJson = """
+        {
+            "isSuccess": false,
+            "message": "Datos inválidos",
+            "errors": [
+                { "propertyMessage": "Email", "errorMessage": "Ya existe una cuenta con ese correo" }
+            ]
+        }
+        """;
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.BadRequest, responseJson);
+        var sut = CreateSut(handler, storedToken: null);
+
+        var result = await sut.RegisterAsync(new CreateUserRequest());
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Datos inválidos", result.Message);
+        Assert.NotNull(result.Errors);
+        Assert.Single(result.Errors!);
+        Assert.Equal("Email", result.Errors![0].PropertyMessage);
+    }
+
+    [Fact]
+    public async Task RegisterAsync_OnServerError_ReturnsIsSuccessFalse()
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.InternalServerError);
+        var sut = CreateSut(handler, storedToken: null);
+
+        var result = await sut.RegisterAsync(new CreateUserRequest());
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("500", result.Message);
+    }
+
+    [Fact]
+    public async Task GetPublicWalkwaysAsync_ReturnsWalkwaysForOrganization()
+    {
+        var organizationId = Guid.NewGuid();
+        var walkwayId = Guid.NewGuid();
+        var responseJson = $$"""
+        {
+            "isSuccess": true,
+            "message": "OK",
+            "data": [ { "id": "{{walkwayId}}", "code": "A-01" } ]
+        }
+        """;
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, responseJson);
+        var sut = CreateSut(handler, storedToken: null);
+
+        var result = await sut.GetPublicWalkwaysAsync(organizationId);
+
+        Assert.NotNull(result);
+        var walkway = Assert.Single(result!);
+        Assert.Equal(walkwayId, walkway.Id);
+        Assert.Equal("A-01", walkway.Code);
+        Assert.Contains($"organizationId={organizationId}", handler.LastRequest!.RequestUri!.ToString());
+        Assert.Null(handler.LastRequest.Headers.Authorization);
+    }
+
+    [Fact]
+    public async Task GetPublicWalkwaysAsync_OnFailureStatus_ReturnsNull()
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.InternalServerError);
+        var sut = CreateSut(handler, storedToken: null);
+
+        var result = await sut.GetPublicWalkwaysAsync(Guid.NewGuid());
+
+        Assert.Null(result);
     }
 }
