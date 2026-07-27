@@ -1,5 +1,4 @@
 ﻿using IrrigationMaster.Mobile.Core.Constants;
-using IrrigationMaster.Mobile.Core.Constants.IrrigationMaster.Mobile.Core.Constants;
 using IrrigationMaster.Mobile.Core.Features.Models.Auth;
 using IrrigationMaster.Mobile.Core.Features.Models.Structure;
 using IrrigationMaster.Mobile.Core.Features.Models.Structure.Country;
@@ -12,15 +11,13 @@ public class ApiService : IAuthService
 {
     private readonly HttpClient _httpClient;
     private readonly ITokenStorage _tokenStorage;
-    // URL base de tu Dev Tunnel de Visual Studio
-    private const string BaseUrl = "https://pcn181v8-44384.euw.devtunnels.ms/api/v1/";
 
     public ApiService(ITokenStorage tokenStorage)
     {
         _tokenStorage = tokenStorage;
         _httpClient = new HttpClient
         {
-            BaseAddress = new Uri(BaseUrl),
+            BaseAddress = new Uri(ApiConfig.BaseUrl),
             Timeout = TimeSpan.FromSeconds(15) // Evita que la app se quede colgada infinitamente en el campo
         };
     }
@@ -66,6 +63,8 @@ public class ApiService : IAuthService
     {
         try
         {
+            await AttachAuthHeadersAsync();
+
             var response = await _httpClient.PostAsJsonAsync(ApiEndpoints.Organizations, request);
 
             if (response.IsSuccessStatusCode)
@@ -84,6 +83,8 @@ public class ApiService : IAuthService
     {
         try
         {
+            await AttachAuthHeadersAsync();
+
             var response = await _httpClient.PostAsJsonAsync(ApiEndpoints.HydraulicSectors, request);
 
             if (response.IsSuccessStatusCode)
@@ -102,6 +103,8 @@ public class ApiService : IAuthService
     {
         try
         {
+            await AttachAuthHeadersAsync();
+
             var response = await _httpClient.PostAsJsonAsync(ApiEndpoints.Walkways, request);
 
             if (response.IsSuccessStatusCode)
@@ -122,13 +125,6 @@ public class ApiService : IAuthService
         if (!string.IsNullOrWhiteSpace(token))
             _httpClient.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-        var orgId = await _tokenStorage.GetOrganizationIdAsync();
-        if (!string.IsNullOrWhiteSpace(orgId))
-        {
-            _httpClient.DefaultRequestHeaders.Remove("X-Organization-Id");
-            _httpClient.DefaultRequestHeaders.Add("X-Organization-Id", orgId);
-        }
     }
 
     public async Task<List<CountryDto>?> GetCountriesAsync()

@@ -24,8 +24,10 @@ public static class MauiProgram
         // ─── INFRAESTRUCTURA ───
         // El almacenamiento seguro de sesión (token + organización + rol)
         builder.Services.AddSingleton<ITokenStorage, SecureTokenStorage>();
-        // El motor de red, expuesto a través de su contrato IAuthService
-        builder.Services.AddSingleton<IAuthService, ApiService>();
+        // El motor de red: una única instancia, resuelta tanto por su contrato IAuthService
+        // como por el tipo concreto (algunos ViewModels aún necesitan métodos fuera de IAuthService).
+        builder.Services.AddSingleton<ApiService>();
+        builder.Services.AddSingleton<IAuthService>(sp => sp.GetRequiredService<ApiService>());
 
         // ─── NIVEL 1: CORE (Autenticación) ───
         builder.Services.AddTransient<MainPage>(); // Asumo que esta es tu página de Login principal
