@@ -12,14 +12,12 @@ public class ApiService : IAuthService, IStructureService
     private readonly HttpClient _httpClient;
     private readonly ITokenStorage _tokenStorage;
 
-    public ApiService(ITokenStorage tokenStorage)
+    // El HttpClient se recibe ya configurado (BaseAddress/Timeout) para poder
+    // sustituirlo por uno con un HttpMessageHandler falso en los tests.
+    public ApiService(HttpClient httpClient, ITokenStorage tokenStorage)
     {
+        _httpClient = httpClient;
         _tokenStorage = tokenStorage;
-        _httpClient = new HttpClient
-        {
-            BaseAddress = new Uri(ApiConfig.BaseUrl),
-            Timeout = TimeSpan.FromSeconds(15) // Evita que la app se quede colgada infinitamente en el campo
-        };
     }
 
     // ─── 1. AUTENTICACIÓN ───

@@ -1,4 +1,5 @@
-﻿using IrrigationMaster.Mobile.Application.Interfaces;
+﻿using IrrigationMaster.Mobile.Application.Features.Models.Structure;
+using IrrigationMaster.Mobile.Application.Interfaces;
 using IrrigationMaster.UI.Maui.Common;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
@@ -126,18 +127,18 @@ public partial class SystemSettingsViewModel : BindableObject
         IsLoading = true;
         try
         {
-            var orgPayload = new
+            var orgPayload = new CreateOrganizationRequest
             {
-                name = OrgName.Trim(),
-                taxId = OrgTaxId.Trim(),
-                address = new
+                Name = OrgName.Trim(),
+                TaxId = OrgTaxId.Trim(),
+                Address = new AddressRequest
                 {
-                    mainAddress = OrgStreet.Trim(),
-                    city = OrgCity.Trim(),
-                    stateOrProvince = OrgStateOrProvince.Trim(),
-                    postalCode = OrgPostalCode.Trim(),
-                    countryId = SelectedCountry.Id.ToString(), // ID dinámico del Picker
-                    locationDetail = OrgLocationDetail?.Trim() ?? string.Empty
+                    MainAddress = OrgStreet.Trim(),
+                    City = OrgCity.Trim(),
+                    StateOrProvince = OrgStateOrProvince.Trim(),
+                    PostalCode = OrgPostalCode.Trim(),
+                    CountryId = SelectedCountry.Id, // ID dinámico del Picker
+                    LocationDetail = OrgLocationDetail?.Trim()
                 }
             };
 

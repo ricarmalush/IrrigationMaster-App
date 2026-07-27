@@ -1,10 +1,10 @@
-﻿using System.Text.Json.Serialization;
+﻿using IrrigationMaster.Mobile.Application.Common.Dtos;
+using System.Text.Json.Serialization;
 
 namespace IrrigationMaster.Mobile.Application.Features.Models.Auth;
 
 public class LoginResponse
 {
-    // Cambiado a 'init' para inmutabilidad y marcado como JsonPropertyName para asegurar el mapeo
     [JsonPropertyName("data")]
     public string? Data { get; init; }
 
@@ -12,9 +12,9 @@ public class LoginResponse
     public bool IsSuccess { get; init; }
 
     [JsonPropertyName("message")]
-    public string Message { get; init; } = string.Empty; // 🟢 Evitamos nulos incómodos en la UI
+    public string Message { get; init; } = string.Empty;
 
-    // 🟢 'Errors' tipado como un diccionario de strings para procesar errores de validación (como FluentValidation o ModelState)
+    // El backend serializa IEnumerable<BaseError> como array de objetos, no como diccionario.
     [JsonPropertyName("errors")]
-    public System.Collections.Generic.Dictionary<string, string[]>? Errors { get; init; }
+    public List<ApiError>? Errors { get; init; }
 }

@@ -27,6 +27,11 @@ public static class MauiProgram
         // Fuente única de verdad de la sesión activa (parsea el JWT una sola vez, en Infrastructure)
         builder.Services.AddSingleton<ICurrentSession, CurrentSession>();
         // El motor de red: una única instancia, resuelta por sus dos contratos (Auth y Structure)
+        builder.Services.AddSingleton(sp => new HttpClient
+        {
+            BaseAddress = new Uri(ApiConfig.BaseUrl),
+            Timeout = TimeSpan.FromSeconds(15) // Evita que la app se quede colgada infinitamente en el campo
+        });
         builder.Services.AddSingleton<ApiService>();
         builder.Services.AddSingleton<IAuthService>(sp => sp.GetRequiredService<ApiService>());
         builder.Services.AddSingleton<IStructureService>(sp => sp.GetRequiredService<ApiService>());

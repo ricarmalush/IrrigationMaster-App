@@ -18,4 +18,9 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\IrrigationMaster.Mobile.Application\IrrigationMaster.Mobile.Application.csproj" />
+    <ProjectReference Include="..\IrrigationMaster.Mobile.Infrastructure\IrrigationMaster.Mobile.Infrastructure.csproj" />
+  </ItemGroup>
+
 </Project>
