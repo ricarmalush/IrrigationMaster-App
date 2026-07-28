@@ -35,7 +35,10 @@ public partial class AdminMenuPage : ContentPage
 
             if (userManagementPage != null)
             {
-                await Navigation.PushModalAsync(userManagementPage);
+                // PushAsync (no PushModalAsync): así queda en la misma pila de navegación jerárquica
+                // que AdminMenuPage y Shell le añade automáticamente la flecha de retroceso estándar.
+                // Un push modal, en cambio, sale de esa pila y no recibe esa flecha.
+                await Navigation.PushAsync(userManagementPage);
             }
             else
             {

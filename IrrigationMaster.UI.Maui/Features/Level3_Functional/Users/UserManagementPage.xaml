@@ -11,7 +11,7 @@
     <Grid RowDefinitions="Auto,Auto,*">
 
         <!-- FILTRO: Pendientes / Todos -->
-        <HorizontalStackLayout Grid.Row="0" Spacing="10" Padding="15,15,15,5">
+        <HorizontalStackLayout Grid.Row="0" Spacing="10" Padding="15,15,15,5" HorizontalOptions="Center">
             <Button Text="Pendientes"
                     Command="{Binding ShowPendingCommand}"
                     TextColor="White"
@@ -19,7 +19,8 @@
                     CornerRadius="8"
                     HeightRequest="40"
                     WidthRequest="130"
-                    BackgroundColor="Gray">
+                    BackgroundColor="Gray"
+                    HorizontalOptions="Center">
                 <Button.Triggers>
                     <DataTrigger TargetType="Button" Binding="{Binding ShowOnlyPending}" Value="True">
                         <Setter Property="BackgroundColor" Value="{StaticResource AppPrimaryColor}"/>
