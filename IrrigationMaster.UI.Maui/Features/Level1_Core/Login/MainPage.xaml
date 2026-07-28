@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:IrrigationMaster.UI.Maui.Features.Level1_Core.Login"
              x:Class="IrrigationMaster.UI.Maui.Features.Level1_Core.Login.MainPage"
-             BackgroundColor="#F5F5F5"
+             BackgroundColor="{StaticResource AppBackgroundColor}"
              Shell.NavBarIsVisible="False"
              x:DataType="local:LoginViewModel">
 
@@ -32,7 +32,7 @@
                 <Label Text="Control de Riego Comunitario"
                        FontSize="20"
                        FontAttributes="Bold"
-                       TextColor="#2E7D32"
+                       TextColor="{StaticResource AppPrimaryColor}"
                        HorizontalTextAlignment="Center"
                        HorizontalOptions="Center" />
 
@@ -44,39 +44,31 @@
                        Margin="0,0,0,10" />
 
                 <VerticalStackLayout Spacing="5" HorizontalOptions="Fill">
-                    <Label Text="Correo Electrónico:" FontAttributes="Bold" TextColor="#333333" FontSize="14"/>
+                    <Label Text="Correo Electrónico:" Style="{StaticResource FieldLabelStyle}"/>
                     <Entry Text="{Binding Email, Mode=TwoWay}"
                            Placeholder="ejemplo@correo.com"
                            Keyboard="Email"
-                           HeightRequest="45"
-                           BackgroundColor="White"
-                           TextColor="Black"/>
+                           Style="{StaticResource EntryStyle}"/>
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Spacing="5" HorizontalOptions="Fill">
-                    <Label Text="Contraseña:" FontAttributes="Bold" TextColor="#333333" FontSize="14"/>
+                    <Label Text="Contraseña:" Style="{StaticResource FieldLabelStyle}"/>
                     <Entry Text="{Binding Password, Mode=TwoWay}"
                            Placeholder="********"
                            IsPassword="True"
-                           HeightRequest="45"
-                           BackgroundColor="White"
-                           TextColor="Black"/>
+                           Style="{StaticResource EntryStyle}"/>
                 </VerticalStackLayout>
 
                 <Button Text="Iniciar Sesión"
                         Command="{Binding LoginCommand}"
                         IsEnabled="{Binding IsNotLoading}"
-                        BackgroundColor="#2E7D32"
-                        TextColor="White"
-                        FontAttributes="Bold"
-                        HeightRequest="50"
-                        CornerRadius="8"
+                        Style="{StaticResource PrimaryButtonStyle}"
                         HorizontalOptions="Fill"
                         Margin="0,15,0,0" />
 
                 <Button Text="¿No tienes cuenta? Regístrate aquí"
                         Command="{Binding NavigateToRegisterCommand}"
-                        TextColor="#4CAF50"
+                        TextColor="{StaticResource AppSecondaryColor}"
                         BackgroundColor="Transparent"
                         FontSize="13"
                         HorizontalOptions="Center"
@@ -101,7 +93,7 @@
                 </Border.StrokeShape>
 
                 <Border.Stroke>
-                    <SolidColorBrush Color="#E0E0E0"/>
+                    <SolidColorBrush Color="{StaticResource AppBorderColor}"/>
                 </Border.Stroke>
 
                 <Border.Shadow>
@@ -113,7 +105,7 @@
 
                 <VerticalStackLayout Spacing="12" HorizontalOptions="Center" VerticalOptions="Center">
                     <ActivityIndicator IsRunning="{Binding IsLoading}"
-                                       Color="#2E7D32"
+                                       Color="{StaticResource AppPrimaryColor}"
                                        HeightRequest="40"
                                        WidthRequest="40"
                                        HorizontalOptions="Center"/>

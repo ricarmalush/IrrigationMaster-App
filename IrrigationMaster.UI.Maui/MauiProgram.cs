@@ -2,6 +2,7 @@
 using IrrigationMaster.Mobile.Infrastructure;
 using IrrigationMaster.UI.Maui.Features.Level1_Core.Login;
 using IrrigationMaster.UI.Maui.Features.Level1_Core.Register;
+using IrrigationMaster.UI.Maui.Features.Level3_Functional.Users;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.AdminConsole;
 using IrrigationMaster.UI.Maui.Services;
 using Microsoft.Extensions.Logging;
@@ -36,6 +37,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IAuthService>(sp => sp.GetRequiredService<ApiService>());
         builder.Services.AddSingleton<IStructureService>(sp => sp.GetRequiredService<ApiService>());
         builder.Services.AddSingleton<IRegistrationService>(sp => sp.GetRequiredService<ApiService>());
+        builder.Services.AddSingleton<IUserManagementService>(sp => sp.GetRequiredService<ApiService>());
         builder.Services.AddSingleton<IAlertService, ShellAlertService>();
         builder.Services.AddSingleton<INavigationService, ShellNavigationService>();
 
@@ -44,6 +46,10 @@ public static class MauiProgram
         builder.Services.AddTransient<LoginViewModel>();
         builder.Services.AddTransient<RegisterPage>();
         builder.Services.AddTransient<RegisterViewModel>();
+
+        // ─── NIVEL 3: FUNCIONAL (Usuarios y Roles) ───
+        builder.Services.AddTransient<UserManagementPage>();
+        builder.Services.AddTransient<UserManagementViewModel>();
 
         // ─── NIVEL 4: OPERACIONAL (Admin Console) ───
         builder.Services.AddTransient<AdminMenuPage>();

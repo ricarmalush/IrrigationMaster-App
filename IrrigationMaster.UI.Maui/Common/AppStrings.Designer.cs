@@ -194,7 +194,16 @@ namespace IrrigationMaster.UI.Maui.Common {
                 return ResourceManager.GetString("MsgMissingWalkwayData", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a Selecciona un rol antes de confirmar el cambio..
+        /// </summary>
+        public static string MsgSelectRoleFirst {
+            get {
+                return ResourceManager.GetString("MsgSelectRoleFirst", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Busca una cadena traducida similar a Autenticación correcta, pero falló la carga de la interfaz de administración..
         /// </summary>
@@ -257,7 +266,16 @@ namespace IrrigationMaster.UI.Maui.Common {
                 return ResourceManager.GetString("SectorCreatedError", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a Rol actualizado con éxito..
+        /// </summary>
+        public static string RoleChangedSuccess {
+            get {
+                return ResourceManager.GetString("RoleChangedSuccess", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Busca una cadena traducida similar a Sector Hidráulico creado con éxito..
         /// </summary>
@@ -318,6 +336,24 @@ namespace IrrigationMaster.UI.Maui.Common {
         public static string UserRegisteredSuccess {
             get {
                 return ResourceManager.GetString("UserRegisteredSuccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a Usuario aprobado con éxito..
+        /// </summary>
+        public static string UserApprovedSuccess {
+            get {
+                return ResourceManager.GetString("UserApprovedSuccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a Andador actualizado con éxito..
+        /// </summary>
+        public static string WalkwayAssignedSuccess {
+            get {
+                return ResourceManager.GetString("WalkwayAssignedSuccess", resourceCulture);
             }
         }
 

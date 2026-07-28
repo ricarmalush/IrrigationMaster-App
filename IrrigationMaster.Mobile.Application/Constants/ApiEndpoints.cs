@@ -16,5 +16,11 @@ namespace IrrigationMaster.Mobile.Application.Constants
         public const string WalkwaysPublic = "walkways/public";
         public const string Countries = "Countries/pagination";
         public const string Users = "Users/Create";
+        public const string UsersPagination = "Users/pagination";
+        public const string UsersActivate = "Users/Activate";
+        public const string UsersAssignWalkway = "Users/AssignWalkway";
+        public const string UsersChangeRole = "Users/ChangeRole";
+        public const string RolesPagination = "Roles/pagination";
+        public const string WalkwaysPagination = "walkways/pagination";
     }
 }

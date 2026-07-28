@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodel="clr-namespace:IrrigationMaster.UI.Maui.Features.Level3_Functional.Users"
+             x:Class="IrrigationMaster.UI.Maui.Features.Level3_Functional.Users.UserManagementPage"
+             x:Name="RootPage"
+             Title="Usuarios y Roles"
+             BackgroundColor="{StaticResource AppBackgroundColor}"
+             x:DataType="viewmodel:UserManagementViewModel">
+
+    <Grid RowDefinitions="Auto,Auto,*">
+
+        <!-- FILTRO: Pendientes / Todos -->
+        <HorizontalStackLayout Grid.Row="0" Spacing="10" Padding="15,15,15,5">
+            <Button Text="Pendientes"
+                    Command="{Binding ShowPendingCommand}"
+                    TextColor="White"
+                    FontAttributes="Bold"
+                    CornerRadius="8"
+                    HeightRequest="40"
+                    WidthRequest="130"
+                    BackgroundColor="Gray">
+                <Button.Triggers>
+                    <DataTrigger TargetType="Button" Binding="{Binding ShowOnlyPending}" Value="True">
+                        <Setter Property="BackgroundColor" Value="{StaticResource AppPrimaryColor}"/>
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
+            <Button Text="Todos"
+                    Command="{Binding ShowAllCommand}"
+                    TextColor="White"
+                    FontAttributes="Bold"
+                    CornerRadius="8"
+                    HeightRequest="40"
+                    WidthRequest="130"
+                    BackgroundColor="Gray">
+                <Button.Triggers>
+                    <DataTrigger TargetType="Button" Binding="{Binding ShowOnlyPending}" Value="False">
+                        <Setter Property="BackgroundColor" Value="{StaticResource AppPrimaryColor}"/>
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
+        </HorizontalStackLayout>
+
+        <ActivityIndicator Grid.Row="1"
+                            IsRunning="{Binding IsBusy}"
+                            IsVisible="{Binding IsBusy}"
+                            Color="{StaticResource AppPrimaryColor}"
+                            HeightRequest="30"/>
+
+        <!-- LISTADO -->
+        <CollectionView Grid.Row="2"
+                         ItemsSource="{Binding Users}"
+                         Margin="10">
+            <CollectionView.EmptyView>
+                <Label Text="No hay usuarios que mostrar." HorizontalOptions="Center" Margin="20" TextColor="Gray"/>
+            </CollectionView.EmptyView>
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="viewmodel:UserListItem">
+                    <Border StrokeThickness="0" BackgroundColor="White" Padding="15" Margin="0,0,0,10">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="12"/>
+                        </Border.StrokeShape>
+                        <Border.Shadow>
+                            <Shadow Brush="Black" Offset="0,2" Opacity="0.1" Radius="5"/>
+                        </Border.Shadow>
+
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="{Binding FullName}" FontAttributes="Bold" FontSize="16" TextColor="Black"/>
+                            <Label Text="{Binding Email}" FontSize="13" TextColor="Gray"/>
+
+                            <HorizontalStackLayout Spacing="15">
+                                <Label FontSize="13" TextColor="#444">
+                                    <Label.FormattedText>
+                                        <FormattedString>
+                                            <Span Text="Rol actual: " FontAttributes="Bold"/>
+                                            <Span Text="{Binding Role}"/>
+                                        </FormattedString>
+                                    </Label.FormattedText>
+                                </Label>
+                                <Label FontSize="13" TextColor="#444">
+                                    <Label.FormattedText>
+                                        <FormattedString>
+                                            <Span Text="Andador: " FontAttributes="Bold"/>
+                                            <Span Text="{Binding WalkwayDisplay}"/>
+                                        </FormattedString>
+                                    </Label.FormattedText>
+                                </Label>
+                                <Label Text="{Binding StatusDisplay}"
+                                       FontSize="13"
+                                       FontAttributes="Bold"
+                                       TextColor="{StaticResource AppPrimaryColor}"/>
+                            </HorizontalStackLayout>
+
+                            <!-- ACCIÓN: Aprobar (solo pendientes) -->
+                            <Button Text="Aprobar"
+                                    Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.ApproveCommand}"
+                                    CommandParameter="{Binding .}"
+                                    IsVisible="{Binding ShowApprove}"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    HeightRequest="40"
+                                    Margin="0,8,0,0"/>
+
+                            <!-- ACCIÓN: Asignar andador -->
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,8,0,0">
+                                <Picker Grid.Column="0"
+                                        Title="Sin asignar"
+                                        ItemsSource="{Binding Source={x:Reference RootPage}, Path=BindingContext.Walkways}"
+                                        ItemDisplayBinding="{Binding Code}"
+                                        SelectedItem="{Binding SelectedWalkway}"
+                                        BackgroundColor="#FAFAFA"/>
+                                <Button Grid.Column="1"
+                                        Text="Asignar andador"
+                                        Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.AssignWalkwayCommand}"
+                                        CommandParameter="{Binding .}"
+                                        BackgroundColor="Transparent"
+                                        TextColor="{StaticResource AppPrimaryColor}"
+                                        BorderColor="{StaticResource AppPrimaryColor}"
+                                        BorderWidth="1.5"
+                                        HeightRequest="44"/>
+                            </Grid>
+
+                            <!-- ACCIÓN: Cambiar rol -->
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <Picker Grid.Column="0"
+                                        Title="Selecciona un rol"
+                                        ItemsSource="{Binding Source={x:Reference RootPage}, Path=BindingContext.Roles}"
+                                        ItemDisplayBinding="{Binding Name}"
+                                        SelectedItem="{Binding SelectedRole}"
+                                        BackgroundColor="#FAFAFA"/>
+                                <Button Grid.Column="1"
+                                        Text="Cambiar rol"
+                                        Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.ChangeRoleCommand}"
+                                        CommandParameter="{Binding .}"
+                                        BackgroundColor="Transparent"
+                                        TextColor="{StaticResource AppPrimaryColor}"
+                                        BorderColor="{StaticResource AppPrimaryColor}"
+                                        BorderWidth="1.5"
+                                        HeightRequest="44"/>
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentPage>

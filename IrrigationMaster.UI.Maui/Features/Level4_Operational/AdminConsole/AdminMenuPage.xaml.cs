@@ -1,12 +1,51 @@
-﻿using IrrigationMaster.UI.Maui.Common; 
+﻿using IrrigationMaster.Mobile.Application.Interfaces;
+using IrrigationMaster.UI.Maui.Common;
+using IrrigationMaster.UI.Maui.Features.Level3_Functional.Users;
 
 namespace IrrigationMaster.UI.Maui.Features.Level4_Operational.AdminConsole;
 
 public partial class AdminMenuPage : ContentPage
 {
-    public AdminMenuPage()
+    // La App todavía no lee permisos granulares del JWT (pendiente aparte): por ahora, cualquier
+    // usuario autenticado que no sea VECINO puede ver el botón. El backend es quien realmente
+    // decide si la acción concreta (aprobar/asignar andador/cambiar rol) está permitida.
+    private const string VecinoRoleCode = "VECINO";
+
+    private readonly ICurrentSession _currentSession;
+
+    public AdminMenuPage(ICurrentSession currentSession)
     {
         InitializeComponent();
+        _currentSession = currentSession;
+    }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+
+        var role = await _currentSession.GetRoleAsync();
+        UserManagementButton.IsVisible = !string.Equals(role, VecinoRoleCode, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async void OnUserManagementClicked(object sender, EventArgs e)
+    {
+        try
+        {
+            var userManagementPage = Handler?.MauiContext?.Services.GetService<UserManagementPage>();
+
+            if (userManagementPage != null)
+            {
+                await Navigation.PushModalAsync(userManagementPage);
+            }
+            else
+            {
+                await DisplayAlert(AppStrings.SystemErrorTitle, "No se pudo cargar la gestión de usuarios.", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Navigation Error]: {ex.Message}");
+        }
     }
 
     /// <summary>

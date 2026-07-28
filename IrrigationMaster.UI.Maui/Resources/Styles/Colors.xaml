@@ -28,6 +28,14 @@
     <Color x:Key="Gray900">#212121</Color>
     <Color x:Key="Gray950">#141414</Color>
 
+    <!-- Paleta propia de la App (distinta del morado por defecto de MAUI arriba):
+         usada por MainPage, RegisterPage y las pantallas operativas (AdminConsole, Users). -->
+    <Color x:Key="AppPrimaryColor">#2E7D32</Color>
+    <Color x:Key="AppSecondaryColor">#4CAF50</Color>
+    <Color x:Key="AppBackgroundColor">#F5F5F5</Color>
+    <Color x:Key="AppFieldTextColor">#333333</Color>
+    <Color x:Key="AppBorderColor">#E0E0E0</Color>
+
     <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource Primary}"/>
     <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource Secondary}"/>
     <SolidColorBrush x:Key="TertiaryBrush" Color="{StaticResource Tertiary}"/>

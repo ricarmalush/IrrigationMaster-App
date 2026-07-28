@@ -29,14 +29,20 @@ public class ShellNavigationService : INavigationService
         if (currentPage == null)
             return;
 
+        var services = Shell.Current!.Handler?.MauiContext?.Services;
+
         switch (route)
         {
             case "//AdminMenuPage":
-                await currentPage.Navigation.PushAsync(new AdminMenuPage());
+                var adminMenuPage = services?.GetService<AdminMenuPage>();
+
+                if (adminMenuPage != null)
+                    await currentPage.Navigation.PushAsync(adminMenuPage);
+                else
+                    await currentPage.DisplayAlert(AppStrings.SystemErrorTitle, AppStrings.NavigationFallbackError, "OK");
                 break;
 
             case "RegisterPage":
-                var services = Shell.Current!.Handler?.MauiContext?.Services;
                 var registerViewModel = services?.GetService<RegisterViewModel>();
 
                 if (registerViewModel != null)

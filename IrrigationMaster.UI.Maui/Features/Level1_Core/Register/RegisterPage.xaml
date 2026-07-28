@@ -4,68 +4,64 @@
              xmlns:viewmodel="clr-namespace:IrrigationMaster.UI.Maui.Features.Level1_Core.Register"
              x:Class="IrrigationMaster.UI.Maui.Features.Level1_Core.Register.RegisterPage"
              Title="Registro de Vecinos"
-             BackgroundColor="#F5F5F5"
+             BackgroundColor="{StaticResource AppBackgroundColor}"
              x:DataType="viewmodel:RegisterViewModel">
 
     <Grid HorizontalOptions="Center" VerticalOptions="Center">
         <ScrollView>
-            <VerticalStackLayout Spacing="12" 
-                                 Padding="20" 
-                                 WidthRequest="320" 
+            <VerticalStackLayout Spacing="12"
+                                 Padding="20"
+                                 WidthRequest="320"
                                  HorizontalOptions="Center"
                                  VerticalOptions="Center">
 
-                <Label x:Name="RegisterTitleLabel" 
-                       Text="Crear Nueva Cuenta" 
-                       FontSize="22" 
-                       FontAttributes="Bold" 
-                       TextColor="#2E7D32" 
+                <Label x:Name="RegisterTitleLabel"
+                       Text="Crear Nueva Cuenta"
+                       FontSize="22"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource AppPrimaryColor}"
                        HorizontalOptions="Center" />
 
-                <Label x:Name="OrganizationSubtitleLabel" 
-                       Text="Completa tus datos de acceso" 
-                       FontSize="13" 
-                       TextColor="Gray" 
-                       HorizontalOptions="Center" 
+                <Label x:Name="OrganizationSubtitleLabel"
+                       Text="Completa tus datos de acceso"
+                       FontSize="13"
+                       TextColor="Gray"
+                       HorizontalOptions="Center"
                        Margin="0,0,0,5" />
 
                 <VerticalStackLayout Spacing="4">
-                    <Label Text="Código de tu comunidad:" FontAttributes="Bold" TextColor="#333333" FontSize="14"/>
-                    <Entry Text="{Binding InvitationCode}" Placeholder="Código compartido por tu Presidente/Coordinador" HeightRequest="45" BackgroundColor="White" TextColor="Black"/>
+                    <Label Text="Código de tu comunidad:" Style="{StaticResource FieldLabelStyle}"/>
+                    <Entry Text="{Binding InvitationCode}" Placeholder="Código compartido por tu Presidente/Coordinador" Style="{StaticResource EntryStyle}"/>
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Spacing="4">
-                    <Label Text="Nombre:" FontAttributes="Bold" TextColor="#333333" FontSize="14"/>
-                    <Entry Text="{Binding FirstName}" Placeholder="Tu nombre" HeightRequest="45" BackgroundColor="White" TextColor="Black"/>
+                    <Label Text="Nombre:" Style="{StaticResource FieldLabelStyle}"/>
+                    <Entry Text="{Binding FirstName}" Placeholder="Tu nombre" Style="{StaticResource EntryStyle}"/>
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Spacing="4">
-                    <Label Text="Apellidos:" FontAttributes="Bold" TextColor="#333333" FontSize="14"/>
-                    <Entry Text="{Binding LastName}" Placeholder="Tus apellidos" HeightRequest="45" BackgroundColor="White" TextColor="Black"/>
+                    <Label Text="Apellidos:" Style="{StaticResource FieldLabelStyle}"/>
+                    <Entry Text="{Binding LastName}" Placeholder="Tus apellidos" Style="{StaticResource EntryStyle}"/>
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Spacing="4">
-                    <Label Text="Correo Electrónico:" FontAttributes="Bold" TextColor="#333333" FontSize="14"/>
-                    <Entry Text="{Binding Email}" Placeholder="ejemplo@correo.com" Keyboard="Email" HeightRequest="45" BackgroundColor="White" TextColor="Black"/>
+                    <Label Text="Correo Electrónico:" Style="{StaticResource FieldLabelStyle}"/>
+                    <Entry Text="{Binding Email}" Placeholder="ejemplo@correo.com" Keyboard="Email" Style="{StaticResource EntryStyle}"/>
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Spacing="4">
-                    <Label Text="Contraseña:" FontAttributes="Bold" TextColor="#333333" FontSize="14"/>
-                    <Entry Text="{Binding Password}" Placeholder="********" IsPassword="True" HeightRequest="45" BackgroundColor="White" TextColor="Black"/>
+                    <Label Text="Contraseña:" Style="{StaticResource FieldLabelStyle}"/>
+                    <Entry Text="{Binding Password}" Placeholder="********" IsPassword="True" Style="{StaticResource EntryStyle}"/>
                 </VerticalStackLayout>
 
                 <Button Text="Confirmar Registro"
                         Command="{Binding RegisterCommand}"
-                        BackgroundColor="#2E7D32" 
-                        TextColor="White" 
-                        FontAttributes="Bold" 
-                        HeightRequest="50" 
-                        CornerRadius="8" 
+                        Style="{StaticResource PrimaryButtonStyle}"
                         Margin="0,15,0,0" />
 
-                <ActivityIndicator IsRunning="{Binding IsBusy}" 
-                                   IsVisible="{Binding IsBusy}" 
-                                   Color="#2E7D32" 
+                <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                   IsVisible="{Binding IsBusy}"
+                                   Color="{StaticResource AppPrimaryColor}"
                                    HorizontalOptions="Center" />
 
             </VerticalStackLayout>

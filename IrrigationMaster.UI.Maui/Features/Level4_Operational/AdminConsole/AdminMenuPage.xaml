@@ -38,7 +38,13 @@
 
                 <Label Text="Historial y Estructura" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
 
-                <Button Text="📜 Historial de Turnos y Consumos" 
+                <Button x:Name="UserManagementButton"
+                        Text="🧑‍🤝‍🧑 Gestión de Usuarios y Roles"
+                        Clicked="OnUserManagementClicked"
+                        IsVisible="False"
+                        BackgroundColor="Transparent" TextColor="#2E7D32" BorderColor="#2E7D32" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
+
+                <Button Text="📜 Historial de Turnos y Consumos"
                         Clicked="OnHistoryLogClicked"
                         BackgroundColor="Transparent" TextColor="#2E7D32" BorderColor="#2E7D32" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
 

@@ -9,7 +9,7 @@ using System.Net.Http.Json;
 
 namespace IrrigationMaster.Mobile.Infrastructure;
 
-public class ApiService : IAuthService, IStructureService, IRegistrationService
+public class ApiService : IAuthService, IStructureService, IRegistrationService, IUserManagementService
 {
     private readonly HttpClient _httpClient;
     private readonly ITokenStorage _tokenStorage;
@@ -228,5 +228,158 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService
             System.Diagnostics.Debug.WriteLine($"[API Error - PublicWalkways]: {ex.Message}");
             return null;
         }
+    }
+
+    // ─── 4. GESTIÓN DE USUARIOS/ROLES (AUTENTICADO) ───
+
+    public async Task<List<AppUserDto>?> GetUsersAsync(bool? isActive)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var url = $"{ApiEndpoints.UsersPagination}?PageNumber=1&PageSize=200";
+            if (isActive.HasValue)
+                url += $"&IsActive={isActive.Value}";
+
+            var response = await _httpClient.GetAsync(url);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var paged = await response.Content.ReadFromJsonAsync<PagedResponse<List<AppUserDto>>>();
+                return paged?.Data;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - Users]: {ex.Message}");
+            return null;
+        }
+    }
+
+    public async Task<List<RoleDto>?> GetRolesAsync()
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.GetAsync($"{ApiEndpoints.RolesPagination}?PageNumber=1&PageSize=200");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var paged = await response.Content.ReadFromJsonAsync<PagedResponse<List<RoleDto>>>();
+                return paged?.Data;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - Roles]: {ex.Message}");
+            return null;
+        }
+    }
+
+    public async Task<List<WalkwayDto>?> GetWalkwaysAsync()
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.GetAsync($"{ApiEndpoints.WalkwaysPagination}?PageNumber=1&PageSize=200");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var paged = await response.Content.ReadFromJsonAsync<PagedResponse<List<WalkwayDto>>>();
+                return paged?.Data;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - Walkways]: {ex.Message}");
+            return null;
+        }
+    }
+
+    public async Task<UserActionResult> ActivateUserAsync(Guid userId)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.PutAsync($"{ApiEndpoints.UsersActivate}/{userId}", null);
+            return await ReadUserActionResultAsync(response);
+        }
+        catch (HttpRequestException)
+        {
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - ActivateUser]: {ex.Message}");
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
+        }
+    }
+
+    public async Task<UserActionResult> AssignWalkwayAsync(Guid userId, Guid? walkwayId)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.PutAsJsonAsync($"{ApiEndpoints.UsersAssignWalkway}/{userId}", new AssignWalkwayRequest { WalkwayId = walkwayId });
+            return await ReadUserActionResultAsync(response);
+        }
+        catch (HttpRequestException)
+        {
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - AssignWalkway]: {ex.Message}");
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
+        }
+    }
+
+    public async Task<UserActionResult> ChangeRoleAsync(Guid userId, Guid roleId)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.PutAsJsonAsync($"{ApiEndpoints.UsersChangeRole}/{userId}", new ChangeRoleRequest { RoleId = roleId });
+            return await ReadUserActionResultAsync(response);
+        }
+        catch (HttpRequestException)
+        {
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - ChangeRole]: {ex.Message}");
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
+        }
+    }
+
+    // El backend también manda un body parseable en 400 (p. ej. permiso insuficiente) y en 403.
+    private static async Task<UserActionResult> ReadUserActionResultAsync(HttpResponseMessage response)
+    {
+        if (response.IsSuccessStatusCode ||
+            response.StatusCode == System.Net.HttpStatusCode.BadRequest ||
+            response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+        {
+            var result = await response.Content.ReadFromJsonAsync<UserActionResult>();
+            return result ?? new UserActionResult { IsSuccess = false, Message = ServiceMessages.UnexpectedError };
+        }
+
+        return new UserActionResult
+        {
+            IsSuccess = false,
+            Message = $"{ServiceMessages.ServerErrorCode} {(int)response.StatusCode})"
+        };
     }
 }
