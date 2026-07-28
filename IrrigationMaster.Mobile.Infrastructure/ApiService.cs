@@ -238,7 +238,7 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         {
             await AttachAuthHeadersAsync();
 
-            var url = $"{ApiEndpoints.UsersPagination}?PageNumber=1&PageSize=200";
+            var url = $"{ApiEndpoints.UsersPagination}?PageNumber=1&PageSize=100";
             if (isActive.HasValue)
                 url += $"&IsActive={isActive.Value}";
 
@@ -265,7 +265,7 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         {
             await AttachAuthHeadersAsync();
 
-            var response = await _httpClient.GetAsync($"{ApiEndpoints.RolesPagination}?PageNumber=1&PageSize=200");
+            var response = await _httpClient.GetAsync($"{ApiEndpoints.RolesPagination}?PageNumber=1&PageSize=100");
 
             if (response.IsSuccessStatusCode)
             {
@@ -288,7 +288,7 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         {
             await AttachAuthHeadersAsync();
 
-            var response = await _httpClient.GetAsync($"{ApiEndpoints.WalkwaysPagination}?PageNumber=1&PageSize=200");
+            var response = await _httpClient.GetAsync($"{ApiEndpoints.WalkwaysPagination}?PageNumber=1&PageSize=100");
 
             if (response.IsSuccessStatusCode)
             {

@@ -290,8 +290,32 @@ public class ApiServiceTests
 
         Assert.NotNull(result);
         Assert.Contains("Users/pagination", handler.LastRequest!.RequestUri!.ToString());
+        Assert.Contains("PageSize=100", handler.LastRequest.RequestUri!.ToString()); // límite real del backend (ver GetAllWithPaginationUserValidator)
         Assert.Contains("IsActive=False", handler.LastRequest.RequestUri!.ToString());
         Assert.Equal("token-123", handler.LastRequest.Headers.Authorization!.Parameter);
+    }
+
+    [Fact]
+    public async Task GetUsersAsync_WhenBackendRejectsPageSize_ReturnsNull_WithoutThrowing()
+    {
+        // Reproduce tal cual la respuesta real del backend cuando ValidationBehaviour lanza
+        // ValidationCustomException por PageSize fuera de rango (confirmado en vivo contra
+        // GetAllWithPaginationUserValidator): GlobalExceptionHandler la convierte en 400 limpio,
+        // nunca en una excepción sin manejar. ApiService debe encajarlo sin romper nada.
+        const string responseJson = """
+        {
+            "data": null,
+            "isSuccess": false,
+            "message": "Se han producido uno o más errores de validación.",
+            "errors": [ { "propertyMessage": "PageSize", "errorMessage": "El campo Tamaño de página no puede ser mayor a 100." } ]
+        }
+        """;
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.BadRequest, responseJson);
+        var sut = CreateSut(handler);
+
+        var result = await sut.GetUsersAsync(false);
+
+        Assert.Null(result);
     }
 
     [Fact]
@@ -328,7 +352,27 @@ public class ApiServiceTests
         Assert.Equal(roleId, role.Id);
         Assert.Equal("Tesorero", role.Name);
         Assert.Contains("Roles/pagination", handler.LastRequest!.RequestUri!.ToString());
+        Assert.Contains("PageSize=100", handler.LastRequest.RequestUri!.ToString());
         Assert.Equal("token-123", handler.LastRequest.Headers.Authorization!.Parameter);
+    }
+
+    [Fact]
+    public async Task GetRolesAsync_WhenBackendRejectsPageSize_ReturnsNull_WithoutThrowing()
+    {
+        const string responseJson = """
+        {
+            "data": null,
+            "isSuccess": false,
+            "message": "Se han producido uno o más errores de validación.",
+            "errors": [ { "propertyMessage": "PageSize", "errorMessage": "El campo Tamaño de página no puede ser mayor a 100." } ]
+        }
+        """;
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.BadRequest, responseJson);
+        var sut = CreateSut(handler);
+
+        var result = await sut.GetRolesAsync();
+
+        Assert.Null(result);
     }
 
     [Fact]
@@ -356,8 +400,28 @@ public class ApiServiceTests
         Assert.Equal(walkwayId, walkway.Id);
         Assert.Equal("A-01", walkway.Code);
         Assert.Contains("walkways/pagination", handler.LastRequest!.RequestUri!.ToString());
+        Assert.Contains("PageSize=100", handler.LastRequest.RequestUri!.ToString());
         Assert.DoesNotContain("organizationId", handler.LastRequest.RequestUri!.ToString(), StringComparison.OrdinalIgnoreCase);
         Assert.Equal("token-123", handler.LastRequest.Headers.Authorization!.Parameter);
+    }
+
+    [Fact]
+    public async Task GetWalkwaysAsync_WhenBackendRejectsPageSize_ReturnsNull_WithoutThrowing()
+    {
+        const string responseJson = """
+        {
+            "data": null,
+            "isSuccess": false,
+            "message": "Se han producido uno o más errores de validación.",
+            "errors": [ { "propertyMessage": "PageSize", "errorMessage": "El campo Tamaño de página no puede ser mayor a 100." } ]
+        }
+        """;
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.BadRequest, responseJson);
+        var sut = CreateSut(handler);
+
+        var result = await sut.GetWalkwaysAsync();
+
+        Assert.Null(result);
     }
 
     [Fact]
