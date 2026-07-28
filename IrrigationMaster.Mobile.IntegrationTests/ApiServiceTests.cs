@@ -277,6 +277,102 @@ public class ApiServiceTests
         Assert.Null(result);
     }
 
+    // ─── ESTRUCTURA (PAÍS / SECTORES HIDRÁULICOS) ───
+
+    [Fact]
+    public async Task GetCountriesAsync_ReturnsCountries_WithAuthHeader()
+    {
+        var countryId = Guid.NewGuid();
+        var responseJson = $$"""
+        {
+            "isSuccess": true,
+            "message": "OK",
+            "data": [ { "id": "{{countryId}}", "name": "España" } ],
+            "totalCount": 1, "pageNumber": 1, "pageSize": 100
+        }
+        """;
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, responseJson);
+        var sut = CreateSut(handler);
+
+        var result = await sut.GetCountriesAsync();
+
+        Assert.NotNull(result);
+        var country = Assert.Single(result!);
+        Assert.Equal(countryId, country.Id);
+        Assert.Equal("España", country.Name);
+        Assert.Contains("Countries/pagination", handler.LastRequest!.RequestUri!.ToString());
+        Assert.Contains("PageSize=100", handler.LastRequest.RequestUri!.ToString()); // límite real del backend (ver GetAllWithPaginationCountryValidator)
+        Assert.Equal("token-123", handler.LastRequest.Headers.Authorization!.Parameter);
+    }
+
+    [Fact]
+    public async Task GetCountriesAsync_WhenBackendRejectsPageSize_ReturnsNull_WithoutThrowing()
+    {
+        // Reproduce tal cual la respuesta real del backend cuando ValidationBehaviour lanza
+        // ValidationCustomException por PageSize fuera de rango (confirmado en vivo contra
+        // GetAllWithPaginationCountryValidator): GlobalExceptionHandler la convierte en 400 limpio,
+        // nunca en una excepción sin manejar. ApiService debe encajarlo sin romper nada.
+        const string responseJson = """
+        {
+            "data": null,
+            "isSuccess": false,
+            "message": "Se han producido uno o más errores de validación.",
+            "errors": [ { "propertyMessage": "PageSize", "errorMessage": "El campo Tamaño de página no puede ser mayor a 100." } ]
+        }
+        """;
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.BadRequest, responseJson);
+        var sut = CreateSut(handler);
+
+        var result = await sut.GetCountriesAsync();
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GetHydraulicSectorsAsync_ReturnsSectors_WithAuthHeader()
+    {
+        var sectorId = Guid.NewGuid();
+        var responseJson = $$"""
+        {
+            "isSuccess": true,
+            "message": "OK",
+            "data": [ { "id": "{{sectorId}}", "name": "Sector Norte" } ],
+            "totalCount": 1, "pageNumber": 1, "pageSize": 100
+        }
+        """;
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, responseJson);
+        var sut = CreateSut(handler);
+
+        var result = await sut.GetHydraulicSectorsAsync();
+
+        Assert.NotNull(result);
+        var sector = Assert.Single(result!);
+        Assert.Equal(sectorId, sector.Id);
+        Assert.Equal("Sector Norte", sector.Name);
+        Assert.Contains("hydraulicsectors/pagination", handler.LastRequest!.RequestUri!.ToString());
+        Assert.Contains("PageSize=100", handler.LastRequest.RequestUri!.ToString()); // límite real del backend (ver GetAllWithPaginationHydraulicSectorValidator)
+        Assert.Equal("token-123", handler.LastRequest.Headers.Authorization!.Parameter);
+    }
+
+    [Fact]
+    public async Task GetHydraulicSectorsAsync_WhenBackendRejectsPageSize_ReturnsNull_WithoutThrowing()
+    {
+        const string responseJson = """
+        {
+            "data": null,
+            "isSuccess": false,
+            "message": "Se han producido uno o más errores de validación.",
+            "errors": [ { "propertyMessage": "PageSize", "errorMessage": "El campo Tamaño de página no puede ser mayor a 100." } ]
+        }
+        """;
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.BadRequest, responseJson);
+        var sut = CreateSut(handler);
+
+        var result = await sut.GetHydraulicSectorsAsync();
+
+        Assert.Null(result);
+    }
+
     // ─── GESTIÓN DE USUARIOS/ROLES (AUTENTICADO) ───
 
     [Fact]
