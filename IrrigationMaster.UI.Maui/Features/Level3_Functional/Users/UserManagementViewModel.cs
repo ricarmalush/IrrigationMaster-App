@@ -85,9 +85,12 @@ public partial class UserManagementViewModel : ObservableObject
             await Task.WhenAll(rolesTask, walkwaysTask, usersTask);
 
             Roles.Clear();
-            // Los roles globales del sistema (OrganizationId == Guid.Empty, p. ej. SUPERADMIN) no
-            // se ofrecen: el backend los rechazaría igualmente, pero listarlos aquí confundiría.
-            foreach (var role in (rolesTask.Result ?? []).Where(r => r.OrganizationId != Guid.Empty))
+            // Solo se descarta el rol de plataforma SUPERADMIN por Code: el backend lo rechazaría
+            // igualmente, pero listarlo aquí confundiría al Presidente. NO se filtra por
+            // OrganizationId == Guid.Empty -- otros roles de plantilla globales por diseño
+            // (VECINO, PRESIDENTE...) también lo tienen y sí deben poder asignarse.
+            const string superAdminRoleCode = "SUPERADMIN";
+            foreach (var role in (rolesTask.Result ?? []).Where(r => r.Code != superAdminRoleCode))
             {
                 Roles.Add(new RoleItem { Id = role.Id, Name = role.Name });
             }

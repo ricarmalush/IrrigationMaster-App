@@ -85,6 +85,37 @@ public class UserManagementViewModelTests
         Assert.Single(vm.Walkways);
     }
 
+    [Fact]
+    public async Task LoadAsync_ExcludesOnlySuperAdminRoleByCode_KeepsOtherGlobalTemplateRoles()
+    {
+        // Caso que motivó el arreglo: VECINO y PRESIDENTE también tienen OrganizationId ==
+        // Guid.Empty (roles de plantilla globales por diseño), igual que SUPERADMIN -- el filtro
+        // debe descartar solo SUPERADMIN por Code, no "cualquier rol con OrganizationId vacío".
+        var vecinoRoleId = Guid.NewGuid();
+        var presidenteRoleId = Guid.NewGuid();
+        var superAdminRoleId = Guid.NewGuid();
+
+        var userService = new FakeUserManagementService
+        {
+            RolesToReturn =
+            [
+                new RoleDto { Id = vecinoRoleId, Name = "Vecino", Code = "VECINO", OrganizationId = Guid.Empty },
+                new RoleDto { Id = presidenteRoleId, Name = "Presidente", Code = "PRESIDENTE", OrganizationId = Guid.Empty },
+                new RoleDto { Id = superAdminRoleId, Name = "Super Administrador", Code = "SUPERADMIN", OrganizationId = Guid.Empty }
+            ],
+            WalkwaysToReturn = [],
+            UsersToReturn = []
+        };
+        var vm = new UserManagementViewModel(userService, new RecordingAlertService());
+
+        await vm.LoadAsync();
+
+        Assert.Equal(2, vm.Roles.Count);
+        Assert.Contains(vm.Roles, r => r.Id == vecinoRoleId);
+        Assert.Contains(vm.Roles, r => r.Id == presidenteRoleId);
+        Assert.DoesNotContain(vm.Roles, r => r.Id == superAdminRoleId);
+    }
+
     // ─── APROBAR ───
 
     [Fact]
