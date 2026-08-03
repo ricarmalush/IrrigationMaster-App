@@ -16,40 +16,12 @@
                 <Label Text="CONSOLA DE CONTROL MAESTRO" FontSize="12" FontAttributes="Bold" TextColor="#2E7D32" HorizontalOptions="Center" CharacterSpacing="1.5"/>
                 <Label Text="Gestión Operativa - El Saso" FontSize="20" FontAttributes="Bold" TextColor="Black" HorizontalOptions="Center" Margin="0,0,0,10"/>
 
-                <Label Text="Monitoreo de Campo" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,5,0,0"/>
-
-                <Button Text="📊 Estado de Andadores (Tiempo Real)" 
-                        Clicked="OnLiveStatusClicked"
-                        BackgroundColor="#2E7D32" TextColor="White" FontAttributes="Bold" HeightRequest="48" CornerRadius="8" />
-
-                <Button Text="👥 Supervisión de Colas FIFO" 
-                        Clicked="OnManageQueuesClicked"
-                        BackgroundColor="Transparent" TextColor="#2E7D32" BorderColor="#2E7D32" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
-
-                <Label Text="Configuración y Alertas" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
-
-                <Button Text="🌊 Configurar Caudal y Tiempos" 
-                        Clicked="OnCaudalConfigClicked"
-                        BackgroundColor="Transparent" TextColor="#2E7D32" BorderColor="#2E7D32" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
-
-                <Button Text="📢 Publicar Alertas e Incidencias" 
-                        Clicked="OnPublishIncidentsClicked"
-                        BackgroundColor="Transparent" TextColor="#2E7D32" BorderColor="#2E7D32" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
-
                 <Label Text="Historial y Estructura" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
 
                 <Button x:Name="UserManagementButton"
                         Text="🧑‍🤝‍🧑 Gestión de Usuarios y Roles"
                         Clicked="OnUserManagementClicked"
                         IsVisible="False"
-                        BackgroundColor="Transparent" TextColor="#2E7D32" BorderColor="#2E7D32" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
-
-                <Button Text="📜 Historial de Turnos y Consumos"
-                        Clicked="OnHistoryLogClicked"
-                        BackgroundColor="Transparent" TextColor="#2E7D32" BorderColor="#2E7D32" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
-
-                <Button Text="🏢 Infraestructura (Orgs / Andadores)" 
-                        Clicked="OnInfrastructureClicked"
                         BackgroundColor="Transparent" TextColor="#2E7D32" BorderColor="#2E7D32" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
 
                 <Label Text="Ajustes de la Aplicación" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>

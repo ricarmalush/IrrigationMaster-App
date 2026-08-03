@@ -30,6 +30,17 @@ public partial class SystemSettingsViewModel : ObservableObject
 {
     private readonly IStructureService _structureService;
     private readonly IAlertService _alertService;
+    private readonly ICurrentSession _currentSession;
+
+    // --- MI ORGANIZACIÓN (solo lectura, de la organización del usuario logueado) ---
+    [ObservableProperty] public partial string MyOrganizationName { get; set; } = string.Empty;
+    [ObservableProperty] public partial string MyOrganizationInvitationCode { get; set; } = string.Empty;
+
+    // El backend ya rechaza con 403 la creación de Organización si el llamador no es SUPERADMIN
+    // -- esto solo evita mostrarle al Presidente una pestaña que nunca va a funcionar para él.
+    // La página (SystemSettingsPage.OnAppearing) lee esta propiedad para decidir si oculta la
+    // pestaña "Entidad" del TabbedPage.
+    [ObservableProperty] public partial bool IsSuperAdmin { get; set; }
 
     // --- PESTAÑA 1: ENTIDAD RAÍZ ---
     [ObservableProperty] public partial string OrgName { get; set; } = string.Empty;
@@ -69,21 +80,65 @@ public partial class SystemSettingsViewModel : ObservableObject
     public ICommand SaveWalkwayCommand { get; }
     public ICommand LoadCountriesCommand { get; }
     public ICommand LoadHydraulicSectorsCommand { get; }
+    public ICommand LoadMyOrganizationCommand { get; }
+    public ICommand LoadCurrentUserRoleCommand { get; }
 
-    public SystemSettingsViewModel(IStructureService structureService, IAlertService alertService)
+    private const string SuperAdminRoleCode = "SUPERADMIN";
+
+    public SystemSettingsViewModel(IStructureService structureService, IAlertService alertService, ICurrentSession currentSession)
     {
         _structureService = structureService;
         _alertService = alertService;
+        _currentSession = currentSession;
 
         SaveOrganizationCommand = new Command(async () => await ExecuteSaveOrganizationAsync());
         SaveHydraulicSectorCommand = new Command(async () => await ExecuteSaveHydraulicSectorAsync());
         SaveWalkwayCommand = new Command(async () => await ExecuteSaveWalkwayAsync());
         LoadCountriesCommand = new Command(async () => await LoadCountriesAsync());
         LoadHydraulicSectorsCommand = new Command(async () => await LoadHydraulicSectorsAsync());
+        LoadMyOrganizationCommand = new Command(async () => await LoadMyOrganizationAsync());
+        LoadCurrentUserRoleCommand = new Command(async () => await LoadCurrentUserRoleAsync());
 
-        // Cargamos los catálogos al instanciar el ViewModel
+        // Cargamos los catálogos, los datos de "Mi Organización" y el rol del usuario al
+        // instanciar el ViewModel
         LoadCountriesCommand.Execute(null);
         LoadHydraulicSectorsCommand.Execute(null);
+        LoadMyOrganizationCommand.Execute(null);
+        LoadCurrentUserRoleCommand.Execute(null);
+    }
+
+    internal async Task LoadCurrentUserRoleAsync()
+    {
+        try
+        {
+            var role = await _currentSession.GetRoleAsync();
+            IsSuperAdmin = string.Equals(role, SuperAdminRoleCode, StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Error Loading CurrentUserRole]: {ex.Message}");
+        }
+    }
+
+    internal async Task LoadMyOrganizationAsync()
+    {
+        try
+        {
+            var organizationIdRaw = await _currentSession.GetOrganizationIdAsync();
+            if (!Guid.TryParse(organizationIdRaw, out var organizationId))
+                return;
+
+            var organization = await _structureService.GetOrganizationAsync(organizationId);
+            if (organization != null)
+            {
+                MyOrganizationName = organization.Name;
+                MyOrganizationInvitationCode = organization.InvitationCode;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Error Loading MyOrganization]: {ex.Message}");
+        }
     }
 
     private async Task LoadCountriesAsync()

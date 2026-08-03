@@ -52,46 +52,7 @@ public partial class AdminMenuPage : ContentPage
     }
 
     /// <summary>
-    /// SECCIÓN 1: MONITOR DE CAMPO
-    /// </summary>
-    private async void OnLiveStatusClicked(object sender, EventArgs e)
-    {
-        await DisplayAlert(AppStrings.ConsoleTitle, AppStrings.LiveStatusLoading, "OK");
-    }
-
-    private async void OnManageQueuesClicked(object sender, EventArgs e)
-    {
-        await DisplayAlert(AppStrings.ConsoleTitle, AppStrings.ManageQueuesLoading, "OK");
-    }
-
-    /// <summary>
-    /// SECCIÓN 2: CONFIGURACIÓN Y ALERTAS
-    /// </summary>
-    private async void OnCaudalConfigClicked(object sender, EventArgs e)
-    {
-        await DisplayAlert(AppStrings.ConsoleTitle, AppStrings.CaudalConfigLoading, "OK");
-    }
-
-    private async void OnPublishIncidentsClicked(object sender, EventArgs e)
-    {
-        await DisplayAlert(AppStrings.ConsoleTitle, AppStrings.PublishIncidentsLoading, "OK");
-    }
-
-    /// <summary>
-    /// SECCIÓN 3: HISTORIAL Y MANTENIMIENTO
-    /// </summary>
-    private async void OnHistoryLogClicked(object sender, EventArgs e)
-    {
-        await DisplayAlert(AppStrings.ConsoleTitle, AppStrings.HistoryLogLoading, "OK");
-    }
-
-    private async void OnInfrastructureClicked(object sender, EventArgs e)
-    {
-        await DisplayAlert(AppStrings.ConsoleTitle, AppStrings.InfrastructureLoading, "OK");
-    }
-
-    /// <summary>
-    /// SECCIÓN 4: AJUSTES DE LA APLICACIÓN
+    /// SECCIÓN: AJUSTES DE LA APLICACIÓN
     /// </summary>
     private async void OnSettingsButtonClicked(object sender, EventArgs e)
     {
@@ -101,8 +62,10 @@ public partial class AdminMenuPage : ContentPage
 
             if (settingsPage != null)
             {
-                // 🟢 EL CAMBIO ESTÁ AQUÍ: Usamos PushModalAsync
-                await Navigation.PushModalAsync(settingsPage);
+                // PushAsync (no PushModalAsync): mismo arreglo que en OnUserManagementClicked --
+                // así queda en la misma pila de navegación jerárquica que AdminMenuPage y Shell
+                // le añade automáticamente la flecha de retroceso estándar.
+                await Navigation.PushAsync(settingsPage);
             }
             else
             {

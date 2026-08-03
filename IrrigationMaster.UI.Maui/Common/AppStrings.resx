@@ -123,23 +123,8 @@
   <data name="AttentionTitle" xml:space="preserve">
     <value>Atención</value>
   </data>
-  <data name="CaudalConfigLoading" xml:space="preserve">
-    <value>Abriendo Panel de Configuración de Caudal y Tiempos...</value>
-  </data>
-  <data name="ConsoleTitle" xml:space="preserve">
-    <value>Consola Maestra</value>
-  </data>
   <data name="ErrorTitle" xml:space="preserve">
     <value>Error de Acceso</value>
-  </data>
-  <data name="HistoryLogLoading" xml:space="preserve">
-    <value>Accediendo al Historial Auditado de Riego...</value>
-  </data>
-  <data name="InfrastructureLoading" xml:space="preserve">
-    <value>Accediendo a la Configuración de Infraestructura Raíz...</value>
-  </data>
-  <data name="LiveStatusLoading" xml:space="preserve">
-    <value>Cargando el Estado de Andadores en Tiempo Real...</value>
   </data>
   <data name="LoginValidationWarning" xml:space="preserve">
     <value>Por favor, introduce tu email y contraseña para entrar.</value>
@@ -158,9 +143,6 @@
   </data>
   <data name="WalkwayAssignedSuccess" xml:space="preserve">
     <value>Andador actualizado con éxito.</value>
-  </data>
-  <data name="ManageQueuesLoading" xml:space="preserve">
-    <value>Abriendo la Supervisión de Colas FIFO por Andador...</value>
   </data>
   <data name="MsgMissingOrgData" xml:space="preserve">
     <value>Por favor, completa todos los datos de la organización.</value>
@@ -188,9 +170,6 @@
   </data>
   <data name="OrgCreatedSuccess" xml:space="preserve">
     <value>Organización creada con éxito.</value>
-  </data>
-  <data name="PublishIncidentsLoading" xml:space="preserve">
-    <value>Abriendo el Editor de Alertas y Comunicados...</value>
   </data>
   <data name="SectorCreatedError" xml:space="preserve">
     <value>Error al crear el sector hidráulico.</value>

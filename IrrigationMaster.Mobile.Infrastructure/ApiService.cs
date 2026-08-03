@@ -189,6 +189,29 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         }
     }
 
+    public async Task<OrganizationDto?> GetOrganizationAsync(Guid organizationId)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.GetAsync($"{ApiEndpoints.OrganizationsGet}/{organizationId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var wrapped = await response.Content.ReadFromJsonAsync<OrganizationDetailsResponse>();
+                return wrapped?.Data;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - Organization]: {ex.Message}");
+            return null;
+        }
+    }
+
     // ─── 3. AUTO-REGISTRO (ANÓNIMO) ───
 
     public async Task<StructureOperationResult> RegisterAsync(CreateUserRequest request)

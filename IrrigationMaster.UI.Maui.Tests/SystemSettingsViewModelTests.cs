@@ -13,16 +13,17 @@ public class SystemSettingsViewModelTests
     private const string FakeBaseUrl = "https://fake-backend.test/api/v1/";
     private const string CreatedResponseJson = """{ "isSuccess": true, "message": "Operación completada exitosamente.", "data": "3fa85f64-5717-4562-b3fc-2c963f66afa6" }""";
 
-    private static (SystemSettingsViewModel ViewModel, RoutingFakeHttpMessageHandler Handler, RecordingAlertService Alerts) CreateSut()
+    private static (SystemSettingsViewModel ViewModel, RoutingFakeHttpMessageHandler Handler, RecordingAlertService Alerts, FakeCurrentSession Session) CreateSut(string? organizationId = null)
     {
         var handler = new RoutingFakeHttpMessageHandler();
         var httpClient = new HttpClient(handler) { BaseAddress = new Uri(FakeBaseUrl) };
         var apiService = new ApiService(httpClient, new FakeTokenStorage { StoredToken = "token-123" });
         var alerts = new RecordingAlertService();
+        var session = new FakeCurrentSession { OrganizationIdToReturn = organizationId };
 
-        var viewModel = new SystemSettingsViewModel(apiService, alerts);
+        var viewModel = new SystemSettingsViewModel(apiService, alerts, session);
 
-        return (viewModel, handler, alerts);
+        return (viewModel, handler, alerts, session);
     }
 
     private static void SetValidOrganizationFields(SystemSettingsViewModel vm)
@@ -36,12 +37,73 @@ public class SystemSettingsViewModelTests
         vm.SelectedCountry = new CountryItem { Id = Guid.NewGuid(), Name = "España" };
     }
 
+    // ─── MI ORGANIZACIÓN: nombre + InvitationCode de la organización del usuario logueado ───
+
+    [Fact]
+    public async Task LoadMyOrganizationAsync_OnSuccess_PopulatesNameAndInvitationCode()
+    {
+        var organizationId = Guid.NewGuid();
+        var (vm, handler, _, _) = CreateSut(organizationId.ToString());
+        const string responseJson = """
+        {
+            "isSuccess": true,
+            "message": "OK",
+            "data": { "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6", "name": "Regantes El Saso", "invitationCode": "H4RN8WEQ" }
+        }
+        """;
+        handler.AddRoute(IsGetTo($"organizations/Get/{organizationId}"), HttpStatusCode.OK, responseJson);
+
+        await vm.LoadMyOrganizationAsync();
+
+        Assert.Equal("Regantes El Saso", vm.MyOrganizationName);
+        Assert.Equal("H4RN8WEQ", vm.MyOrganizationInvitationCode);
+    }
+
+    [Fact]
+    public async Task LoadMyOrganizationAsync_WhenSessionHasNoOrganizationId_DoesNotCallApi_AndLeavesFieldsEmpty()
+    {
+        var (vm, handler, _, _) = CreateSut(organizationId: null);
+
+        await vm.LoadMyOrganizationAsync();
+
+        Assert.DoesNotContain(handler.Requests, r => r.RequestUri!.AbsolutePath.Contains("organizations/Get", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(string.Empty, vm.MyOrganizationName);
+        Assert.Equal(string.Empty, vm.MyOrganizationInvitationCode);
+    }
+
+    // ─── IsSuperAdmin: decide si SystemSettingsPage oculta la pestaña "Entidad" ───
+
+    [Fact]
+    public async Task LoadCurrentUserRoleAsync_WhenSessionRoleIsSuperAdmin_SetsIsSuperAdminTrue()
+    {
+        var (vm, _, _, session) = CreateSut();
+        session.RoleToReturn = "SUPERADMIN";
+
+        await vm.LoadCurrentUserRoleAsync();
+
+        Assert.True(vm.IsSuperAdmin);
+    }
+
+    [Theory]
+    [InlineData("PRESIDENTE")]
+    [InlineData("VECINO")]
+    [InlineData(null)]
+    public async Task LoadCurrentUserRoleAsync_WhenSessionRoleIsNotSuperAdmin_SetsIsSuperAdminFalse(string? role)
+    {
+        var (vm, _, _, session) = CreateSut();
+        session.RoleToReturn = role;
+
+        await vm.LoadCurrentUserRoleAsync();
+
+        Assert.False(vm.IsSuperAdmin);
+    }
+
     // ─── ORGANIZACIÓN: éxito, fallo de red, fallo de validación del backend ───
 
     [Fact]
     public async Task ExecuteSaveOrganizationAsync_OnSuccess_ShowsSuccessAlert()
     {
-        var (vm, handler, alerts) = CreateSut();
+        var (vm, handler, alerts, _) = CreateSut();
         handler.AddRoute(IsPostTo("organizations/Create"), HttpStatusCode.Created, CreatedResponseJson);
         SetValidOrganizationFields(vm);
 
@@ -55,7 +117,7 @@ public class SystemSettingsViewModelTests
     [Fact]
     public async Task ExecuteSaveOrganizationAsync_OnNetworkFailure_ShowsNetworkErrorAlert()
     {
-        var (vm, handler, alerts) = CreateSut();
+        var (vm, handler, alerts, _) = CreateSut();
         handler.AddThrowingRoute(IsPostTo("organizations/Create"));
         SetValidOrganizationFields(vm);
 
@@ -70,7 +132,7 @@ public class SystemSettingsViewModelTests
     [Fact]
     public async Task ExecuteSaveOrganizationAsync_OnBackendValidationFailure_ShowsBackendErrorsInAlert()
     {
-        var (vm, handler, alerts) = CreateSut();
+        var (vm, handler, alerts, _) = CreateSut();
         const string errorsJson = """
         {
             "isSuccess": false,
@@ -95,7 +157,7 @@ public class SystemSettingsViewModelTests
     [Fact]
     public async Task ExecuteSaveOrganizationAsync_WithMissingCountry_DoesNotCallApi()
     {
-        var (vm, handler, alerts) = CreateSut();
+        var (vm, handler, alerts, _) = CreateSut();
         SetValidOrganizationFields(vm);
         vm.SelectedCountry = null;
 
@@ -111,7 +173,7 @@ public class SystemSettingsViewModelTests
     [Fact]
     public async Task ExecuteSaveHydraulicSectorAsync_OnSuccess_ShowsSuccessAlertAndClearsFields()
     {
-        var (vm, handler, alerts) = CreateSut();
+        var (vm, handler, alerts, _) = CreateSut();
         handler.AddRoute(IsPostTo("hydraulicsectors/Create"), HttpStatusCode.Created, CreatedResponseJson);
         vm.SectorName = "Sector Norte";
         vm.SectorAreaSize = "150.5";
@@ -127,7 +189,7 @@ public class SystemSettingsViewModelTests
     [Fact]
     public async Task ExecuteSaveHydraulicSectorAsync_OnBackendValidationFailure_ShowsBackendErrorsInAlert()
     {
-        var (vm, handler, alerts) = CreateSut();
+        var (vm, handler, alerts, _) = CreateSut();
         const string errorsJson = """
         { "isSuccess": false, "message": "No se pudo crear el sector", "errors": [ { "propertyMessage": "Name", "errorMessage": "Ya existe un sector con ese nombre" } ] }
         """;
@@ -147,7 +209,7 @@ public class SystemSettingsViewModelTests
     [Fact]
     public async Task ExecuteSaveWalkwayAsync_OnSuccess_ShowsSuccessAlert()
     {
-        var (vm, handler, alerts) = CreateSut();
+        var (vm, handler, alerts, _) = CreateSut();
         handler.AddRoute(IsPostTo("walkways/Create"), HttpStatusCode.Created, CreatedResponseJson);
         vm.WalkwayCode = "A-01";
         vm.WalkwayLength = "400";
@@ -163,7 +225,7 @@ public class SystemSettingsViewModelTests
     [Fact]
     public async Task ExecuteSaveWalkwayAsync_WithoutSelectedSector_DoesNotCallApi()
     {
-        var (vm, handler, alerts) = CreateSut();
+        var (vm, handler, alerts, _) = CreateSut();
         vm.WalkwayCode = "A-01";
         vm.WalkwayLength = "400";
         vm.SelectedHydraulicSector = null;
@@ -178,7 +240,7 @@ public class SystemSettingsViewModelTests
     [Fact]
     public async Task ExecuteSaveWalkwayAsync_OnNetworkFailure_ShowsNetworkErrorAlert()
     {
-        var (vm, handler, alerts) = CreateSut();
+        var (vm, handler, alerts, _) = CreateSut();
         handler.AddThrowingRoute(IsPostTo("walkways/Create"));
         vm.WalkwayCode = "A-01";
         vm.WalkwayLength = "400";

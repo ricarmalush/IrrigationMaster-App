@@ -40,4 +40,7 @@ public class RoutingFakeHttpMessageHandler : HttpMessageHandler
 
     public static Func<HttpRequestMessage, bool> IsPostTo(string pathSuffix)
         => r => r.Method == HttpMethod.Post && r.RequestUri!.AbsolutePath.EndsWith(pathSuffix, StringComparison.OrdinalIgnoreCase);
+
+    public static Func<HttpRequestMessage, bool> IsGetTo(string pathSuffix)
+        => r => r.Method == HttpMethod.Get && r.RequestUri!.AbsolutePath.EndsWith(pathSuffix, StringComparison.OrdinalIgnoreCase);
 }

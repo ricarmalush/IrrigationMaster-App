@@ -11,4 +11,5 @@ public interface IStructureService
     Task<StructureOperationResult> CreateWalkwayAsync(CreateWalkwayRequest request);
     Task<List<CountryDto>?> GetCountriesAsync();
     Task<List<HydraulicSectorDto>?> GetHydraulicSectorsAsync();
+    Task<OrganizationDto?> GetOrganizationAsync(Guid organizationId);
 }
