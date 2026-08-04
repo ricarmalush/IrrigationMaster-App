@@ -21,7 +21,7 @@ public class SystemSettingsViewModelTests
         var alerts = new RecordingAlertService();
         var session = new FakeCurrentSession { OrganizationIdToReturn = organizationId };
 
-        var viewModel = new SystemSettingsViewModel(apiService, alerts, session);
+        var viewModel = new SystemSettingsViewModel(apiService, apiService, alerts, session);
 
         return (viewModel, handler, alerts, session);
     }
@@ -248,6 +248,108 @@ public class SystemSettingsViewModelTests
 
         await vm.ExecuteSaveWalkwayAsync();
 
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.ErrorTitle, alert.Title);
+        Assert.Equal(ServiceMessages.NetworkConnectionError, alert.Message);
+    }
+
+    // ─── MI CUENTA: cambio de contraseña ───
+
+    private static void SetValidChangePasswordFields(SystemSettingsViewModel vm)
+    {
+        vm.CurrentPassword = "OldPass123!";
+        vm.NewPassword = "NewPass456!";
+        vm.ConfirmNewPassword = "NewPass456!";
+    }
+
+    [Fact]
+    public async Task ExecuteChangePasswordAsync_OnSuccess_ShowsSuccessAlert_AndClearsFields()
+    {
+        var (vm, handler, alerts, _) = CreateSut();
+        handler.AddRoute(IsPutTo("Users/ChangePassword"), HttpStatusCode.OK, CreatedResponseJson);
+        SetValidChangePasswordFields(vm);
+
+        await vm.ExecuteChangePasswordAsync();
+
+        Assert.False(vm.IsLoading);
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.SuccessTitle, alert.Title);
+        Assert.Equal(AppStrings.PasswordChangedSuccess, alert.Message);
+        Assert.Equal(string.Empty, vm.CurrentPassword);
+        Assert.Equal(string.Empty, vm.NewPassword);
+        Assert.Equal(string.Empty, vm.ConfirmNewPassword);
+    }
+
+    [Fact]
+    public async Task ExecuteChangePasswordAsync_WhenCurrentPasswordIsIncorrect_ShowsExactBackendMessage()
+    {
+        var (vm, handler, alerts, _) = CreateSut();
+        const string errorJson = """{ "isSuccess": false, "message": "La contraseña actual no es correcta.", "errors": null }""";
+        handler.AddRoute(IsPutTo("Users/ChangePassword"), HttpStatusCode.BadRequest, errorJson);
+        SetValidChangePasswordFields(vm);
+
+        await vm.ExecuteChangePasswordAsync();
+
+        Assert.False(vm.IsLoading);
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.ErrorTitle, alert.Title);
+        Assert.Equal("La contraseña actual no es correcta.", alert.Message);
+        // El backend rechazó el cambio: los campos no deben limpiarse, para que el usuario
+        // pueda corregir sin volver a escribir todo.
+        Assert.Equal("OldPass123!", vm.CurrentPassword);
+    }
+
+    [Fact]
+    public async Task ExecuteChangePasswordAsync_OnBackendValidationFailure_ShowsBackendErrorsInAlert()
+    {
+        var (vm, handler, alerts, _) = CreateSut();
+        const string errorsJson = """
+        {
+            "isSuccess": false,
+            "message": "Datos inválidos",
+            "errors": [
+                { "propertyMessage": "ConfirmNewPassword", "errorMessage": "Las contraseñas no coinciden." }
+            ]
+        }
+        """;
+        handler.AddRoute(IsPutTo("Users/ChangePassword"), HttpStatusCode.BadRequest, errorsJson);
+        SetValidChangePasswordFields(vm);
+        vm.ConfirmNewPassword = "OtraDistinta789!";
+
+        await vm.ExecuteChangePasswordAsync();
+
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.ErrorTitle, alert.Title);
+        Assert.Contains("ConfirmNewPassword", alert.Message);
+        Assert.Contains("Las contraseñas no coinciden.", alert.Message);
+    }
+
+    [Fact]
+    public async Task ExecuteChangePasswordAsync_WithMissingFields_DoesNotCallApi()
+    {
+        var (vm, handler, alerts, _) = CreateSut();
+        vm.CurrentPassword = "OldPass123!";
+        vm.NewPassword = string.Empty;
+        vm.ConfirmNewPassword = string.Empty;
+
+        await vm.ExecuteChangePasswordAsync();
+
+        Assert.DoesNotContain(handler.Requests, r => r.RequestUri!.AbsolutePath.EndsWith("Users/ChangePassword"));
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.AttentionTitle, alert.Title);
+        Assert.Equal(AppStrings.MsgMissingPasswordData, alert.Message);
+    }
+
+    [Fact]
+    public async Task ExecuteChangePasswordAsync_OnNetworkFailure_ShowsNetworkErrorAlert()
+    {
+        var (vm, handler, alerts, _) = CreateSut();
+        handler.AddThrowingRoute(IsPutTo("Users/ChangePassword"));
+        SetValidChangePasswordFields(vm);
+
+        await vm.ExecuteChangePasswordAsync();
+
+        Assert.False(vm.IsLoading);
         var alert = Assert.Single(alerts.Calls);
         Assert.Equal(AppStrings.ErrorTitle, alert.Title);
         Assert.Equal(ServiceMessages.NetworkConnectionError, alert.Message);

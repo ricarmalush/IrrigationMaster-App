@@ -147,6 +147,9 @@
   <data name="MsgMissingOrgData" xml:space="preserve">
     <value>Por favor, completa todos los datos de la organización.</value>
   </data>
+  <data name="MsgMissingPasswordData" xml:space="preserve">
+    <value>Por favor, completa los tres campos de contraseña.</value>
+  </data>
   <data name="MsgMissingRegisterData" xml:space="preserve">
     <value>Por favor, completa todos los datos obligatorios del registro.</value>
   </data>
@@ -170,6 +173,9 @@
   </data>
   <data name="OrgCreatedSuccess" xml:space="preserve">
     <value>Organización creada con éxito.</value>
+  </data>
+  <data name="PasswordChangedSuccess" xml:space="preserve">
+    <value>Contraseña actualizada con éxito.</value>
   </data>
   <data name="SectorCreatedError" xml:space="preserve">
     <value>Error al crear el sector hidráulico.</value>

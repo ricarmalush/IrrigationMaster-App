@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using IrrigationMaster.Mobile.Application.Common.Dtos;
 using IrrigationMaster.Mobile.Application.Features.Models.Structure;
+using IrrigationMaster.Mobile.Application.Features.Models.Users;
 using IrrigationMaster.Mobile.Application.Interfaces;
 using IrrigationMaster.UI.Maui.Common;
 using System.Collections.ObjectModel;
@@ -29,6 +30,7 @@ public class HydraulicSectorItem
 public partial class SystemSettingsViewModel : ObservableObject
 {
     private readonly IStructureService _structureService;
+    private readonly IAuthService _authService;
     private readonly IAlertService _alertService;
     private readonly ICurrentSession _currentSession;
 
@@ -67,6 +69,11 @@ public partial class SystemSettingsViewModel : ObservableObject
     // Colección para alimentar el Picker de XAML
     public ObservableCollection<HydraulicSectorItem> HydraulicSectors { get; } = [];
 
+    // --- MI CUENTA (cambio de contraseña, disponible para cualquier rol autenticado) ---
+    [ObservableProperty] public partial string CurrentPassword { get; set; } = string.Empty;
+    [ObservableProperty] public partial string NewPassword { get; set; } = string.Empty;
+    [ObservableProperty] public partial string ConfirmNewPassword { get; set; } = string.Empty;
+
     // --- ESTADOS ---
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsNotLoading))]
@@ -78,6 +85,7 @@ public partial class SystemSettingsViewModel : ObservableObject
     public ICommand SaveOrganizationCommand { get; }
     public ICommand SaveHydraulicSectorCommand { get; }
     public ICommand SaveWalkwayCommand { get; }
+    public ICommand ChangePasswordCommand { get; }
     public ICommand LoadCountriesCommand { get; }
     public ICommand LoadHydraulicSectorsCommand { get; }
     public ICommand LoadMyOrganizationCommand { get; }
@@ -85,15 +93,17 @@ public partial class SystemSettingsViewModel : ObservableObject
 
     private const string SuperAdminRoleCode = "SUPERADMIN";
 
-    public SystemSettingsViewModel(IStructureService structureService, IAlertService alertService, ICurrentSession currentSession)
+    public SystemSettingsViewModel(IStructureService structureService, IAuthService authService, IAlertService alertService, ICurrentSession currentSession)
     {
         _structureService = structureService;
+        _authService = authService;
         _alertService = alertService;
         _currentSession = currentSession;
 
         SaveOrganizationCommand = new Command(async () => await ExecuteSaveOrganizationAsync());
         SaveHydraulicSectorCommand = new Command(async () => await ExecuteSaveHydraulicSectorAsync());
         SaveWalkwayCommand = new Command(async () => await ExecuteSaveWalkwayAsync());
+        ChangePasswordCommand = new Command(async () => await ExecuteChangePasswordAsync());
         LoadCountriesCommand = new Command(async () => await LoadCountriesAsync());
         LoadHydraulicSectorsCommand = new Command(async () => await LoadHydraulicSectorsAsync());
         LoadMyOrganizationCommand = new Command(async () => await LoadMyOrganizationAsync());
@@ -316,7 +326,51 @@ public partial class SystemSettingsViewModel : ObservableObject
         finally { IsLoading = false; }
     }
 
+    internal async Task ExecuteChangePasswordAsync()
+    {
+        if (string.IsNullOrWhiteSpace(CurrentPassword) || string.IsNullOrWhiteSpace(NewPassword) || string.IsNullOrWhiteSpace(ConfirmNewPassword))
+        {
+            await _alertService.ShowAsync(AppStrings.AttentionTitle, AppStrings.MsgMissingPasswordData);
+            return;
+        }
+
+        IsLoading = true;
+        try
+        {
+            var result = await _authService.ChangePasswordAsync(CurrentPassword, NewPassword, ConfirmNewPassword);
+
+            if (result.IsSuccess)
+            {
+                await _alertService.ShowAsync(AppStrings.SuccessTitle, AppStrings.PasswordChangedSuccess);
+                CurrentPassword = string.Empty;
+                NewPassword = string.Empty;
+                ConfirmNewPassword = string.Empty;
+            }
+            else
+            {
+                // Mismo criterio que el resto de la pantalla: se muestra tal cual el mensaje que
+                // devuelva el backend (p. ej. "La contraseña actual no es correcta."), sin
+                // reinterpretarlo aquí.
+                await _alertService.ShowAsync(AppStrings.ErrorTitle, BuildFailureMessage(result));
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Error ChangePassword]: {ex.Message}");
+            await _alertService.ShowAsync(AppStrings.ErrorTitle, AppStrings.ApiConnectionError);
+        }
+        finally { IsLoading = false; }
+    }
+
     private static string BuildFailureMessage(StructureOperationResult result)
+    {
+        if (result.Errors is { Count: > 0 })
+            return string.Join("\n", result.Errors.Select(e => $"{e.PropertyMessage}: {e.ErrorMessage}"));
+
+        return string.IsNullOrWhiteSpace(result.Message) ? AppStrings.ApiConnectionError : result.Message;
+    }
+
+    private static string BuildFailureMessage(UserActionResult result)
     {
         if (result.Errors is { Count: > 0 })
             return string.Join("\n", result.Errors.Select(e => $"{e.PropertyMessage}: {e.ErrorMessage}"));

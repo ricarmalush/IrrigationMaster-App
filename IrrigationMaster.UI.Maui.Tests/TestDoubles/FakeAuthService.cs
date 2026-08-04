@@ -1,4 +1,5 @@
 using IrrigationMaster.Mobile.Application.Features.Models.Auth;
+using IrrigationMaster.Mobile.Application.Features.Models.Users;
 using IrrigationMaster.Mobile.Application.Interfaces;
 
 namespace IrrigationMaster.UI.Maui.Tests.TestDoubles;
@@ -9,6 +10,9 @@ public class FakeAuthService : IAuthService
     public Exception? ExceptionToThrow { get; set; }
     public (string Email, string Password)? LastCall { get; private set; }
 
+    public UserActionResult ChangePasswordResult { get; set; } = new() { IsSuccess = true };
+    public (string CurrentPassword, string NewPassword, string ConfirmNewPassword)? LastChangePasswordCall { get; private set; }
+
     public Task<LoginResponse?> LoginAsync(string email, string password)
     {
         LastCall = (email, password);
@@ -17,5 +21,11 @@ public class FakeAuthService : IAuthService
             throw ExceptionToThrow;
 
         return Task.FromResult(ResponseToReturn);
+    }
+
+    public Task<UserActionResult> ChangePasswordAsync(string currentPassword, string newPassword, string confirmNewPassword)
+    {
+        LastChangePasswordCall = (currentPassword, newPassword, confirmNewPassword);
+        return Task.FromResult(ChangePasswordResult);
     }
 }
