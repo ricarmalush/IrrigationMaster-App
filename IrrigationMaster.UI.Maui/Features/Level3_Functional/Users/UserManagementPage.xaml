@@ -110,7 +110,8 @@
                                         ItemsSource="{Binding Source={x:Reference RootPage}, Path=BindingContext.Walkways}"
                                         ItemDisplayBinding="{Binding Code}"
                                         SelectedItem="{Binding SelectedWalkway}"
-                                        BackgroundColor="#FAFAFA"/>
+                                        BackgroundColor="#FAFAFA"
+                                        HeightRequest="44"/>
                                 <Button Grid.Column="1"
                                         Text="Asignar andador"
                                         Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.AssignWalkwayCommand}"
@@ -119,7 +120,8 @@
                                         TextColor="{StaticResource AppPrimaryColor}"
                                         BorderColor="{StaticResource AppPrimaryColor}"
                                         BorderWidth="1.5"
-                                        HeightRequest="44"/>
+                                        HeightRequest="44"
+                                        WidthRequest="150"/>
                             </Grid>
 
                             <!-- ACCIÓN: Cambiar rol -->
@@ -129,7 +131,8 @@
                                         ItemsSource="{Binding Source={x:Reference RootPage}, Path=BindingContext.Roles}"
                                         ItemDisplayBinding="{Binding Name}"
                                         SelectedItem="{Binding SelectedRole}"
-                                        BackgroundColor="#FAFAFA"/>
+                                        BackgroundColor="#FAFAFA"
+                                        HeightRequest="44"/>
                                 <Button Grid.Column="1"
                                         Text="Cambiar rol"
                                         Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.ChangeRoleCommand}"
@@ -138,7 +141,8 @@
                                         TextColor="{StaticResource AppPrimaryColor}"
                                         BorderColor="{StaticResource AppPrimaryColor}"
                                         BorderWidth="1.5"
-                                        HeightRequest="44"/>
+                                        HeightRequest="44"
+                                        WidthRequest="150"/>
                             </Grid>
                         </VerticalStackLayout>
                     </Border>
