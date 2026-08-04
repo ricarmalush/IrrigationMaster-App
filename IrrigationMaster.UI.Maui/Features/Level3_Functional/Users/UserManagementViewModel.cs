@@ -31,6 +31,7 @@ public partial class UserListItem : ObservableObject
     public string Role { get; init; } = string.Empty;
     public bool IsActive { get; init; }
     public string WalkwayDisplay { get; init; } = "Sin asignar";
+    public string OrganizationName { get; init; } = string.Empty;
 
     public string StatusDisplay => IsActive ? "Activo" : "Pendiente";
     public bool ShowApprove => !IsActive;
@@ -112,6 +113,7 @@ public partial class UserManagementViewModel : ObservableObject
                     Role = user.Role,
                     IsActive = user.IsActive,
                     WalkwayDisplay = user.WalkwayCode ?? "Sin asignar",
+                    OrganizationName = user.OrganizationName,
                     SelectedRole = Roles.FirstOrDefault(r => r.Name == user.Role),
                     SelectedWalkway = user.WalkwayId.HasValue ? Walkways.FirstOrDefault(w => w.Id == user.WalkwayId.Value) : null
                 };

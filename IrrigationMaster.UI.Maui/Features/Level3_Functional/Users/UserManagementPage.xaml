@@ -70,6 +70,14 @@
                         <VerticalStackLayout Spacing="6">
                             <Label Text="{Binding FullName}" FontAttributes="Bold" FontSize="16" TextColor="Black"/>
                             <Label Text="{Binding Email}" FontSize="13" TextColor="Gray"/>
+                            <Label FontSize="13" TextColor="#444">
+                                <Label.FormattedText>
+                                    <FormattedString>
+                                        <Span Text="Organización: " FontAttributes="Bold"/>
+                                        <Span Text="{Binding OrganizationName}"/>
+                                    </FormattedString>
+                                </Label.FormattedText>
+                            </Label>
 
                             <HorizontalStackLayout Spacing="15">
                                 <Label FontSize="13" TextColor="#444">

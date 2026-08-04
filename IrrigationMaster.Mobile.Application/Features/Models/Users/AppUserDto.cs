@@ -34,4 +34,7 @@ public class AppUserDto
 
     [JsonPropertyName("walkwayCode")]
     public string? WalkwayCode { get; init; }
+
+    [JsonPropertyName("organizationName")]
+    public string OrganizationName { get; init; } = string.Empty;
 }

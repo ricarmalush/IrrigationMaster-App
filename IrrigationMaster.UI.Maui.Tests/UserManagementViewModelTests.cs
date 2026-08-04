@@ -24,7 +24,8 @@ public class UserManagementViewModelTests
                 new AppUserDto
                 {
                     Id = PendingUserId, FirstName = "Ana", LastName = "García", Email = "ana@test.com",
-                    OrganizationId = OrganizationId, Role = "Vecino", IsActive = false
+                    OrganizationId = OrganizationId, Role = "Vecino", IsActive = false,
+                    OrganizationName = "Regantes El Saso"
                 }
             ]
         };
@@ -80,9 +81,34 @@ public class UserManagementViewModelTests
 
         var user = Assert.Single(vm.Users);
         Assert.Equal("Ana García", user.FullName);
+        Assert.Equal("Regantes El Saso", user.OrganizationName);
         Assert.True(user.ShowApprove); // pendiente -> debe ofrecer "Aprobar"
         Assert.Single(vm.Roles);
         Assert.Single(vm.Walkways);
+    }
+
+    [Fact]
+    public async Task LoadAsync_WithUsersFromDifferentOrganizations_PreservesEachUsersOwnOrganizationName()
+    {
+        // Caso SUPERADMIN: la lista puede mezclar usuarios de organizaciones distintas -- cada
+        // tarjeta debe mostrar la organización que le corresponde a ESE usuario, no una fija.
+        var userService = new FakeUserManagementService
+        {
+            RolesToReturn = [],
+            WalkwaysToReturn = [],
+            UsersToReturn =
+            [
+                new AppUserDto { Id = Guid.NewGuid(), FirstName = "Ana", LastName = "García", Email = "ana@test.com", OrganizationName = "Regantes El Saso", IsActive = true },
+                new AppUserDto { Id = Guid.NewGuid(), FirstName = "Luis", LastName = "Pérez", Email = "luis@test.com", OrganizationName = "Regantes Ajena", IsActive = true }
+            ]
+        };
+        var vm = new UserManagementViewModel(userService, new RecordingAlertService());
+
+        await vm.LoadAsync();
+
+        Assert.Equal(2, vm.Users.Count);
+        Assert.Contains(vm.Users, u => u.FullName == "Ana García" && u.OrganizationName == "Regantes El Saso");
+        Assert.Contains(vm.Users, u => u.FullName == "Luis Pérez" && u.OrganizationName == "Regantes Ajena");
     }
 
     [Fact]
