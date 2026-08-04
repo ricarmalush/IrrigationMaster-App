@@ -36,8 +36,20 @@ public partial class UserListItem : ObservableObject
     public string StatusDisplay => IsActive ? "Activo" : "Pendiente";
     public bool ShowApprove => !IsActive;
 
-    [ObservableProperty] public partial RoleItem? SelectedRole { get; set; }
-    [ObservableProperty] public partial WalkwayItem? SelectedWalkway { get; set; }
+    // Picker en Windows tiene un bug conocido y sin arreglo oficial (dotnet/maui #5038, #24369):
+    // no refresca su texto visible al cambiar SelectedItem, ni al precargarlo por binding ni tras
+    // una selección real del usuario. En vez de depender de ese texto, exponemos aquí el valor
+    // seleccionado ya formateado para un Label aparte que sí se actualiza de forma fiable.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RoleSelectionDisplay))]
+    public partial RoleItem? SelectedRole { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WalkwaySelectionDisplay))]
+    public partial WalkwayItem? SelectedWalkway { get; set; }
+
+    public string RoleSelectionDisplay => SelectedRole?.Name ?? "Selecciona un rol";
+    public string WalkwaySelectionDisplay => SelectedWalkway?.Code ?? "Sin asignar";
 }
 
 /// <summary>

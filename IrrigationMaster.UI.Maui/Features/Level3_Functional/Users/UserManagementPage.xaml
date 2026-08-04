@@ -111,47 +111,51 @@
                                     HeightRequest="40"
                                     Margin="0,8,0,0"/>
 
-                            <!-- ACCIÓN: Asignar andador -->
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,8,0,0">
-                                <Picker Grid.Column="0"
-                                        Title="Sin asignar"
+                            <!-- ACCIÓN: Asignar andador
+                                 Picker y Button ya NO comparten Grid (antes: Grid.Column="0"/"1"),
+                                 cada control vive en su propia fila. Igual patrón que "Aprobar",
+                                 el único botón que en el diagnóstico original recibía clics de
+                                 forma fiable. -->
+                            <VerticalStackLayout Spacing="4" Margin="0,8,0,0">
+                                <Picker Title="Sin asignar"
                                         ItemsSource="{Binding Source={x:Reference RootPage}, Path=BindingContext.Walkways}"
                                         ItemDisplayBinding="{Binding Code}"
                                         SelectedItem="{Binding SelectedWalkway}"
                                         BackgroundColor="#FAFAFA"
                                         HeightRequest="44"/>
-                                <Button Grid.Column="1"
-                                        Text="Asignar andador"
+                                <!-- Picker en Windows no refresca su texto visible al cambiar
+                                     SelectedItem (bug conocido sin arreglo oficial en MAUI, p. ej.
+                                     dotnet/maui #5038 y #24369); este Label muestra la selección
+                                     real de forma fiable, independiente de ese bug. -->
+                                <Label Text="{Binding WalkwaySelectionDisplay}" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource AppPrimaryColor}"/>
+                                <Button Text="Asignar andador"
                                         Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.AssignWalkwayCommand}"
                                         CommandParameter="{Binding .}"
                                         BackgroundColor="Transparent"
                                         TextColor="{StaticResource AppPrimaryColor}"
                                         BorderColor="{StaticResource AppPrimaryColor}"
                                         BorderWidth="1.5"
-                                        HeightRequest="44"
-                                        WidthRequest="150"/>
-                            </Grid>
+                                        HeightRequest="44"/>
+                            </VerticalStackLayout>
 
-                            <!-- ACCIÓN: Cambiar rol -->
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                <Picker Grid.Column="0"
-                                        Title="Selecciona un rol"
+                            <!-- ACCIÓN: Cambiar rol (mismo motivo: Picker y Button en filas separadas) -->
+                            <VerticalStackLayout Spacing="4">
+                                <Picker Title="Selecciona un rol"
                                         ItemsSource="{Binding Source={x:Reference RootPage}, Path=BindingContext.Roles}"
                                         ItemDisplayBinding="{Binding Name}"
                                         SelectedItem="{Binding SelectedRole}"
                                         BackgroundColor="#FAFAFA"
                                         HeightRequest="44"/>
-                                <Button Grid.Column="1"
-                                        Text="Cambiar rol"
+                                <Label Text="{Binding RoleSelectionDisplay}" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource AppPrimaryColor}"/>
+                                <Button Text="Cambiar rol"
                                         Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.ChangeRoleCommand}"
                                         CommandParameter="{Binding .}"
                                         BackgroundColor="Transparent"
                                         TextColor="{StaticResource AppPrimaryColor}"
                                         BorderColor="{StaticResource AppPrimaryColor}"
                                         BorderWidth="1.5"
-                                        HeightRequest="44"
-                                        WidthRequest="150"/>
-                            </Grid>
+                                        HeightRequest="44"/>
+                            </VerticalStackLayout>
                         </VerticalStackLayout>
                     </Border>
                 </DataTemplate>

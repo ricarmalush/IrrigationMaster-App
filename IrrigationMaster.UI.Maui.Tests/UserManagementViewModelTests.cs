@@ -270,4 +270,50 @@ public class UserManagementViewModelTests
         Assert.Equal(AppStrings.ErrorTitle, alert.Title);
         Assert.Equal("La acción sobre 'Usuario' no está permitida o el estado es inválido.", alert.Message);
     }
+
+    // ─── SELECCIÓN VISIBLE (Picker en Windows no refresca su propio texto: dotnet/maui #5038,
+    // #24369 -- RoleSelectionDisplay/WalkwaySelectionDisplay son el reemplazo fiable que se
+    // bindea en un Label aparte) ───
+
+    [Fact]
+    public void RoleSelectionDisplay_WithNoSelection_ShowsPlaceholder()
+    {
+        var user = new UserListItem();
+
+        Assert.Equal("Selecciona un rol", user.RoleSelectionDisplay);
+    }
+
+    [Fact]
+    public void WalkwaySelectionDisplay_WithNoSelection_ShowsPlaceholder()
+    {
+        var user = new UserListItem();
+
+        Assert.Equal("Sin asignar", user.WalkwaySelectionDisplay);
+    }
+
+    [Fact]
+    public void RoleSelectionDisplay_ReflectsSelectedRole_AndRaisesPropertyChanged()
+    {
+        var user = new UserListItem();
+        var raisedFor = new List<string>();
+        user.PropertyChanged += (_, e) => raisedFor.Add(e.PropertyName!);
+
+        user.SelectedRole = new RoleItem { Id = RoleId, Name = "Tesorero" };
+
+        Assert.Equal("Tesorero", user.RoleSelectionDisplay);
+        Assert.Contains(nameof(UserListItem.RoleSelectionDisplay), raisedFor);
+    }
+
+    [Fact]
+    public void WalkwaySelectionDisplay_ReflectsSelectedWalkway_AndRaisesPropertyChanged()
+    {
+        var user = new UserListItem();
+        var raisedFor = new List<string>();
+        user.PropertyChanged += (_, e) => raisedFor.Add(e.PropertyName!);
+
+        user.SelectedWalkway = new WalkwayItem { Id = WalkwayId, Code = "A-01" };
+
+        Assert.Equal("A-01", user.WalkwaySelectionDisplay);
+        Assert.Contains(nameof(UserListItem.WalkwaySelectionDisplay), raisedFor);
+    }
 }
