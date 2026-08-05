@@ -1,8 +1,8 @@
 namespace IrrigationMaster.UI.Maui.Features.Level4_Operational.AdminConsole;
 
-public partial class EntidadTabPage : ContentPage
+public partial class MiCuentaTabView : ContentView
 {
-    public EntidadTabPage()
+    public MiCuentaTabView()
     {
         InitializeComponent();
     }

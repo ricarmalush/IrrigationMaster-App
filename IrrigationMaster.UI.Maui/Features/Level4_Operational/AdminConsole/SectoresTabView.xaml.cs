@@ -1,8 +1,8 @@
 namespace IrrigationMaster.UI.Maui.Features.Level4_Operational.AdminConsole;
 
-public partial class AndadoresTabPage : ContentPage
+public partial class SectoresTabView : ContentView
 {
-    public AndadoresTabPage()
+    public SectoresTabView()
     {
         InitializeComponent();
     }

@@ -1,44 +1,93 @@
+using System.ComponentModel;
+using System.Windows.Input;
+
 namespace IrrigationMaster.UI.Maui.Features.Level4_Operational.AdminConsole;
 
-public partial class SystemSettingsPage : TabbedPage
+public partial class SystemSettingsPage : ContentPage
 {
+    private const string ActiveTextColor = "White";
+    private const string InactiveTextColor = "#A5D6A7";
+
+    private readonly Dictionary<SettingsTab, Button> _tabButtons = [];
+
     public SystemSettingsPage(SystemSettingsViewModel viewModel)
     {
         InitializeComponent();
         BindingContext = viewModel;
 
-        // Las pestañas se AÑADEN aquí -- nunca se QUITAN. Un intento anterior declaraba las 4
-        // pestañas en el XAML y quitaba las que no tocaban con Children.Remove(), incluso desde
-        // este mismo constructor (antes de Navigation.PushAsync). Eso seguía reventando en
-        // Android con IllegalArgumentException ('No view found for id ...
-        // navigationlayout_toptabs'): el adaptador de fragments del ViewPager nativo se inicializa
-        // contando las 4 pestañas que el XAML compilado declaró, y un Remove() posterior --sin
-        // importar en qué punto del ciclo de vida ocurra-- deja al adaptador con referencias a
-        // ids que ya no existen. La única forma de evitar el bug de raíz es que las pestañas que
-        // no tocan NUNCA lleguen a existir: por eso cada pestaña es ahora su propia ContentPage
-        // (EntidadTabPage, SectoresTabPage, AndadoresTabPage, MiCuentaTabPage) y el TabbedPage
-        // las añade condicionalmente según el rol (ya disponible de forma síncrona vía
-        // ICurrentSession.CachedRole, poblado por EstablishAsync durante el login).
+        // Tira de pestañas construida aquí, no en XAML: solo debe existir un botón por cada
+        // pestaña que el rol puede ver (mismo motivo que ya se aplicaba a las Views de
+        // contenido), y para que se repartan el ancho a partes iguales entre solo las
+        // visibles, sin huecos -- Grid.ColumnDefinitions no se puede enlazar dinámicamente a
+        // la cantidad de pestañas visibles desde XAML.
+        AddTab("ENTIDAD", SettingsTab.Entidad, viewModel.ShowEntidadTab, viewModel.SelectEntidadTabCommand);
+        AddTab("SECTORES", SettingsTab.Sectores, viewModel.ShowSectoresTab, viewModel.SelectSectoresTabCommand);
+        AddTab("ANDADORES", SettingsTab.Andadores, viewModel.ShowAndadoresTab, viewModel.SelectAndadoresTabCommand);
+        AddTab("MI CUENTA", SettingsTab.MiCuenta, visible: true, viewModel.SelectMiCuentaTabCommand);
+
+        // Cada View de contenido decide su propia visibilidad por sí misma (IsVisible enlazado a
+        // Is*TabActive en su XAML); aquí solo se decide cuáles llegan a existir, igual que con
+        // las pestañas: nunca crear lo que el rol no puede ver.
         if (viewModel.ShowEntidadTab)
         {
-            Children.Add(new EntidadTabPage());
+            ContentArea.Children.Add(new EntidadTabView { BindingContext = viewModel });
         }
 
         if (viewModel.ShowSectoresTab)
         {
-            Children.Add(new SectoresTabPage());
+            ContentArea.Children.Add(new SectoresTabView { BindingContext = viewModel });
         }
 
         if (viewModel.ShowAndadoresTab)
         {
-            Children.Add(new AndadoresTabPage());
+            ContentArea.Children.Add(new AndadoresTabView { BindingContext = viewModel });
         }
 
-        Children.Add(new MiCuentaTabPage());
+        ContentArea.Children.Add(new MiCuentaTabView { BindingContext = viewModel });
+
+        viewModel.PropertyChanged += OnViewModelPropertyChanged;
+        RefreshTabButtonStyles(viewModel.ActiveTab);
     }
 
-    private async void OnBackClicked(object? sender, EventArgs e)
+    private void AddTab(string text, SettingsTab tab, bool visible, ICommand command)
     {
-        await Navigation.PopModalAsync();
+        if (!visible)
+        {
+            return;
+        }
+
+        TabStripGrid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+
+        var button = new Button
+        {
+            Text = text,
+            Command = command,
+            BackgroundColor = Colors.Transparent,
+            TextColor = Color.FromArgb(InactiveTextColor),
+            FontAttributes = FontAttributes.Bold,
+            FontSize = 13,
+            CornerRadius = 0,
+            Padding = new Thickness(4, 0)
+        };
+
+        Grid.SetColumn(button, TabStripGrid.ColumnDefinitions.Count - 1);
+        TabStripGrid.Children.Add(button);
+        _tabButtons[tab] = button;
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SystemSettingsViewModel.ActiveTab) && BindingContext is SystemSettingsViewModel viewModel)
+        {
+            RefreshTabButtonStyles(viewModel.ActiveTab);
+        }
+    }
+
+    private void RefreshTabButtonStyles(SettingsTab activeTab)
+    {
+        foreach (var (tab, button) in _tabButtons)
+        {
+            button.TextColor = tab == activeTab ? Color.FromArgb(ActiveTextColor) : Color.FromArgb(InactiveTextColor);
+        }
     }
 }

@@ -85,6 +85,11 @@ public class SystemSettingsViewModelTests
         Assert.True(vm.ShowEntidadTab);
         Assert.True(vm.ShowSectoresTab);
         Assert.True(vm.ShowAndadoresTab);
+        // SUPERADMIN puede ver y compartir el código de invitación de la organización.
+        Assert.True(vm.ShowMyOrganization);
+        // La pestaña inicial es la primera visible, en el mismo orden en que se muestran.
+        Assert.Equal(SettingsTab.Entidad, vm.ActiveTab);
+        Assert.True(vm.IsEntidadTabActive);
     }
 
     [Fact]
@@ -95,6 +100,11 @@ public class SystemSettingsViewModelTests
         Assert.False(vm.ShowEntidadTab);
         Assert.True(vm.ShowSectoresTab);
         Assert.True(vm.ShowAndadoresTab);
+        // El Presidente también puede ver y compartir el código de invitación.
+        Assert.True(vm.ShowMyOrganization);
+        // Entidad está oculta para este rol: la primera pestaña visible es Sectores.
+        Assert.Equal(SettingsTab.Sectores, vm.ActiveTab);
+        Assert.True(vm.IsSectoresTabActive);
     }
 
     [Theory]
@@ -108,6 +118,12 @@ public class SystemSettingsViewModelTests
         Assert.False(vm.ShowEntidadTab);
         Assert.False(vm.ShowSectoresTab);
         Assert.False(vm.ShowAndadoresTab);
+        // Un Vecino no debe poder ver ni compartir libremente el código de invitación -- eso lo
+        // decide el Presidente.
+        Assert.False(vm.ShowMyOrganization);
+        // La única pestaña visible es Mi Cuenta, así que es la única que puede ser la activa.
+        Assert.Equal(SettingsTab.MiCuenta, vm.ActiveTab);
+        Assert.True(vm.IsMiCuentaTabActive);
     }
 
     [Fact]
@@ -116,6 +132,35 @@ public class SystemSettingsViewModelTests
         var (vm, _, _, _) = CreateSut(role: "superadmin");
 
         Assert.True(vm.ShowEntidadTab);
+        Assert.True(vm.ShowMyOrganization);
+    }
+
+    // ─── SELECCIÓN DE PESTAÑA: sustituye la selección nativa de un TabbedPage (ver el
+    // comentario de ApplyTabVisibility para el porqué SystemSettingsPage dejó de serlo) ───
+
+    [Fact]
+    public void SelectSectoresTabCommand_WhenExecuted_MakesSectoresTheActiveTabAndOthersInactive()
+    {
+        var (vm, _, _, _) = CreateSut(role: "SUPERADMIN");
+
+        vm.SelectSectoresTabCommand.Execute(null);
+
+        Assert.Equal(SettingsTab.Sectores, vm.ActiveTab);
+        Assert.True(vm.IsSectoresTabActive);
+        Assert.False(vm.IsEntidadTabActive);
+        Assert.False(vm.IsAndadoresTabActive);
+        Assert.False(vm.IsMiCuentaTabActive);
+    }
+
+    [Fact]
+    public void SelectMiCuentaTabCommand_WhenExecuted_MakesMiCuentaTheActiveTab()
+    {
+        var (vm, _, _, _) = CreateSut(role: "SUPERADMIN");
+
+        vm.SelectMiCuentaTabCommand.Execute(null);
+
+        Assert.Equal(SettingsTab.MiCuenta, vm.ActiveTab);
+        Assert.True(vm.IsMiCuentaTabActive);
     }
 
     // ─── ORGANIZACIÓN: éxito, fallo de red, fallo de validación del backend ───

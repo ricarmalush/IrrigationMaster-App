@@ -23,6 +23,16 @@ public class HydraulicSectorItem
     public string Name { get; set; } = string.Empty;
 }
 
+// SystemSettingsPage ya no es un TabbedPage (ver ApplyTabVisibility para el motivo): esto
+// identifica cuál de las Views de contenido está activa dentro de su propio Grid.
+public enum SettingsTab
+{
+    Entidad,
+    Sectores,
+    Andadores,
+    MiCuenta
+}
+
 // ObservableObject (CommunityToolkit.Mvvm) en vez de BindableObject: XAML se enlaza igual,
 // pero así el ViewModel se puede instanciar en tests sin una app MAUI corriendo
 // (BindableObject exige un Dispatcher de WinUI en su constructor). Mismo patrón que
@@ -38,15 +48,36 @@ public partial class SystemSettingsViewModel : ObservableObject
     [ObservableProperty] public partial string MyOrganizationName { get; set; } = string.Empty;
     [ObservableProperty] public partial string MyOrganizationInvitationCode { get; set; } = string.Empty;
 
+    // Un Vecino no debe poder ver ni compartir libremente el código de invitación de su
+    // organización -- a quién se lo comparte lo decide el Presidente. Vive dentro de la
+    // pestaña "Mi Cuenta" (que sí es visible para los 3 roles), oculta solo esta sección.
+    [ObservableProperty] public partial bool ShowMyOrganization { get; set; }
+
     // El backend ya rechaza con 403 la creación de Organización/Sector/Andador si el llamador
     // no tiene permiso -- esto solo evita mostrarle a cada rol pestañas que nunca van a
     // funcionarle. Se calculan de forma SÍNCRONA en el constructor (a partir de
     // ICurrentSession.CachedRole, ya disponible en memoria tras el login) para que
-    // SystemSettingsPage pueda decidir sus Children ANTES del primer render del TabbedPage.
+    // SystemSettingsPage pueda decidir sus Children ANTES del primer render.
     // Vecino no tiene ninguna de las dos en true: solo ve "Mi Cuenta".
     [ObservableProperty] public partial bool ShowEntidadTab { get; set; }
     [ObservableProperty] public partial bool ShowSectoresTab { get; set; }
     [ObservableProperty] public partial bool ShowAndadoresTab { get; set; }
+
+    // Pestaña actualmente mostrada. SystemSettingsPage ya no es un TabbedPage nativo de Android
+    // (ver el comentario grande en ApplyTabVisibility para el porqué): esto sustituye la
+    // selección de pestaña nativa por una decidida aquí, con las 4 Views de contenido
+    // presentes en el mismo Grid y solo la activa visible.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsEntidadTabActive))]
+    [NotifyPropertyChangedFor(nameof(IsSectoresTabActive))]
+    [NotifyPropertyChangedFor(nameof(IsAndadoresTabActive))]
+    [NotifyPropertyChangedFor(nameof(IsMiCuentaTabActive))]
+    public partial SettingsTab ActiveTab { get; set; }
+
+    public bool IsEntidadTabActive => ActiveTab == SettingsTab.Entidad;
+    public bool IsSectoresTabActive => ActiveTab == SettingsTab.Sectores;
+    public bool IsAndadoresTabActive => ActiveTab == SettingsTab.Andadores;
+    public bool IsMiCuentaTabActive => ActiveTab == SettingsTab.MiCuenta;
 
     // --- PESTAÑA 1: ENTIDAD RAÍZ ---
     [ObservableProperty] public partial string OrgName { get; set; } = string.Empty;
@@ -93,6 +124,10 @@ public partial class SystemSettingsViewModel : ObservableObject
     public ICommand LoadCountriesCommand { get; }
     public ICommand LoadHydraulicSectorsCommand { get; }
     public ICommand LoadMyOrganizationCommand { get; }
+    public ICommand SelectEntidadTabCommand { get; }
+    public ICommand SelectSectoresTabCommand { get; }
+    public ICommand SelectAndadoresTabCommand { get; }
+    public ICommand SelectMiCuentaTabCommand { get; }
 
     private const string SuperAdminRoleCode = "SUPERADMIN";
     private const string PresidenteRoleCode = "PRESIDENTE";
@@ -111,6 +146,10 @@ public partial class SystemSettingsViewModel : ObservableObject
         LoadCountriesCommand = new Command(async () => await LoadCountriesAsync());
         LoadHydraulicSectorsCommand = new Command(async () => await LoadHydraulicSectorsAsync());
         LoadMyOrganizationCommand = new Command(async () => await LoadMyOrganizationAsync());
+        SelectEntidadTabCommand = new Command(() => ActiveTab = SettingsTab.Entidad);
+        SelectSectoresTabCommand = new Command(() => ActiveTab = SettingsTab.Sectores);
+        SelectAndadoresTabCommand = new Command(() => ActiveTab = SettingsTab.Andadores);
+        SelectMiCuentaTabCommand = new Command(() => ActiveTab = SettingsTab.MiCuenta);
 
         ApplyTabVisibility(currentSession.CachedRole);
 
@@ -120,11 +159,20 @@ public partial class SystemSettingsViewModel : ObservableObject
         LoadMyOrganizationCommand.Execute(null);
     }
 
-    // Síncrono a propósito: SystemSettingsPage lo llama a través de estas tres propiedades
-    // desde su propio constructor, antes de InitializeComponent()/antes de que la página se
-    // añada a la pila de navegación, para eliminar del TabbedPage las pestañas que no tocan
-    // ANTES de su primer render (mutar Children después revienta en Android con
-    // IllegalArgumentException: 'No view found for id ... navigationlayout_toptabs').
+    // Síncrono a propósito: SystemSettingsPage lo llama desde su propio constructor, antes de
+    // InitializeComponent()/antes de que la página se añada a la pila de navegación, para
+    // decidir qué pestañas existen ANTES de su primer render.
+    //
+    // SystemSettingsPage dejó de ser un TabbedPage nativo: empujar un TabbedPage con
+    // Navigation.PushAsync sobre la pila de un NavigationPage/Shell es un bug conocido de
+    // Android (el ViewPager/FragmentManager nativo del TabbedPage choca con las transiciones de
+    // fragments del NavigationPage que lo aloja -- reproducido en dispositivo real con
+    // IllegalArgumentException: 'No view found for id ... navigationlayout_toptabs',
+    // independientemente de cómo se gestionaran sus Children). La única forma de evitarlo sin
+    // perder la flecha de retroceso nativa (que exige PushAsync, no PushModalAsync) era dejar de
+    // usar TabbedPage: ahora es un ContentPage normal -- empujado exactamente igual que
+    // UserManagementPage -- con una tira de pestañas hecha a mano y las 4 Views de contenido en
+    // el mismo Grid, mostrando solo la que ActiveTab señale.
     internal void ApplyTabVisibility(string? role)
     {
         bool isSuperAdmin = string.Equals(role, SuperAdminRoleCode, StringComparison.OrdinalIgnoreCase);
@@ -133,6 +181,14 @@ public partial class SystemSettingsViewModel : ObservableObject
         ShowEntidadTab = isSuperAdmin;
         ShowSectoresTab = isSuperAdmin || isPresidente;
         ShowAndadoresTab = isSuperAdmin || isPresidente;
+        ShowMyOrganization = isSuperAdmin || isPresidente;
+
+        // La pestaña inicial es la primera que el rol puede ver, en el mismo orden en que se
+        // muestran (Entidad, Sectores, Andadores, Mi Cuenta).
+        ActiveTab = ShowEntidadTab ? SettingsTab.Entidad
+            : ShowSectoresTab ? SettingsTab.Sectores
+            : ShowAndadoresTab ? SettingsTab.Andadores
+            : SettingsTab.MiCuenta;
     }
 
     internal async Task LoadMyOrganizationAsync()

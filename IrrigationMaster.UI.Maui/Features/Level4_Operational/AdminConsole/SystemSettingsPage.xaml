@@ -1,23 +1,21 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<TabbedPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-            xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-            xmlns:viewmodel="clr-namespace:IrrigationMaster.UI.Maui.Features.Level4_Operational.AdminConsole"
-            x:Class="IrrigationMaster.UI.Maui.Features.Level4_Operational.AdminConsole.SystemSettingsPage"
-            x:DataType="viewmodel:SystemSettingsViewModel"
-            BarBackgroundColor="#2E7D32"
-            BarTextColor="White"
-            UnselectedTabColor="#A5D6A7"
-            SelectedTabColor="White"
-            Title="Configuración del Sistema">
-    <!-- Sin ContentPage hijas declaradas aquí a propósito: se añaden condicionalmente por rol
-         desde el code-behind (Children.Add), nunca se quitan (Children.Remove); ver
-         SystemSettingsPage.xaml.cs para la explicación completa del bug de Android que esto
-         evita. -->
-
-    <!-- La página se abre con PushModalAsync (no PushAsync; ver AdminMenuPage.xaml.cs), así
-         que no hereda la flecha de retroceso automática de la pila de navegación jerárquica.
-         Este ToolbarItem es la forma explícita de volver. -->
-    <TabbedPage.ToolbarItems>
-        <ToolbarItem Text="← Atrás" Order="Primary" Priority="0" Clicked="OnBackClicked"/>
-    </TabbedPage.ToolbarItems>
-</TabbedPage>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodel="clr-namespace:IrrigationMaster.UI.Maui.Features.Level4_Operational.AdminConsole"
+             x:Class="IrrigationMaster.UI.Maui.Features.Level4_Operational.AdminConsole.SystemSettingsPage"
+             x:DataType="viewmodel:SystemSettingsViewModel"
+             Title="Configuración del Sistema"
+             BackgroundColor="#F5F5F5">
+    <!-- Ya no es un TabbedPage: empujar un TabbedPage con Navigation.PushAsync sobre la pila de
+         un NavigationPage/Shell revienta en Android (bug de plataforma, reproducido en
+         dispositivo real). PushModalAsync evitaba el crash pero deja la página sin la flecha de
+         retroceso nativa que Shell añade automáticamente a un push normal, exactamente como en
+         UserManagementPage. Un ContentPage normal, empujado igual que UserManagementPage, obtiene
+         esa flecha nativa gratis y no tiene el bug del TabbedPage. La tira de pestañas de abajo
+         (TabStripGrid) y las 4 Views de contenido (ContentArea) se construyen en el code-behind
+         (ver SystemSettingsPage.xaml.cs), condicionadas por rol igual que antes. -->
+    <Grid RowDefinitions="Auto,*">
+        <Grid x:Name="TabStripGrid" Grid.Row="0" BackgroundColor="#2E7D32" ColumnSpacing="0" HeightRequest="56"/>
+        <Grid x:Name="ContentArea" Grid.Row="1"/>
+    </Grid>
+</ContentPage>

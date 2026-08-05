@@ -62,25 +62,20 @@ public partial class AdminMenuPage : ContentPage
 
             if (settingsPage != null)
             {
-                // PushModalAsync (no PushAsync) -- a diferencia de OnUserManagementClicked, aquí SÍ
-                // hace falta: SystemSettingsPage es un TabbedPage, y empujar un TabbedPage con
-                // Navigation.PushAsync sobre la pila de un NavigationPage es un bug conocido de
-                // Android (el ViewPager/FragmentManager nativo del TabbedPage entra en conflicto
-                // con las transiciones de fragments del NavigationPage que lo aloja), que revienta
-                // con IllegalArgumentException: 'No view found for id ... navigationlayout_toptabs'
-                // -- reproducido en dispositivo real, independientemente de cómo se gestionen sus
-                // Children (probado tanto quitando pestañas como añadiendo solo las necesarias).
-                // PushModalAsync evita el conflicto por completo al no anidar el TabbedPage dentro
-                // de la navegación jerárquica del NavigationPage.
+                // PushAsync (no PushModalAsync): mismo arreglo que en OnUserManagementClicked --
+                // así queda en la misma pila de navegación jerárquica que AdminMenuPage y Shell
+                // le añade automáticamente la flecha de retroceso estándar, en el mismo sitio y
+                // con el mismo aspecto que en el resto de la App.
                 //
-                // Se envuelve en un NavigationPage propio (no compartido con la pila de
-                // AdminMenuPage -- eso sería volver al bug de arriba) porque un TabbedPage
-                // modal "desnudo" no renderiza NINGUNA barra de acción en Android: el
-                // ToolbarItem de "← Atrás" de SystemSettingsPage no tenía dónde pintarse
-                // (confirmado en dispositivo real). Como raíz de un NavigationPage recién
-                // creado sí obtiene esa barra, sin reintroducir el conflicto original porque
-                // esta pila nace vacía y nunca comparte Navigation con AdminMenuPage.
-                await Navigation.PushModalAsync(new NavigationPage(settingsPage));
+                // Esto solo es seguro en Android porque SystemSettingsPage dejó de ser un
+                // TabbedPage nativo: empujar un TabbedPage con PushAsync sobre esta misma pila
+                // revienta con IllegalArgumentException ('No view found for id ...
+                // navigationlayout_toptabs') -- bug de plataforma reproducido en dispositivo
+                // real, independientemente de cómo se gestionaran sus Children. Ahora es un
+                // ContentPage normal con una tira de pestañas hecha a mano (ver
+                // SystemSettingsPage.xaml.cs), así que este PushAsync es idéntico al de
+                // OnUserManagementClicked y no tiene ese problema.
+                await Navigation.PushAsync(settingsPage);
             }
             else
             {
