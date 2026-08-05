@@ -13,13 +13,16 @@ public class SystemSettingsViewModelTests
     private const string FakeBaseUrl = "https://fake-backend.test/api/v1/";
     private const string CreatedResponseJson = """{ "isSuccess": true, "message": "Operación completada exitosamente.", "data": "3fa85f64-5717-4562-b3fc-2c963f66afa6" }""";
 
-    private static (SystemSettingsViewModel ViewModel, RoutingFakeHttpMessageHandler Handler, RecordingAlertService Alerts, FakeCurrentSession Session) CreateSut(string? organizationId = null)
+    private static (SystemSettingsViewModel ViewModel, RoutingFakeHttpMessageHandler Handler, RecordingAlertService Alerts, FakeCurrentSession Session) CreateSut(string? organizationId = null, string? role = null)
     {
         var handler = new RoutingFakeHttpMessageHandler();
         var httpClient = new HttpClient(handler) { BaseAddress = new Uri(FakeBaseUrl) };
         var apiService = new ApiService(httpClient, new FakeTokenStorage { StoredToken = "token-123" });
         var alerts = new RecordingAlertService();
-        var session = new FakeCurrentSession { OrganizationIdToReturn = organizationId };
+        // RoleToReturn debe fijarse ANTES de construir el ViewModel: éste lee
+        // ICurrentSession.CachedRole de forma síncrona en su propio constructor (para poder
+        // decidir las pestañas antes del primer render), no de forma perezosa.
+        var session = new FakeCurrentSession { OrganizationIdToReturn = organizationId, RoleToReturn = role };
 
         var viewModel = new SystemSettingsViewModel(apiService, apiService, alerts, session);
 
@@ -71,31 +74,48 @@ public class SystemSettingsViewModelTests
         Assert.Equal(string.Empty, vm.MyOrganizationInvitationCode);
     }
 
-    // ─── IsSuperAdmin: decide si SystemSettingsPage oculta la pestaña "Entidad" ───
+    // ─── VISIBILIDAD DE PESTAÑAS POR ROL: decide qué Children mutará SystemSettingsPage en su
+    // propio constructor (antes del primer render, para no reventar en Android) ───
 
     [Fact]
-    public async Task LoadCurrentUserRoleAsync_WhenSessionRoleIsSuperAdmin_SetsIsSuperAdminTrue()
+    public void Constructor_WhenRoleIsSuperAdmin_ShowsAllFourTabs()
     {
-        var (vm, _, _, session) = CreateSut();
-        session.RoleToReturn = "SUPERADMIN";
+        var (vm, _, _, _) = CreateSut(role: "SUPERADMIN");
 
-        await vm.LoadCurrentUserRoleAsync();
+        Assert.True(vm.ShowEntidadTab);
+        Assert.True(vm.ShowSectoresTab);
+        Assert.True(vm.ShowAndadoresTab);
+    }
 
-        Assert.True(vm.IsSuperAdmin);
+    [Fact]
+    public void Constructor_WhenRoleIsPresidente_ShowsSectoresAndAndadoresButNotEntidad()
+    {
+        var (vm, _, _, _) = CreateSut(role: "PRESIDENTE");
+
+        Assert.False(vm.ShowEntidadTab);
+        Assert.True(vm.ShowSectoresTab);
+        Assert.True(vm.ShowAndadoresTab);
     }
 
     [Theory]
-    [InlineData("PRESIDENTE")]
     [InlineData("VECINO")]
     [InlineData(null)]
-    public async Task LoadCurrentUserRoleAsync_WhenSessionRoleIsNotSuperAdmin_SetsIsSuperAdminFalse(string? role)
+    [InlineData("")]
+    public void Constructor_WhenRoleIsVecinoOrUnknown_ShowsOnlyMiCuenta(string? role)
     {
-        var (vm, _, _, session) = CreateSut();
-        session.RoleToReturn = role;
+        var (vm, _, _, _) = CreateSut(role: role);
 
-        await vm.LoadCurrentUserRoleAsync();
+        Assert.False(vm.ShowEntidadTab);
+        Assert.False(vm.ShowSectoresTab);
+        Assert.False(vm.ShowAndadoresTab);
+    }
 
-        Assert.False(vm.IsSuperAdmin);
+    [Fact]
+    public void Constructor_RoleComparisonIsCaseInsensitive()
+    {
+        var (vm, _, _, _) = CreateSut(role: "superadmin");
+
+        Assert.True(vm.ShowEntidadTab);
     }
 
     // ─── ORGANIZACIÓN: éxito, fallo de red, fallo de validación del backend ───
@@ -308,20 +328,22 @@ public class SystemSettingsViewModelTests
             "isSuccess": false,
             "message": "Datos inválidos",
             "errors": [
-                { "propertyMessage": "ConfirmNewPassword", "errorMessage": "Las contraseñas no coinciden." }
+                { "propertyMessage": "NewPassword", "errorMessage": "La contraseña debe contener al menos un número." }
             ]
         }
         """;
         handler.AddRoute(IsPutTo("Users/ChangePassword"), HttpStatusCode.BadRequest, errorsJson);
+        // Ambos campos coinciden a propósito: este test cubre errores de validación que el
+        // backend detecta y el cliente no (p.ej. complejidad de contraseña), no el caso de
+        // contraseñas no coincidentes, que ahora se atrapa localmente antes de llamar al backend.
         SetValidChangePasswordFields(vm);
-        vm.ConfirmNewPassword = "OtraDistinta789!";
 
         await vm.ExecuteChangePasswordAsync();
 
         var alert = Assert.Single(alerts.Calls);
         Assert.Equal(AppStrings.ErrorTitle, alert.Title);
-        Assert.Contains("ConfirmNewPassword", alert.Message);
-        Assert.Contains("Las contraseñas no coinciden.", alert.Message);
+        Assert.Contains("NewPassword", alert.Message);
+        Assert.Contains("La contraseña debe contener al menos un número.", alert.Message);
     }
 
     [Fact]
@@ -338,6 +360,24 @@ public class SystemSettingsViewModelTests
         var alert = Assert.Single(alerts.Calls);
         Assert.Equal(AppStrings.AttentionTitle, alert.Title);
         Assert.Equal(AppStrings.MsgMissingPasswordData, alert.Message);
+    }
+
+    [Fact]
+    public async Task ExecuteChangePasswordAsync_WhenConfirmationDoesNotMatch_ShowsLocalMessage_WithoutCallingApi()
+    {
+        // Validación local: ni siquiera debe intentar la petición de red si la confirmación no
+        // coincide con la nueva contraseña -- el backend nunca llega a ver esta petición.
+        var (vm, handler, alerts, _) = CreateSut();
+        vm.CurrentPassword = "OldPass123!";
+        vm.NewPassword = "NewPass456!";
+        vm.ConfirmNewPassword = "OtraDistinta789!";
+
+        await vm.ExecuteChangePasswordAsync();
+
+        Assert.DoesNotContain(handler.Requests, r => r.RequestUri!.AbsolutePath.EndsWith("Users/ChangePassword"));
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.AttentionTitle, alert.Title);
+        Assert.Equal(AppStrings.MsgPasswordsDoNotMatch, alert.Message);
     }
 
     [Fact]

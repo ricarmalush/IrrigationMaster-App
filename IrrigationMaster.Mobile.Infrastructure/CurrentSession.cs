@@ -13,6 +13,8 @@ public class CurrentSession : ICurrentSession
         _tokenStorage = tokenStorage;
     }
 
+    public string? CachedRole { get; private set; }
+
     public async Task EstablishAsync(string jwtToken)
     {
         var handler = new JwtSecurityTokenHandler();
@@ -22,11 +24,16 @@ public class CurrentSession : ICurrentSession
         var role = parsedToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value ?? string.Empty;
 
         await _tokenStorage.SaveSessionAsync(jwtToken, organizationId, role);
+        CachedRole = role;
     }
 
     public Task<string?> GetOrganizationIdAsync() => _tokenStorage.GetOrganizationIdAsync();
 
     public Task<string?> GetRoleAsync() => _tokenStorage.GetRoleAsync();
 
-    public Task ClearAsync() => _tokenStorage.ClearSessionAsync();
+    public Task ClearAsync()
+    {
+        CachedRole = null;
+        return _tokenStorage.ClearSessionAsync();
+    }
 }

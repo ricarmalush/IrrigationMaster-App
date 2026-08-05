@@ -62,10 +62,17 @@ public partial class AdminMenuPage : ContentPage
 
             if (settingsPage != null)
             {
-                // PushAsync (no PushModalAsync): mismo arreglo que en OnUserManagementClicked --
-                // así queda en la misma pila de navegación jerárquica que AdminMenuPage y Shell
-                // le añade automáticamente la flecha de retroceso estándar.
-                await Navigation.PushAsync(settingsPage);
+                // PushModalAsync (no PushAsync) -- a diferencia de OnUserManagementClicked, aquí SÍ
+                // hace falta: SystemSettingsPage es un TabbedPage, y empujar un TabbedPage con
+                // Navigation.PushAsync sobre la pila de un NavigationPage es un bug conocido de
+                // Android (el ViewPager/FragmentManager nativo del TabbedPage entra en conflicto
+                // con las transiciones de fragments del NavigationPage que lo aloja), que revienta
+                // con IllegalArgumentException: 'No view found for id ... navigationlayout_toptabs'
+                // -- reproducido en dispositivo real, independientemente de cómo se gestionen sus
+                // Children (probado tanto quitando pestañas como añadiendo solo las necesarias).
+                // PushModalAsync evita el conflicto por completo al no anidar el TabbedPage dentro
+                // de la navegación jerárquica del NavigationPage.
+                await Navigation.PushModalAsync(settingsPage);
             }
             else
             {

@@ -38,11 +38,15 @@ public partial class SystemSettingsViewModel : ObservableObject
     [ObservableProperty] public partial string MyOrganizationName { get; set; } = string.Empty;
     [ObservableProperty] public partial string MyOrganizationInvitationCode { get; set; } = string.Empty;
 
-    // El backend ya rechaza con 403 la creación de Organización si el llamador no es SUPERADMIN
-    // -- esto solo evita mostrarle al Presidente una pestaña que nunca va a funcionar para él.
-    // La página (SystemSettingsPage.OnAppearing) lee esta propiedad para decidir si oculta la
-    // pestaña "Entidad" del TabbedPage.
-    [ObservableProperty] public partial bool IsSuperAdmin { get; set; }
+    // El backend ya rechaza con 403 la creación de Organización/Sector/Andador si el llamador
+    // no tiene permiso -- esto solo evita mostrarle a cada rol pestañas que nunca van a
+    // funcionarle. Se calculan de forma SÍNCRONA en el constructor (a partir de
+    // ICurrentSession.CachedRole, ya disponible en memoria tras el login) para que
+    // SystemSettingsPage pueda decidir sus Children ANTES del primer render del TabbedPage.
+    // Vecino no tiene ninguna de las dos en true: solo ve "Mi Cuenta".
+    [ObservableProperty] public partial bool ShowEntidadTab { get; set; }
+    [ObservableProperty] public partial bool ShowSectoresTab { get; set; }
+    [ObservableProperty] public partial bool ShowAndadoresTab { get; set; }
 
     // --- PESTAÑA 1: ENTIDAD RAÍZ ---
     [ObservableProperty] public partial string OrgName { get; set; } = string.Empty;
@@ -89,9 +93,9 @@ public partial class SystemSettingsViewModel : ObservableObject
     public ICommand LoadCountriesCommand { get; }
     public ICommand LoadHydraulicSectorsCommand { get; }
     public ICommand LoadMyOrganizationCommand { get; }
-    public ICommand LoadCurrentUserRoleCommand { get; }
 
     private const string SuperAdminRoleCode = "SUPERADMIN";
+    private const string PresidenteRoleCode = "PRESIDENTE";
 
     public SystemSettingsViewModel(IStructureService structureService, IAuthService authService, IAlertService alertService, ICurrentSession currentSession)
     {
@@ -107,27 +111,28 @@ public partial class SystemSettingsViewModel : ObservableObject
         LoadCountriesCommand = new Command(async () => await LoadCountriesAsync());
         LoadHydraulicSectorsCommand = new Command(async () => await LoadHydraulicSectorsAsync());
         LoadMyOrganizationCommand = new Command(async () => await LoadMyOrganizationAsync());
-        LoadCurrentUserRoleCommand = new Command(async () => await LoadCurrentUserRoleAsync());
 
-        // Cargamos los catálogos, los datos de "Mi Organización" y el rol del usuario al
-        // instanciar el ViewModel
+        ApplyTabVisibility(currentSession.CachedRole);
+
+        // Cargamos los catálogos y los datos de "Mi Organización" al instanciar el ViewModel
         LoadCountriesCommand.Execute(null);
         LoadHydraulicSectorsCommand.Execute(null);
         LoadMyOrganizationCommand.Execute(null);
-        LoadCurrentUserRoleCommand.Execute(null);
     }
 
-    internal async Task LoadCurrentUserRoleAsync()
+    // Síncrono a propósito: SystemSettingsPage lo llama a través de estas tres propiedades
+    // desde su propio constructor, antes de InitializeComponent()/antes de que la página se
+    // añada a la pila de navegación, para eliminar del TabbedPage las pestañas que no tocan
+    // ANTES de su primer render (mutar Children después revienta en Android con
+    // IllegalArgumentException: 'No view found for id ... navigationlayout_toptabs').
+    internal void ApplyTabVisibility(string? role)
     {
-        try
-        {
-            var role = await _currentSession.GetRoleAsync();
-            IsSuperAdmin = string.Equals(role, SuperAdminRoleCode, StringComparison.OrdinalIgnoreCase);
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[Error Loading CurrentUserRole]: {ex.Message}");
-        }
+        bool isSuperAdmin = string.Equals(role, SuperAdminRoleCode, StringComparison.OrdinalIgnoreCase);
+        bool isPresidente = string.Equals(role, PresidenteRoleCode, StringComparison.OrdinalIgnoreCase);
+
+        ShowEntidadTab = isSuperAdmin;
+        ShowSectoresTab = isSuperAdmin || isPresidente;
+        ShowAndadoresTab = isSuperAdmin || isPresidente;
     }
 
     internal async Task LoadMyOrganizationAsync()
@@ -331,6 +336,15 @@ public partial class SystemSettingsViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(CurrentPassword) || string.IsNullOrWhiteSpace(NewPassword) || string.IsNullOrWhiteSpace(ConfirmNewPassword))
         {
             await _alertService.ShowAsync(AppStrings.AttentionTitle, AppStrings.MsgMissingPasswordData);
+            return;
+        }
+
+        // Validación local, sin red: el backend también la hace (y la mostraríamos igual, tal
+        // cual, si llegara desde ahí), pero comprobarlo aquí evita una petición innecesaria y
+        // le da al usuario el mismo mensaje al instante.
+        if (NewPassword != ConfirmNewPassword)
+        {
+            await _alertService.ShowAsync(AppStrings.AttentionTitle, AppStrings.MsgPasswordsDoNotMatch);
             return;
         }
 

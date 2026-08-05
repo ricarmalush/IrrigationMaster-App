@@ -205,6 +205,15 @@ namespace IrrigationMaster.UI.Maui.Common {
         }
 
         /// <summary>
+        ///   Busca una cadena traducida similar a La nueva contraseña y su confirmación no coinciden..
+        /// </summary>
+        public static string MsgPasswordsDoNotMatch {
+            get {
+                return ResourceManager.GetString("MsgPasswordsDoNotMatch", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Busca una cadena traducida similar a Selecciona un rol antes de confirmar el cambio..
         /// </summary>
         public static string MsgSelectRoleFirst {

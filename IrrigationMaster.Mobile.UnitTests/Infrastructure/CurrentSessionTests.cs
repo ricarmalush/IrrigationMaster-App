@@ -26,6 +26,10 @@ public class CurrentSessionTests
         Assert.Equal(jwt, tokenStorage.SavedToken);
         Assert.Equal(organizationId, tokenStorage.SavedOrganizationId);
         Assert.Equal("Admin", tokenStorage.SavedRole);
+        // CachedRole debe quedar disponible de forma síncrona tras EstablishAsync -- es lo que
+        // permite decidir UI dependiente del rol (p. ej. qué pestañas mostrar) sin esperar a
+        // una lectura async de SecureStorage.
+        Assert.Equal("Admin", session.CachedRole);
     }
 
     [Fact]
@@ -80,5 +84,25 @@ public class CurrentSessionTests
         await session.ClearAsync();
 
         Assert.True(tokenStorage.ClearCalled);
+    }
+
+    [Fact]
+    public async Task ClearAsync_ClearsCachedRole()
+    {
+        var tokenStorage = new FakeTokenStorage();
+        var session = new CurrentSession(tokenStorage);
+        await session.EstablishAsync(BuildJwt([new Claim(ClaimTypes.Role, "SUPERADMIN")]));
+
+        await session.ClearAsync();
+
+        Assert.Null(session.CachedRole);
+    }
+
+    [Fact]
+    public void CachedRole_BeforeEstablishAsync_IsNull()
+    {
+        var session = new CurrentSession(new FakeTokenStorage());
+
+        Assert.Null(session.CachedRole);
     }
 }

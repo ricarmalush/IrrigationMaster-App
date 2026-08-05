@@ -156,6 +156,9 @@
   <data name="MsgMissingSectorData" xml:space="preserve">
     <value>Por favor, completa todos los datos del sector hidráulico.</value>
   </data>
+  <data name="MsgPasswordsDoNotMatch" xml:space="preserve">
+    <value>La nueva contraseña y su confirmación no coinciden.</value>
+  </data>
   <data name="MsgMissingWalkwayData" xml:space="preserve">
     <value>Por favor, completa todos los datos del andador.</value>
   </data>
