@@ -72,7 +72,15 @@ public partial class AdminMenuPage : ContentPage
                 // Children (probado tanto quitando pestañas como añadiendo solo las necesarias).
                 // PushModalAsync evita el conflicto por completo al no anidar el TabbedPage dentro
                 // de la navegación jerárquica del NavigationPage.
-                await Navigation.PushModalAsync(settingsPage);
+                //
+                // Se envuelve en un NavigationPage propio (no compartido con la pila de
+                // AdminMenuPage -- eso sería volver al bug de arriba) porque un TabbedPage
+                // modal "desnudo" no renderiza NINGUNA barra de acción en Android: el
+                // ToolbarItem de "← Atrás" de SystemSettingsPage no tenía dónde pintarse
+                // (confirmado en dispositivo real). Como raíz de un NavigationPage recién
+                // creado sí obtiene esa barra, sin reintroducir el conflicto original porque
+                // esta pila nace vacía y nunca comparte Navigation con AdminMenuPage.
+                await Navigation.PushModalAsync(new NavigationPage(settingsPage));
             }
             else
             {

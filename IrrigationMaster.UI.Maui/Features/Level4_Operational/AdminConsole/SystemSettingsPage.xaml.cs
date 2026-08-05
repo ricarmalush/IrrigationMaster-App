@@ -36,4 +36,9 @@ public partial class SystemSettingsPage : TabbedPage
 
         Children.Add(new MiCuentaTabPage());
     }
+
+    private async void OnBackClicked(object? sender, EventArgs e)
+    {
+        await Navigation.PopModalAsync();
+    }
 }

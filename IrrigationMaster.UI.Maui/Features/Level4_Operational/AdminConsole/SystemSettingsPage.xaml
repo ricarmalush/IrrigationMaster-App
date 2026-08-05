@@ -13,4 +13,11 @@
          desde el code-behind (Children.Add), nunca se quitan (Children.Remove); ver
          SystemSettingsPage.xaml.cs para la explicación completa del bug de Android que esto
          evita. -->
+
+    <!-- La página se abre con PushModalAsync (no PushAsync; ver AdminMenuPage.xaml.cs), así
+         que no hereda la flecha de retroceso automática de la pila de navegación jerárquica.
+         Este ToolbarItem es la forma explícita de volver. -->
+    <TabbedPage.ToolbarItems>
+        <ToolbarItem Text="← Atrás" Order="Primary" Priority="0" Clicked="OnBackClicked"/>
+    </TabbedPage.ToolbarItems>
 </TabbedPage>
