@@ -438,6 +438,26 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         }
     }
 
+    public async Task<UserActionResult> ResetPasswordAsync(Guid userId, string newPassword)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.PutAsJsonAsync($"{ApiEndpoints.UsersResetPassword}/{userId}", new ResetPasswordRequest { NewPassword = newPassword });
+            return await ReadUserActionResultAsync(response);
+        }
+        catch (HttpRequestException)
+        {
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - ResetPassword]: {ex.Message}");
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
+        }
+    }
+
     // El backend también manda un body parseable en 400 (p. ej. permiso insuficiente) y en 403.
     private static async Task<UserActionResult> ReadUserActionResultAsync(HttpResponseMessage response)
     {

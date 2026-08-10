@@ -323,6 +323,72 @@ public class UserManagementViewModelTests
         Assert.Equal(AppStrings.MsgSelectRoleFirst, alert.Message);
     }
 
+    // ─── RESTABLECER CONTRASEÑA (sin contraseña actual: quien resetea es un tercero de
+    // confianza -- Presidente/SUPERADMIN --, no el propio usuario) ───
+
+    [Fact]
+    public async Task ResetPasswordAsync_OnSuccess_UsesNewPassword_AndShowsSuccessAlert()
+    {
+        var (vm, userService, alerts) = CreateSut();
+        var user = new UserListItem { Id = ActiveUserId, IsActive = true, NewPassword = "NuevaClave123!", ConfirmNewPassword = "NuevaClave123!" };
+
+        await vm.ResetPasswordAsync(user);
+
+        Assert.Equal((ActiveUserId, "NuevaClave123!"), userService.LastResetPasswordCall);
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.SuccessTitle, alert.Title);
+        Assert.Equal(AppStrings.PasswordResetSuccess, alert.Message);
+    }
+
+    [Fact]
+    public async Task ResetPasswordAsync_WhenPasswordsDoNotMatch_ShowsValidationMessage_WithoutCallingService()
+    {
+        var (vm, userService, alerts) = CreateSut();
+        var user = new UserListItem { Id = ActiveUserId, IsActive = true, NewPassword = "NuevaClave123!", ConfirmNewPassword = "OtraClave456!" };
+
+        await vm.ResetPasswordAsync(user);
+
+        Assert.Null(userService.LastResetPasswordCall);
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.AttentionTitle, alert.Title);
+        Assert.Equal(AppStrings.MsgPasswordsDoNotMatch, alert.Message);
+    }
+
+    [Theory]
+    [InlineData("", "ConfirmaAlgo123!")]
+    [InlineData("NuevaClave123!", "")]
+    [InlineData("", "")]
+    public async Task ResetPasswordAsync_WhenFieldsAreMissing_ShowsValidationMessage_WithoutCallingService(string newPassword, string confirmNewPassword)
+    {
+        var (vm, userService, alerts) = CreateSut();
+        var user = new UserListItem { Id = ActiveUserId, IsActive = true, NewPassword = newPassword, ConfirmNewPassword = confirmNewPassword };
+
+        await vm.ResetPasswordAsync(user);
+
+        Assert.Null(userService.LastResetPasswordCall);
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.AttentionTitle, alert.Title);
+        Assert.Equal(AppStrings.MsgMissingResetPasswordData, alert.Message);
+    }
+
+    [Fact]
+    public async Task ResetPasswordAsync_WhenBackendRejectsForInsufficientPermission_ShowsExactBackendMessage()
+    {
+        var (vm, userService, alerts) = CreateSut();
+        userService.ResetPasswordResult = new UserActionResult
+        {
+            IsSuccess = false,
+            Message = "La acción sobre 'Usuario' no está permitida o el estado es inválido."
+        };
+        var user = new UserListItem { Id = ActiveUserId, IsActive = true, NewPassword = "NuevaClave123!", ConfirmNewPassword = "NuevaClave123!" };
+
+        await vm.ResetPasswordAsync(user);
+
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.ErrorTitle, alert.Title);
+        Assert.Equal("La acción sobre 'Usuario' no está permitida o el estado es inválido.", alert.Message);
+    }
+
     // ─── BACKEND RECHAZA POR PERMISOS INSUFICIENTES ───
 
     [Fact]

@@ -153,6 +153,9 @@
   <data name="MsgMissingRegisterData" xml:space="preserve">
     <value>Por favor, completa todos los datos obligatorios del registro.</value>
   </data>
+  <data name="MsgMissingResetPasswordData" xml:space="preserve">
+    <value>Por favor, completa los dos campos de contraseña.</value>
+  </data>
   <data name="MsgMissingSectorData" xml:space="preserve">
     <value>Por favor, completa todos los datos del sector hidráulico.</value>
   </data>
@@ -179,6 +182,9 @@
   </data>
   <data name="PasswordChangedSuccess" xml:space="preserve">
     <value>Contraseña actualizada con éxito.</value>
+  </data>
+  <data name="PasswordResetSuccess" xml:space="preserve">
+    <value>Contraseña restablecida con éxito.</value>
   </data>
   <data name="SectorCreatedError" xml:space="preserve">
     <value>Error al crear el sector hidráulico.</value>

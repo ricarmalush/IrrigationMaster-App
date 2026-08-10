@@ -58,6 +58,12 @@ public partial class UserListItem : ObservableObject
 
     public string RoleSelectionDisplay => SelectedRole?.Name ?? "Selecciona un rol";
     public string WalkwaySelectionDisplay => SelectedWalkway?.Code ?? "Sin asignar";
+
+    // Restablecer contraseña: solo dos campos, sin la contraseña actual -- quien la resetea es un
+    // tercero de confianza (Presidente/SUPERADMIN), no el propio usuario. Estado por fila, igual
+    // que SelectedRole/SelectedWalkway, para no interferir entre tarjetas distintas.
+    [ObservableProperty] public partial string NewPassword { get; set; } = string.Empty;
+    [ObservableProperty] public partial string ConfirmNewPassword { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -257,6 +263,31 @@ public partial class UserManagementViewModel : ObservableObject
 
         var result = await _userManagementService.ChangeRoleAsync(user.Id, user.SelectedRole.Id);
         await HandleActionResultAsync(result, AppStrings.RoleChangedSuccess);
+    }
+
+    [RelayCommand]
+    internal async Task ResetPasswordAsync(UserListItem? user)
+    {
+        if (user is null) return;
+
+        if (string.IsNullOrWhiteSpace(user.NewPassword) || string.IsNullOrWhiteSpace(user.ConfirmNewPassword))
+        {
+            await _alertService.ShowAsync(AppStrings.AttentionTitle, AppStrings.MsgMissingResetPasswordData);
+            return;
+        }
+
+        // Validación local, sin red: mismo motivo que ExecuteChangePasswordAsync en
+        // SystemSettingsViewModel -- el backend también la hace (y la mostraríamos igual, tal
+        // cual, si llegara desde ahí), pero comprobarlo aquí evita una petición innecesaria y le
+        // da al Presidente/SUPERADMIN el mismo mensaje al instante.
+        if (user.NewPassword != user.ConfirmNewPassword)
+        {
+            await _alertService.ShowAsync(AppStrings.AttentionTitle, AppStrings.MsgPasswordsDoNotMatch);
+            return;
+        }
+
+        var result = await _userManagementService.ResetPasswordAsync(user.Id, user.NewPassword);
+        await HandleActionResultAsync(result, AppStrings.PasswordResetSuccess);
     }
 
     private async Task HandleActionResultAsync(UserActionResult result, string successMessage)

@@ -171,6 +171,29 @@
                                         BorderWidth="1.5"
                                         HeightRequest="44"/>
                             </VerticalStackLayout>
+
+                            <!-- ACCIÓN: Restablecer contraseña (sin contraseña actual: quien
+                                 resetea es un tercero de confianza, no el propio usuario) -->
+                            <VerticalStackLayout Spacing="4">
+                                <Entry Text="{Binding NewPassword}"
+                                       Placeholder="Nueva contraseña"
+                                       IsPassword="True"
+                                       BackgroundColor="#FAFAFA"
+                                       HeightRequest="44"/>
+                                <Entry Text="{Binding ConfirmNewPassword}"
+                                       Placeholder="Confirmar nueva contraseña"
+                                       IsPassword="True"
+                                       BackgroundColor="#FAFAFA"
+                                       HeightRequest="44"/>
+                                <Button Text="Restablecer contraseña"
+                                        Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.ResetPasswordCommand}"
+                                        CommandParameter="{Binding .}"
+                                        BackgroundColor="Transparent"
+                                        TextColor="{StaticResource AppPrimaryColor}"
+                                        BorderColor="{StaticResource AppPrimaryColor}"
+                                        BorderWidth="1.5"
+                                        HeightRequest="44"/>
+                            </VerticalStackLayout>
                         </VerticalStackLayout>
                     </Border>
                 </DataTemplate>

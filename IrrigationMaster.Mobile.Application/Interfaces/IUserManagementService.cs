@@ -4,8 +4,8 @@ namespace IrrigationMaster.Mobile.Application.Interfaces;
 
 // Operaciones autenticadas de gestión de usuarios/roles (pantalla del Presidente/Coordinador).
 // El backend es quien decide si el llamador tiene permiso (APPROVE_USERS/ASSIGN_WALKWAY/
-// CHANGE_USER_ROLE) -- este servicio no duplica esa lógica, solo transporta la petición y
-// devuelve tal cual lo que el backend responda.
+// CHANGE_USER_ROLE/RESET_USER_PASSWORD) -- este servicio no duplica esa lógica, solo transporta
+// la petición y devuelve tal cual lo que el backend responda.
 public interface IUserManagementService
 {
     // organizationId solo tiene efecto para SUPERADMIN (el backend lo ignora para cualquier otro
@@ -16,4 +16,9 @@ public interface IUserManagementService
     Task<UserActionResult> ActivateUserAsync(Guid userId);
     Task<UserActionResult> AssignWalkwayAsync(Guid userId, Guid? walkwayId);
     Task<UserActionResult> ChangeRoleAsync(Guid userId, Guid roleId);
+
+    // Distinto de IAuthService.ChangePasswordAsync: aquí un tercero de confianza (SUPERADMIN o
+    // Presidente con RESET_USER_PASSWORD) establece la contraseña de OTRO usuario sin conocer la
+    // anterior -- pensado para el vecino que olvidó la suya.
+    Task<UserActionResult> ResetPasswordAsync(Guid userId, string newPassword);
 }

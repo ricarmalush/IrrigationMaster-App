@@ -23,6 +23,7 @@ namespace IrrigationMaster.Mobile.Application.Constants
         public const string UsersAssignWalkway = "Users/AssignWalkway";
         public const string UsersChangeRole = "Users/ChangeRole";
         public const string UsersChangePassword = "Users/ChangePassword";
+        public const string UsersResetPassword = "Users/ResetPassword";
         public const string RolesPagination = "Roles/pagination";
         public const string WalkwaysPagination = "walkways/pagination";
     }

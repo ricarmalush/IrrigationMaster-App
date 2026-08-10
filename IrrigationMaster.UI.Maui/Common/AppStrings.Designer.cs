@@ -187,6 +187,15 @@ namespace IrrigationMaster.UI.Maui.Common {
         }
 
         /// <summary>
+        ///   Busca una cadena traducida similar a Por favor, completa los dos campos de contraseña..
+        /// </summary>
+        public static string MsgMissingResetPasswordData {
+            get {
+                return ResourceManager.GetString("MsgMissingResetPasswordData", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Busca una cadena traducida similar a Por favor, completa todos los datos del sector hidráulico..
         /// </summary>
         public static string MsgMissingSectorData {
@@ -273,6 +282,15 @@ namespace IrrigationMaster.UI.Maui.Common {
         public static string PasswordChangedSuccess {
             get {
                 return ResourceManager.GetString("PasswordChangedSuccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a Contraseña restablecida con éxito..
+        /// </summary>
+        public static string PasswordResetSuccess {
+            get {
+                return ResourceManager.GetString("PasswordResetSuccess", resourceCulture);
             }
         }
 
