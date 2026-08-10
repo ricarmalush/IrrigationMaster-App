@@ -8,10 +8,25 @@
              BackgroundColor="{StaticResource AppBackgroundColor}"
              x:DataType="viewmodel:UserManagementViewModel">
 
-    <Grid RowDefinitions="Auto,Auto,*">
+    <Grid RowDefinitions="Auto,Auto,Auto,*">
+
+        <!-- FILTRO: Organización (solo SUPERADMIN; el resto de roles ya está acotado a la suya) -->
+        <VerticalStackLayout Grid.Row="0" Spacing="4" Padding="15,15,15,0" IsVisible="{Binding ShowOrganizationFilter}">
+            <Label Text="Organización:" FontSize="13" FontAttributes="Bold" TextColor="#444"/>
+            <Picker Title="Todas las organizaciones"
+                    ItemsSource="{Binding OrganizationFilters}"
+                    ItemDisplayBinding="{Binding Name}"
+                    SelectedItem="{Binding SelectedOrganizationFilter}"
+                    BackgroundColor="#FAFAFA"
+                    HeightRequest="44"/>
+            <!-- Picker en Windows no refresca su texto visible al cambiar SelectedItem (bug
+                 conocido, dotnet/maui #5038/#24369); mismo patrón que RoleSelectionDisplay/
+                 WalkwaySelectionDisplay. -->
+            <Label Text="{Binding OrganizationFilterSelectionDisplay}" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource AppPrimaryColor}"/>
+        </VerticalStackLayout>
 
         <!-- FILTRO: Pendientes / Todos -->
-        <HorizontalStackLayout Grid.Row="0" Spacing="10" Padding="15,15,15,5" HorizontalOptions="Center">
+        <HorizontalStackLayout Grid.Row="1" Spacing="10" Padding="15,15,15,5" HorizontalOptions="Center">
             <Button Text="Pendientes"
                     Command="{Binding ShowPendingCommand}"
                     TextColor="White"
@@ -43,14 +58,14 @@
             </Button>
         </HorizontalStackLayout>
 
-        <ActivityIndicator Grid.Row="1"
+        <ActivityIndicator Grid.Row="2"
                             IsRunning="{Binding IsBusy}"
                             IsVisible="{Binding IsBusy}"
                             Color="{StaticResource AppPrimaryColor}"
                             HeightRequest="30"/>
 
         <!-- LISTADO -->
-        <CollectionView Grid.Row="2"
+        <CollectionView Grid.Row="3"
                          ItemsSource="{Binding Users}"
                          Margin="10">
             <CollectionView.EmptyView>

@@ -237,6 +237,29 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         }
     }
 
+    public async Task<List<OrganizationDto>?> GetOrganizationsAsync()
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.GetAsync($"{ApiEndpoints.OrganizationsPagination}?PageNumber=1&PageSize=100");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var paged = await response.Content.ReadFromJsonAsync<PagedResponse<List<OrganizationDto>>>();
+                return paged?.Data;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - Organizations]: {ex.Message}");
+            return null;
+        }
+    }
+
     // ─── 3. AUTO-REGISTRO (ANÓNIMO) ───
 
     public async Task<StructureOperationResult> RegisterAsync(CreateUserRequest request)
@@ -280,7 +303,7 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
 
     // ─── 4. GESTIÓN DE USUARIOS/ROLES (AUTENTICADO) ───
 
-    public async Task<List<AppUserDto>?> GetUsersAsync(bool? isActive)
+    public async Task<List<AppUserDto>?> GetUsersAsync(bool? isActive, Guid? organizationId = null)
     {
         try
         {
@@ -289,6 +312,8 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
             var url = $"{ApiEndpoints.UsersPagination}?PageNumber=1&PageSize=100";
             if (isActive.HasValue)
                 url += $"&IsActive={isActive.Value}";
+            if (organizationId.HasValue)
+                url += $"&OrganizationId={organizationId.Value}";
 
             var response = await _httpClient.GetAsync(url);
 

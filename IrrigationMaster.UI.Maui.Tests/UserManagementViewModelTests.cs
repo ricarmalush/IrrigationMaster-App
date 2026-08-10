@@ -1,3 +1,4 @@
+using IrrigationMaster.Mobile.Application.Features.Models.Structure;
 using IrrigationMaster.Mobile.Application.Features.Models.Users;
 using IrrigationMaster.UI.Maui.Common;
 using IrrigationMaster.UI.Maui.Features.Level3_Functional.Users;
@@ -13,7 +14,7 @@ public class UserManagementViewModelTests
     private static readonly Guid RoleId = Guid.NewGuid();
     private static readonly Guid WalkwayId = Guid.NewGuid();
 
-    private static (UserManagementViewModel ViewModel, FakeUserManagementService UserService, RecordingAlertService Alerts) CreateSut()
+    private static (UserManagementViewModel ViewModel, FakeUserManagementService UserService, RecordingAlertService Alerts) CreateSut(string role = "PRESIDENTE")
     {
         var userService = new FakeUserManagementService
         {
@@ -30,8 +31,10 @@ public class UserManagementViewModelTests
             ]
         };
         var alerts = new RecordingAlertService();
+        var structureService = new FakeStructureService();
+        var session = new FakeCurrentSession { RoleToReturn = role };
 
-        var viewModel = new UserManagementViewModel(userService, alerts);
+        var viewModel = new UserManagementViewModel(userService, structureService, alerts, session);
 
         return (viewModel, userService, alerts);
     }
@@ -102,7 +105,7 @@ public class UserManagementViewModelTests
                 new AppUserDto { Id = Guid.NewGuid(), FirstName = "Luis", LastName = "Pérez", Email = "luis@test.com", OrganizationName = "Regantes Ajena", IsActive = true }
             ]
         };
-        var vm = new UserManagementViewModel(userService, new RecordingAlertService());
+        var vm = new UserManagementViewModel(userService, new FakeStructureService(), new RecordingAlertService(), new FakeCurrentSession { RoleToReturn = "SUPERADMIN" });
 
         await vm.LoadAsync();
 
@@ -132,7 +135,7 @@ public class UserManagementViewModelTests
             WalkwaysToReturn = [],
             UsersToReturn = []
         };
-        var vm = new UserManagementViewModel(userService, new RecordingAlertService());
+        var vm = new UserManagementViewModel(userService, new FakeStructureService(), new RecordingAlertService(), new FakeCurrentSession { RoleToReturn = "PRESIDENTE" });
 
         await vm.LoadAsync();
 
@@ -140,6 +143,111 @@ public class UserManagementViewModelTests
         Assert.Contains(vm.Roles, r => r.Id == vecinoRoleId);
         Assert.Contains(vm.Roles, r => r.Id == presidenteRoleId);
         Assert.DoesNotContain(vm.Roles, r => r.Id == superAdminRoleId);
+    }
+
+    // ─── FILTRO: Organización (solo SUPERADMIN) ───
+
+    [Fact]
+    public void ShowOrganizationFilter_IsTrue_ForSuperAdmin()
+    {
+        var (vm, _, _) = CreateSut(role: "SUPERADMIN");
+
+        Assert.True(vm.ShowOrganizationFilter);
+    }
+
+    [Theory]
+    [InlineData("PRESIDENTE")]
+    [InlineData("VECINO")]
+    public void ShowOrganizationFilter_IsFalse_ForNonSuperAdminRoles(string role)
+    {
+        var (vm, _, _) = CreateSut(role);
+
+        Assert.False(vm.ShowOrganizationFilter);
+    }
+
+    [Fact]
+    public async Task LoadAsync_ForSuperAdmin_PopulatesOrganizationFilters_WithAllOptionFirst()
+    {
+        var elSaso = new OrganizationDto { Id = Guid.NewGuid(), Name = "Asociación de Vecinos El Saso (AVES)" };
+        var horizonteVerde = new OrganizationDto { Id = Guid.NewGuid(), Name = "Cooperativa Horizonte Verde" };
+        var userService = new FakeUserManagementService();
+        var structureService = new FakeStructureService { OrganizationsToReturn = [elSaso, horizonteVerde] };
+        var vm = new UserManagementViewModel(userService, structureService, new RecordingAlertService(), new FakeCurrentSession { RoleToReturn = "SUPERADMIN" });
+
+        await vm.LoadAsync();
+
+        Assert.Equal(3, vm.OrganizationFilters.Count);
+        Assert.Null(vm.OrganizationFilters[0].Id);
+        Assert.Equal("Todas las organizaciones", vm.OrganizationFilters[0].Name);
+        Assert.Contains(vm.OrganizationFilters, f => f.Id == elSaso.Id && f.Name == elSaso.Name);
+        Assert.Contains(vm.OrganizationFilters, f => f.Id == horizonteVerde.Id && f.Name == horizonteVerde.Name);
+        Assert.Same(vm.OrganizationFilters[0], vm.SelectedOrganizationFilter);
+    }
+
+    [Fact]
+    public async Task LoadAsync_ForNonSuperAdmin_DoesNotPopulateOrganizationFilters()
+    {
+        var userService = new FakeUserManagementService();
+        var structureService = new FakeStructureService { OrganizationsToReturn = [new OrganizationDto { Id = Guid.NewGuid(), Name = "Cooperativa Horizonte Verde" }] };
+        var vm = new UserManagementViewModel(userService, structureService, new RecordingAlertService(), new FakeCurrentSession { RoleToReturn = "PRESIDENTE" });
+
+        await vm.LoadAsync();
+
+        Assert.Empty(vm.OrganizationFilters);
+    }
+
+    [Fact]
+    public async Task LoadAsync_WithAllOrganizationsSelected_RequestsUsers_WithoutOrganizationFilter()
+    {
+        var userService = new FakeUserManagementService();
+        var structureService = new FakeStructureService { OrganizationsToReturn = [new OrganizationDto { Id = Guid.NewGuid(), Name = "Cooperativa Horizonte Verde" }] };
+        var vm = new UserManagementViewModel(userService, structureService, new RecordingAlertService(), new FakeCurrentSession { RoleToReturn = "SUPERADMIN" });
+
+        await vm.LoadAsync();
+
+        Assert.Null(userService.LastOrganizationIdFilter);
+    }
+
+    [Fact]
+    public async Task SelectingAnOrganization_ReloadsUsers_WithThatOrganizationId()
+    {
+        var horizonteVerde = new OrganizationDto { Id = Guid.NewGuid(), Name = "Cooperativa Horizonte Verde" };
+        var userService = new FakeUserManagementService();
+        var structureService = new FakeStructureService { OrganizationsToReturn = [horizonteVerde] };
+        var vm = new UserManagementViewModel(userService, structureService, new RecordingAlertService(), new FakeCurrentSession { RoleToReturn = "SUPERADMIN" });
+        await vm.LoadAsync();
+
+        vm.SelectedOrganizationFilter = vm.OrganizationFilters.Single(f => f.Id == horizonteVerde.Id);
+        await Task.Yield(); // OnSelectedOrganizationFilterChanged dispara LoadAsync sin esperarlo (_ = LoadAsync())
+
+        Assert.Equal(horizonteVerde.Id, userService.LastOrganizationIdFilter);
+        Assert.Equal(horizonteVerde.Name, vm.OrganizationFilterSelectionDisplay);
+    }
+
+    [Fact]
+    public async Task SelectingTodasAfterAnOrganization_ReloadsUsers_WithoutOrganizationFilter()
+    {
+        var horizonteVerde = new OrganizationDto { Id = Guid.NewGuid(), Name = "Cooperativa Horizonte Verde" };
+        var userService = new FakeUserManagementService();
+        var structureService = new FakeStructureService { OrganizationsToReturn = [horizonteVerde] };
+        var vm = new UserManagementViewModel(userService, structureService, new RecordingAlertService(), new FakeCurrentSession { RoleToReturn = "SUPERADMIN" });
+        await vm.LoadAsync();
+        vm.SelectedOrganizationFilter = vm.OrganizationFilters.Single(f => f.Id == horizonteVerde.Id);
+        await Task.Yield();
+
+        vm.SelectedOrganizationFilter = vm.OrganizationFilters.Single(f => f.Id == null);
+        await Task.Yield();
+
+        Assert.Null(userService.LastOrganizationIdFilter);
+        Assert.Equal("Todas las organizaciones", vm.OrganizationFilterSelectionDisplay);
+    }
+
+    [Fact]
+    public void OrganizationFilterSelectionDisplay_WithNoSelection_ShowsPlaceholder()
+    {
+        var (vm, _, _) = CreateSut(role: "SUPERADMIN");
+
+        Assert.Equal("Todas las organizaciones", vm.OrganizationFilterSelectionDisplay);
     }
 
     // ─── APROBAR ───

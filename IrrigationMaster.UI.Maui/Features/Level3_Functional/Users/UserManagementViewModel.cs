@@ -21,6 +21,14 @@ public class WalkwayItem
     public string Code { get; set; } = string.Empty;
 }
 
+// Id null representa "Todas las organizaciones" (sin filtro), siempre la primera entrada del
+// desplegable. Solo lo usa SUPERADMIN -- ver ShowOrganizationFilter.
+public class OrganizationFilterItem
+{
+    public Guid? Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+}
+
 // Una fila de la lista. ObservableObject porque cada fila necesita su propio estado mutable
 // (el rol/andador que el Presidente está eligiendo en el Picker de ESA fila, antes de confirmar).
 public partial class UserListItem : ObservableObject
@@ -60,7 +68,16 @@ public partial class UserListItem : ObservableObject
 public partial class UserManagementViewModel : ObservableObject
 {
     private readonly IUserManagementService _userManagementService;
+    private readonly IStructureService _structureService;
     private readonly IAlertService _alertService;
+
+    private const string SuperAdminRoleCode = "SUPERADMIN";
+
+    // Evita el doble LoadAsync reentrante: poblar OrganizationFilters fija
+    // SelectedOrganizationFilter a "Todas", lo que dispara OnSelectedOrganizationFilterChanged;
+    // esta bandera hace que esa primera asignación (interna, no del usuario) no dispare una
+    // segunda carga por encima de la que ya está en curso.
+    private bool _isPopulatingOrganizationFilters;
 
     [ObservableProperty] public partial bool ShowOnlyPending { get; set; } = true;
 
@@ -70,16 +87,40 @@ public partial class UserManagementViewModel : ObservableObject
 
     public bool IsNotBusy => !IsBusy;
 
+    // Visible solo para SUPERADMIN: el resto de roles ya viene acotado a su propia organización
+    // por el backend (filtro multi-tenant global), no necesitan elegir cuál ver.
+    [ObservableProperty] public partial bool ShowOrganizationFilter { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(OrganizationFilterSelectionDisplay))]
+    public partial OrganizationFilterItem? SelectedOrganizationFilter { get; set; }
+
+    // Mismo motivo que RoleSelectionDisplay/WalkwaySelectionDisplay: Picker en Windows no
+    // refresca su texto visible al cambiar SelectedItem (bug conocido, dotnet/maui #5038/#24369).
+    public string OrganizationFilterSelectionDisplay => SelectedOrganizationFilter?.Name ?? "Todas las organizaciones";
+
     public ObservableCollection<UserListItem> Users { get; } = [];
     public ObservableCollection<RoleItem> Roles { get; } = [];
     public ObservableCollection<WalkwayItem> Walkways { get; } = [];
+    public ObservableCollection<OrganizationFilterItem> OrganizationFilters { get; } = [];
 
     public UserManagementViewModel(
         IUserManagementService userManagementService,
-        IAlertService alertService)
+        IStructureService structureService,
+        IAlertService alertService,
+        ICurrentSession currentSession)
     {
         _userManagementService = userManagementService;
+        _structureService = structureService;
         _alertService = alertService;
+
+        ShowOrganizationFilter = string.Equals(currentSession.CachedRole, SuperAdminRoleCode, StringComparison.OrdinalIgnoreCase);
+    }
+
+    partial void OnSelectedOrganizationFilterChanged(OrganizationFilterItem? value)
+    {
+        if (_isPopulatingOrganizationFilters) return;
+        _ = LoadAsync();
     }
 
     [RelayCommand]
@@ -88,12 +129,19 @@ public partial class UserManagementViewModel : ObservableObject
         IsBusy = true;
         try
         {
-            // Users/Roles/Walkways están todos acotados automáticamente a la organización del
-            // llamador vía ICurrentUser en el backend -- no hace falta resolver ni pasar el
-            // OrganizationId a mano desde aquí.
+            // Roles/Walkways están acotados automáticamente a la organización del llamador vía
+            // ICurrentUser en el backend. Users también lo está para cualquier rol que no sea
+            // SUPERADMIN; para SUPERADMIN se puede acotar manualmente a una organización concreta
+            // eligiéndola en el desplegable (SelectedOrganizationFilter), o dejar sin filtro
+            // ("Todas las organizaciones") para verlas todas mezcladas.
+            if (ShowOrganizationFilter && OrganizationFilters.Count == 0)
+            {
+                await PopulateOrganizationFiltersAsync();
+            }
+
             var rolesTask = _userManagementService.GetRolesAsync();
             var walkwaysTask = _userManagementService.GetWalkwaysAsync();
-            var usersTask = _userManagementService.GetUsersAsync(ShowOnlyPending ? false : null);
+            var usersTask = _userManagementService.GetUsersAsync(ShowOnlyPending ? false : null, SelectedOrganizationFilter?.Id);
 
             await Task.WhenAll(rolesTask, walkwaysTask, usersTask);
 
@@ -139,6 +187,28 @@ public partial class UserManagementViewModel : ObservableObject
         finally
         {
             IsBusy = false;
+        }
+    }
+
+    private async Task PopulateOrganizationFiltersAsync()
+    {
+        _isPopulatingOrganizationFilters = true;
+        try
+        {
+            OrganizationFilters.Clear();
+            OrganizationFilters.Add(new OrganizationFilterItem { Id = null, Name = "Todas las organizaciones" });
+
+            var organizations = await _structureService.GetOrganizationsAsync();
+            foreach (var org in organizations ?? [])
+            {
+                OrganizationFilters.Add(new OrganizationFilterItem { Id = org.Id, Name = org.Name });
+            }
+
+            SelectedOrganizationFilter = OrganizationFilters[0];
+        }
+        finally
+        {
+            _isPopulatingOrganizationFilters = false;
         }
     }
 

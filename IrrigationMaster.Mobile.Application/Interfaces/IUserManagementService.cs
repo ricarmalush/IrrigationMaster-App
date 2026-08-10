@@ -8,7 +8,9 @@ namespace IrrigationMaster.Mobile.Application.Interfaces;
 // devuelve tal cual lo que el backend responda.
 public interface IUserManagementService
 {
-    Task<List<AppUserDto>?> GetUsersAsync(bool? isActive);
+    // organizationId solo tiene efecto para SUPERADMIN (el backend lo ignora para cualquier otro
+    // rol, que ya viene acotado a su propia organización): null trae todas.
+    Task<List<AppUserDto>?> GetUsersAsync(bool? isActive, Guid? organizationId = null);
     Task<List<RoleDto>?> GetRolesAsync();
     Task<List<WalkwayDto>?> GetWalkwaysAsync();
     Task<UserActionResult> ActivateUserAsync(Guid userId);
