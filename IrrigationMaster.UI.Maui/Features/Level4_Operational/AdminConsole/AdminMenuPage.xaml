@@ -24,6 +24,14 @@
                         IsVisible="False"
                         BackgroundColor="Transparent" TextColor="#2E7D32" BorderColor="#2E7D32" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
 
+                <Label Text="Riego" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
+
+                <!-- Visible para los 3 roles sin restricción: cualquier vecino debe poder ver el
+                     estado de riego de su organización. -->
+                <Button Text="🚰 Estado de Riego"
+                        Clicked="OnIrrigationStatusClicked"
+                        BackgroundColor="Transparent" TextColor="#0277BD" BorderColor="#0277BD" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
+
                 <Label Text="Ajustes de la Aplicación" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
 
                 <Button x:Name="SystemSettingsButton"

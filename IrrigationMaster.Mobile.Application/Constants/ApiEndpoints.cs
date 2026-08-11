@@ -26,5 +26,9 @@ namespace IrrigationMaster.Mobile.Application.Constants
         public const string UsersResetPassword = "Users/ResetPassword";
         public const string RolesPagination = "Roles/pagination";
         public const string WalkwaysPagination = "walkways/pagination";
+        public const string WalkwaysGet = "walkways/Get";
+        public const string IrrigationTurns = "IrrigationTurns";
+        public const string IrrigationTurnsStatus = "IrrigationTurns/status";
+        public const string IrrigationProgramsIsIrrigationDay = "IrrigationPrograms/IsIrrigationDay";
     }
 }

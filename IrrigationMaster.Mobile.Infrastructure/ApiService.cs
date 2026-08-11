@@ -1,6 +1,7 @@
 ﻿using IrrigationMaster.Mobile.Application.Common.Dtos;
 using IrrigationMaster.Mobile.Application.Constants;
 using IrrigationMaster.Mobile.Application.Features.Models.Auth;
+using IrrigationMaster.Mobile.Application.Features.Models.Irrigation;
 using IrrigationMaster.Mobile.Application.Features.Models.Structure;
 using IrrigationMaster.Mobile.Application.Features.Models.Structure.Country;
 using IrrigationMaster.Mobile.Application.Features.Models.Users;
@@ -9,7 +10,7 @@ using System.Net.Http.Json;
 
 namespace IrrigationMaster.Mobile.Infrastructure;
 
-public class ApiService : IAuthService, IStructureService, IRegistrationService, IUserManagementService
+public class ApiService : IAuthService, IStructureService, IRegistrationService, IUserManagementService, IIrrigationService
 {
     private readonly HttpClient _httpClient;
     private readonly ITokenStorage _tokenStorage;
@@ -260,6 +261,29 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         }
     }
 
+    public async Task<WalkwayDetailDto?> GetWalkwayAsync(Guid walkwayId)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.GetAsync($"{ApiEndpoints.WalkwaysGet}/{walkwayId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var wrapped = await response.Content.ReadFromJsonAsync<WalkwayDetailResponse>();
+                return wrapped?.Data;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - Walkway]: {ex.Message}");
+            return null;
+        }
+    }
+
     // ─── 3. AUTO-REGISTRO (ANÓNIMO) ───
 
     public async Task<StructureOperationResult> RegisterAsync(CreateUserRequest request)
@@ -455,6 +479,97 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         {
             System.Diagnostics.Debug.WriteLine($"[API Error - ResetPassword]: {ex.Message}");
             return new UserActionResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
+        }
+    }
+
+    // ─── 5. ESTADO DE RIEGO ───
+
+    public async Task<List<WalkwayIrrigationStatusDto>?> GetIrrigationStatusAsync()
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.GetAsync(ApiEndpoints.IrrigationTurnsStatus);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var wrapped = await response.Content.ReadFromJsonAsync<IrrigationStatusResponse>();
+                return wrapped?.Data;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - IrrigationStatus]: {ex.Message}");
+            return null;
+        }
+    }
+
+    public async Task<UserActionResult> StartTurnAsync(Guid turnId)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.PatchAsync($"{ApiEndpoints.IrrigationTurns}/{turnId}/start", null);
+            return await ReadUserActionResultAsync(response);
+        }
+        catch (HttpRequestException)
+        {
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - StartTurn]: {ex.Message}");
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
+        }
+    }
+
+    public async Task<UserActionResult> CompleteTurnAsync(Guid turnId)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.PatchAsync($"{ApiEndpoints.IrrigationTurns}/{turnId}/complete", null);
+            return await ReadUserActionResultAsync(response);
+        }
+        catch (HttpRequestException)
+        {
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - CompleteTurn]: {ex.Message}");
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
+        }
+    }
+
+    public async Task<bool> IsIrrigationDayAsync(Guid hydraulicSectorId)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.GetAsync($"{ApiEndpoints.IrrigationProgramsIsIrrigationDay}?HydraulicSectorId={hydraulicSectorId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var wrapped = await response.Content.ReadFromJsonAsync<IsIrrigationDayResponse>();
+                // Fallback true ("sin actividad todavía") en vez de false ("no hay riego programado
+                // hoy"): ante un fallo de red o de parseo, es preferible no afirmar algo que no
+                // sabemos que sea cierto.
+                return wrapped?.Data ?? true;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - IsIrrigationDay]: {ex.Message}");
+            return true;
         }
     }
 

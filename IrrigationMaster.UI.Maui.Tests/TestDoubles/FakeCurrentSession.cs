@@ -7,6 +7,7 @@ public class FakeCurrentSession : ICurrentSession
     public string? EstablishedWithToken { get; private set; }
     public string? OrganizationIdToReturn { get; set; }
     public string? RoleToReturn { get; set; }
+    public Guid? UserIdToReturn { get; set; }
 
     public Task EstablishAsync(string jwtToken)
     {
@@ -21,4 +22,5 @@ public class FakeCurrentSession : ICurrentSession
     // Mismo valor que RoleToReturn: en los tests no hace falta distinguir la copia síncrona de
     // la asíncrona, ambas representan "el rol que esta sesión falsa dice tener ahora mismo".
     public string? CachedRole => RoleToReturn;
+    public Guid? CachedUserId => UserIdToReturn;
 }

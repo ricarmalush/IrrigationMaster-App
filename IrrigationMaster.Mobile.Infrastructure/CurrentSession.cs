@@ -14,6 +14,7 @@ public class CurrentSession : ICurrentSession
     }
 
     public string? CachedRole { get; private set; }
+    public Guid? CachedUserId { get; private set; }
 
     public async Task EstablishAsync(string jwtToken)
     {
@@ -22,9 +23,11 @@ public class CurrentSession : ICurrentSession
 
         var organizationId = parsedToken.Claims.FirstOrDefault(c => c.Type == "organizationId")?.Value ?? string.Empty;
         var role = parsedToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value ?? string.Empty;
+        var userIdClaim = parsedToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
 
         await _tokenStorage.SaveSessionAsync(jwtToken, organizationId, role);
         CachedRole = role;
+        CachedUserId = Guid.TryParse(userIdClaim, out var userId) ? userId : null;
     }
 
     public Task<string?> GetOrganizationIdAsync() => _tokenStorage.GetOrganizationIdAsync();
@@ -34,6 +37,7 @@ public class CurrentSession : ICurrentSession
     public Task ClearAsync()
     {
         CachedRole = null;
+        CachedUserId = null;
         return _tokenStorage.ClearSessionAsync();
     }
 }

@@ -365,7 +365,25 @@ namespace IrrigationMaster.UI.Maui.Common {
                 return ResourceManager.GetString("SystemErrorTitle", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a Turno terminado con éxito..
+        /// </summary>
+        public static string TurnCompletedSuccess {
+            get {
+                return ResourceManager.GetString("TurnCompletedSuccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a Turno iniciado con éxito..
+        /// </summary>
+        public static string TurnStartedSuccess {
+            get {
+                return ResourceManager.GetString("TurnStartedSuccess", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Busca una cadena traducida similar a Ocurrió un error inesperado al procesar la solicitud..
         /// </summary>

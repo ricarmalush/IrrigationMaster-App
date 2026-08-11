@@ -12,7 +12,19 @@ public class FakeStructureService : IStructureService
 {
     public List<OrganizationDto>? OrganizationsToReturn { get; set; } = [];
 
+    // Clave: WalkwayId consultado -> detalle a devolver. Permite a IrrigationStatusViewModelTests
+    // configurar el HydraulicSectorId de cada andador vacío sin tener que implementar todo el
+    // resto de IStructureService.
+    public Dictionary<Guid, WalkwayDetailDto> WalkwaysById { get; set; } = [];
+    public Guid? LastGetWalkwayCall { get; private set; }
+
     public Task<List<OrganizationDto>?> GetOrganizationsAsync() => Task.FromResult(OrganizationsToReturn);
+
+    public Task<WalkwayDetailDto?> GetWalkwayAsync(Guid walkwayId)
+    {
+        LastGetWalkwayCall = walkwayId;
+        return Task.FromResult(WalkwaysById.GetValueOrDefault(walkwayId));
+    }
 
     public Task<StructureOperationResult> CreateOrganizationAsync(CreateOrganizationRequest request) => throw new NotImplementedException();
     public Task<StructureOperationResult> CreateHydraulicSectorAsync(CreateHydraulicSectorRequest request) => throw new NotImplementedException();

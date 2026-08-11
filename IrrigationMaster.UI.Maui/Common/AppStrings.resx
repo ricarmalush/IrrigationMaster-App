@@ -204,6 +204,12 @@
   <data name="SystemErrorTitle" xml:space="preserve">
     <value>Error de Sistema</value>
   </data>
+  <data name="TurnCompletedSuccess" xml:space="preserve">
+    <value>Turno terminado con éxito.</value>
+  </data>
+  <data name="TurnStartedSuccess" xml:space="preserve">
+    <value>Turno iniciado con éxito.</value>
+  </data>
   <data name="UnexpectedError" xml:space="preserve">
     <value>Ocurrió un error inesperado al procesar la solicitud.</value>
   </data>

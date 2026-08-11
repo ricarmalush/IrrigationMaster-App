@@ -18,4 +18,10 @@ public interface IStructureService
     // solo se usa hoy desde el desplegable de filtro de UserManagementViewModel, visible solo
     // para SUPERADMIN.
     Task<List<OrganizationDto>?> GetOrganizationsAsync();
+
+    // Detalle de un andador concreto (Walkways/Get/{id}), con su HydraulicSectorId -- a diferencia
+    // de WalkwayDto (solo Id+Code, usado en los Picker de asignación). Hoy solo lo usa
+    // IrrigationStatusViewModel: para consultar IrrigationPrograms/IsIrrigationDay sobre un
+    // andador sin ningún vecino con turno hoy, necesita saber a qué sector pertenece.
+    Task<WalkwayDetailDto?> GetWalkwayAsync(Guid walkwayId);
 }

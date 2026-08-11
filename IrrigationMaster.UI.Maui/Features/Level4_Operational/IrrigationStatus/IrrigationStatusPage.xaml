@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodel="clr-namespace:IrrigationMaster.UI.Maui.Features.Level4_Operational.IrrigationStatus"
+             x:Class="IrrigationMaster.UI.Maui.Features.Level4_Operational.IrrigationStatus.IrrigationStatusPage"
+             x:Name="RootPage"
+             Title="Estado de Riego"
+             BackgroundColor="{StaticResource AppBackgroundColor}"
+             x:DataType="viewmodel:IrrigationStatusViewModel">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <ActivityIndicator Grid.Row="0"
+                            IsRunning="{Binding IsBusy}"
+                            IsVisible="{Binding IsBusy}"
+                            Color="{StaticResource AppPrimaryColor}"
+                            HeightRequest="30"/>
+
+        <CollectionView Grid.Row="1"
+                         ItemsSource="{Binding Walkways}"
+                         Margin="10">
+            <CollectionView.EmptyView>
+                <Label Text="No hay andadores que mostrar." HorizontalOptions="Center" Margin="20" TextColor="Gray"/>
+            </CollectionView.EmptyView>
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="viewmodel:WalkwayStatusItem">
+                    <Border StrokeThickness="0" BackgroundColor="White" Padding="15" Margin="0,0,0,10">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="12"/>
+                        </Border.StrokeShape>
+                        <Border.Shadow>
+                            <Shadow Brush="Black" Offset="0,2" Opacity="0.1" Radius="5"/>
+                        </Border.Shadow>
+
+                        <VerticalStackLayout Spacing="8">
+                            <Label FontSize="16" FontAttributes="Bold" TextColor="Black">
+                                <Label.FormattedText>
+                                    <FormattedString>
+                                        <Span Text="Andador: "/>
+                                        <Span Text="{Binding WalkwayCode}"/>
+                                    </FormattedString>
+                                </Label.FormattedText>
+                            </Label>
+
+                            <!-- ANDADOR SIN VECINOS: mensaje resuelto vía IsIrrigationDay -->
+                            <Label Text="{Binding EmptyStateMessage}"
+                                   IsVisible="{Binding ShowEmptyState}"
+                                   FontSize="14"
+                                   TextColor="Gray"/>
+
+                            <!-- VECINOS DEL ANDADOR -->
+                            <VerticalStackLayout Spacing="10"
+                                                  IsVisible="{Binding HasNeighbors}"
+                                                  BindableLayout.ItemsSource="{Binding Neighbors}">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate x:DataType="viewmodel:NeighborStatusItem">
+                                        <VerticalStackLayout Spacing="4" Margin="0,4,0,0">
+                                            <Label FontSize="14" TextColor="#444">
+                                                <Label.FormattedText>
+                                                    <FormattedString>
+                                                        <Span Text="{Binding FullName}" FontAttributes="Bold"/>
+                                                        <Span Text=" -- "/>
+                                                        <Span Text="{Binding StatusDisplay}"/>
+                                                    </FormattedString>
+                                                </Label.FormattedText>
+                                            </Label>
+
+                                            <!-- ACCIÓN: Empezar mi turno (solo sobre mi propia fila, Pendiente) -->
+                                            <Button Text="Empezar mi turno"
+                                                    Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.StartTurnCommand}"
+                                                    CommandParameter="{Binding .}"
+                                                    IsVisible="{Binding ShowStartButton}"
+                                                    Style="{StaticResource PrimaryButtonStyle}"
+                                                    HeightRequest="40"/>
+
+                                            <!-- ACCIÓN: Terminar mi turno (solo sobre mi propia fila, Regando) -->
+                                            <Button Text="Terminar mi turno"
+                                                    Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.CompleteTurnCommand}"
+                                                    CommandParameter="{Binding .}"
+                                                    IsVisible="{Binding ShowCompleteButton}"
+                                                    BackgroundColor="Transparent"
+                                                    TextColor="{StaticResource AppPrimaryColor}"
+                                                    BorderColor="{StaticResource AppPrimaryColor}"
+                                                    BorderWidth="1.5"
+                                                    HeightRequest="40"/>
+                                        </VerticalStackLayout>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentPage>
