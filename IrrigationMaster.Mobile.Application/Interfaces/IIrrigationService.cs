@@ -19,4 +19,9 @@ public interface IIrrigationService
     // real -- distingue "sin actividad todavía" (true) de "no hay riego programado hoy" (false)
     // para un andador sin ningún vecino en la respuesta de estado.
     Task<bool> IsIrrigationDayAsync(Guid hydraulicSectorId);
+
+    // Todos los IrrigationProgram de la organización del llamador (activos e inactivos -- el
+    // filtrado por IsActive lo hace el consumidor). No hay filtro por HydraulicSectorId en el
+    // backend, así que se trae todo de una vez y se cruza en memoria.
+    Task<List<IrrigationProgramDto>?> GetIrrigationProgramsAsync();
 }

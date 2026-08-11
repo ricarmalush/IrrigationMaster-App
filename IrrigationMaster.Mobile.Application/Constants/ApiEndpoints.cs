@@ -30,5 +30,6 @@ namespace IrrigationMaster.Mobile.Application.Constants
         public const string IrrigationTurns = "IrrigationTurns";
         public const string IrrigationTurnsStatus = "IrrigationTurns/status";
         public const string IrrigationProgramsIsIrrigationDay = "IrrigationPrograms/IsIrrigationDay";
+        public const string IrrigationProgramsPagination = "IrrigationPrograms/pagination";
     }
 }

@@ -1,5 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using IrrigationMaster.Mobile.Application.Features.Models.Irrigation;
+using IrrigationMaster.Mobile.Application.Features.Models.Structure;
 using IrrigationMaster.Mobile.Application.Features.Models.Users;
 using IrrigationMaster.Mobile.Application.Interfaces;
 using IrrigationMaster.UI.Maui.Common;
@@ -38,6 +40,14 @@ public class WalkwayStatusItem
     // Solo se resuelve (vía IsIrrigationDay) cuando Neighbors está vacío -- ver
     // IrrigationStatusViewModel.ResolveEmptyStateMessageAsync.
     public string EmptyStateMessage { get; set; } = string.Empty;
+
+    // Una línea por cada IrrigationProgram activo del sector de este andador (puede haber más de
+    // uno, p. ej. uno para riego matutino y otro para nocturno). Vacío si no hay ninguno activo,
+    // o si no se pudo resolver el sector del andador -- no confundir con EmptyStateMessage, que
+    // habla del día concreto, no del patrón general del sector.
+    public List<string> IrrigationPatternLines { get; set; } = [];
+    public bool ShowIrrigationPattern => IrrigationPatternLines.Count > 0;
+    public string IrrigationPatternText => string.Join("\n", IrrigationPatternLines);
 }
 
 /// <summary>
@@ -88,6 +98,7 @@ public partial class IrrigationStatusViewModel : ObservableObject
         try
         {
             var statusList = await _irrigationService.GetIrrigationStatusAsync();
+            var programs = await _irrigationService.GetIrrigationProgramsAsync() ?? [];
             var myUserId = _currentSession.CachedUserId;
 
             Walkways.Clear();
@@ -108,9 +119,24 @@ public partial class IrrigationStatusViewModel : ObservableObject
                     }).ToList()
                 };
 
+                // Se resuelve el andador -> sector para TODOS los andadores (no solo los vacíos):
+                // el patrón de riego es información del sector, independiente de si hoy hay
+                // actividad o no.
+                var walkwayDetail = await _structureService.GetWalkwayAsync(walkway.WalkwayId);
+
+                if (walkwayDetail is not null)
+                {
+                    item.IrrigationPatternLines = programs
+                        .Where(p => p.IsActive && p.HydraulicSectorId == walkwayDetail.HydraulicSectorId)
+                        .Select(p => BuildIrrigationPatternText(p))
+                        .Where(text => text is not null)
+                        .Select(text => text!)
+                        .ToList();
+                }
+
                 if (!item.HasNeighbors)
                 {
-                    item.EmptyStateMessage = await ResolveEmptyStateMessageAsync(walkway.WalkwayId);
+                    item.EmptyStateMessage = await ResolveEmptyStateMessageAsync(walkwayDetail);
                 }
 
                 Walkways.Add(item);
@@ -126,9 +152,8 @@ public partial class IrrigationStatusViewModel : ObservableObject
         }
     }
 
-    private async Task<string> ResolveEmptyStateMessageAsync(Guid walkwayId)
+    private async Task<string> ResolveEmptyStateMessageAsync(WalkwayDetailDto? walkwayDetail)
     {
-        var walkwayDetail = await _structureService.GetWalkwayAsync(walkwayId);
         if (walkwayDetail is null)
         {
             // Fail-soft: sin saber el sector, no podemos afirmar que no hay riego programado.
@@ -145,6 +170,53 @@ public partial class IrrigationStatusViewModel : ObservableObject
         WaitingStatus => "Pendiente",
         CompletedStatus => "Terminado",
         _ => rawStatus
+    };
+
+    private static readonly string[] DayNames =
+        ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+
+    private static readonly string[] MonthNames =
+    [
+        "enero", "febrero", "marzo", "abril", "mayo", "junio",
+        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+    ];
+
+    // "Este sector riega: Sábado y Domingo, de marzo a noviembre" -- null si DaysOfWeek no trae
+    // ningún día válido (defensivo: el backend no valida su formato, ver comentario en
+    // IrrigationProgramDto).
+    internal static string? BuildIrrigationPatternText(IrrigationProgramDto program)
+    {
+        var days = ParseDaysOfWeek(program.DaysOfWeek);
+        if (days.Count == 0) return null;
+
+        var text = $"Este sector riega: {JoinWithY(days)}";
+
+        if (program.SeasonStartMonth.HasValue && program.SeasonEndMonth.HasValue
+            && program.SeasonStartDay.HasValue && program.SeasonEndDay.HasValue)
+        {
+            text += $", de {MonthNames[program.SeasonStartMonth.Value - 1]} a {MonthNames[program.SeasonEndMonth.Value - 1]}";
+        }
+
+        return text;
+    }
+
+    // CSV de enteros ISO-8601 (Lunes=1...Domingo=7, p. ej. "1,3,5"); entradas no numéricas o fuera
+    // de [1,7] se descartan en vez de reventar -- el backend no las valida en absoluto.
+    private static List<string> ParseDaysOfWeek(string daysOfWeekCsv) => daysOfWeekCsv
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Select(s => int.TryParse(s, out var day) ? day : (int?)null)
+        .Where(day => day is >= 1 and <= 7)
+        .Select(day => day!.Value)
+        .Distinct()
+        .OrderBy(day => day)
+        .Select(day => DayNames[day - 1])
+        .ToList();
+
+    private static string JoinWithY(List<string> items) => items.Count switch
+    {
+        0 => string.Empty,
+        1 => items[0],
+        _ => string.Join(", ", items.Take(items.Count - 1)) + " y " + items[^1]
     };
 
     [RelayCommand]

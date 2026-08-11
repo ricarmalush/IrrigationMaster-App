@@ -573,6 +573,36 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         }
     }
 
+    public async Task<List<IrrigationProgramDto>?> GetIrrigationProgramsAsync()
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            // A diferencia del resto de listados, este endpoint exige OrganizationId explícito en
+            // la query (no lo resuelve por sí solo vía ICurrentUser) -- lo tomamos de la sesión
+            // guardada, la misma fuente que usa CurrentSession.GetOrganizationIdAsync.
+            var organizationId = await _tokenStorage.GetOrganizationIdAsync();
+            if (string.IsNullOrWhiteSpace(organizationId))
+                return null;
+
+            var response = await _httpClient.GetAsync($"{ApiEndpoints.IrrigationProgramsPagination}?OrganizationId={organizationId}&PageNumber=1&PageSize=100");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var paged = await response.Content.ReadFromJsonAsync<PagedResponse<List<IrrigationProgramDto>>>();
+                return paged?.Data;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - IrrigationPrograms]: {ex.Message}");
+            return null;
+        }
+    }
+
     // El backend también manda un body parseable en 400 (p. ej. permiso insuficiente) y en 403.
     private static async Task<UserActionResult> ReadUserActionResultAsync(HttpResponseMessage response)
     {

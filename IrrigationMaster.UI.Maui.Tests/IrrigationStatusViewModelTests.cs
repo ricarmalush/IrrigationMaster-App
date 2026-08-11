@@ -48,6 +48,75 @@ public class IrrigationStatusViewModelTests
         Assert.Equal("SomeFutureStatus", IrrigationStatusViewModel.TranslateStatus("SomeFutureStatus"));
     }
 
+    // ─── PATRÓN DE RIEGO: traducción de DaysOfWeek/temporada a texto legible ───
+
+    [Fact]
+    public void BuildIrrigationPatternText_SingleDay_NoSeason_OmitsDatePart()
+    {
+        var program = new IrrigationProgramDto { DaysOfWeek = "1" };
+
+        Assert.Equal("Este sector riega: Lunes", IrrigationStatusViewModel.BuildIrrigationPatternText(program));
+    }
+
+    [Fact]
+    public void BuildIrrigationPatternText_TwoDays_JoinsWithY()
+    {
+        // Entrada en orden inverso (7,6): la salida debe seguir el orden natural de la semana
+        // (Lunes...Domingo), no el orden del CSV.
+        var program = new IrrigationProgramDto { DaysOfWeek = "7,6" };
+
+        Assert.Equal("Este sector riega: Sábado y Domingo", IrrigationStatusViewModel.BuildIrrigationPatternText(program));
+    }
+
+    [Fact]
+    public void BuildIrrigationPatternText_ThreeOrMoreDays_UsesCommasAndFinalY()
+    {
+        var program = new IrrigationProgramDto { DaysOfWeek = "1,3,5" };
+
+        Assert.Equal("Este sector riega: Lunes, Miércoles y Viernes", IrrigationStatusViewModel.BuildIrrigationPatternText(program));
+    }
+
+    [Fact]
+    public void BuildIrrigationPatternText_WithSeasonDeclared_AppendsMonthRange()
+    {
+        var program = new IrrigationProgramDto
+        {
+            DaysOfWeek = "6,7",
+            SeasonStartMonth = 3,
+            SeasonStartDay = 1,
+            SeasonEndMonth = 11,
+            SeasonEndDay = 30
+        };
+
+        Assert.Equal("Este sector riega: Sábado y Domingo, de marzo a noviembre", IrrigationStatusViewModel.BuildIrrigationPatternText(program));
+    }
+
+    [Fact]
+    public void BuildIrrigationPatternText_AllFourSeasonFieldsNull_OmitsDatePart()
+    {
+        var program = new IrrigationProgramDto { DaysOfWeek = "6,7" };
+
+        Assert.Equal("Este sector riega: Sábado y Domingo", IrrigationStatusViewModel.BuildIrrigationPatternText(program));
+    }
+
+    [Fact]
+    public void BuildIrrigationPatternText_DuplicateAndUnparseableEntries_AreIgnored()
+    {
+        // El backend no valida el formato de DaysOfWeek (ver comentario en IrrigationProgramDto):
+        // entradas repetidas, vacías o fuera de [1,7] no deben reventar ni duplicar el día.
+        var program = new IrrigationProgramDto { DaysOfWeek = "1,1,abc,9,,1" };
+
+        Assert.Equal("Este sector riega: Lunes", IrrigationStatusViewModel.BuildIrrigationPatternText(program));
+    }
+
+    [Fact]
+    public void BuildIrrigationPatternText_NoValidDays_ReturnsNull()
+    {
+        var program = new IrrigationProgramDto { DaysOfWeek = "" };
+
+        Assert.Null(IrrigationStatusViewModel.BuildIrrigationPatternText(program));
+    }
+
     // ─── AGRUPAMIENTO Y TRADUCCIÓN AL CARGAR ───
 
     [Fact]
@@ -229,16 +298,142 @@ public class IrrigationStatusViewModelTests
     [Fact]
     public async Task LoadAsync_WalkwayWithNeighbors_NeverCallsIsIrrigationDay()
     {
+        // GetWalkwayAsync SÍ se llama (hace falta el HydraulicSectorId para el patrón de riego,
+        // ver LoadAsync_WalkwayWithNeighbors_StillResolvesIrrigationPattern), pero IsIrrigationDay
+        // es exclusivo de andadores sin vecinos: no tiene sentido resolverlo aquí.
+        var statusList = new List<WalkwayIrrigationStatusDto>
+        {
+            new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId, FullName = "Yo", Status = "Waiting" }] }
+        };
+        var (vm, irrigationService, _, _) = CreateSut(statusList);
+
+        await vm.LoadAsync();
+
+        Assert.Null(irrigationService.LastIsIrrigationDayCall);
+    }
+
+    // ─── PATRÓN DE RIEGO: resolución del sector por andador y cruce con IrrigationProgram ───
+
+    [Fact]
+    public async Task LoadAsync_WalkwayWithActiveProgram_ShowsPatternLine()
+    {
+        var statusList = new List<WalkwayIrrigationStatusDto>
+        {
+            new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [] }
+        };
+        var (vm, irrigationService, structureService, _) = CreateSut(statusList);
+        structureService.WalkwaysById[WalkwayAId] = new WalkwayDetailDto { Id = WalkwayAId, Code = "A-01", HydraulicSectorId = SectorId };
+        irrigationService.ProgramsToReturn =
+        [
+            new IrrigationProgramDto { HydraulicSectorId = SectorId, IsActive = true, DaysOfWeek = "6,7" }
+        ];
+
+        await vm.LoadAsync();
+
+        var walkway = vm.Walkways.Single();
+        Assert.True(walkway.ShowIrrigationPattern);
+        Assert.Equal("Este sector riega: Sábado y Domingo", walkway.IrrigationPatternText);
+    }
+
+    [Fact]
+    public async Task LoadAsync_WalkwayWithOnlyInactiveProgram_DoesNotShowPatternLine()
+    {
+        var statusList = new List<WalkwayIrrigationStatusDto>
+        {
+            new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [] }
+        };
+        var (vm, irrigationService, structureService, _) = CreateSut(statusList);
+        structureService.WalkwaysById[WalkwayAId] = new WalkwayDetailDto { Id = WalkwayAId, Code = "A-01", HydraulicSectorId = SectorId };
+        irrigationService.ProgramsToReturn =
+        [
+            new IrrigationProgramDto { HydraulicSectorId = SectorId, IsActive = false, DaysOfWeek = "6,7" }
+        ];
+
+        await vm.LoadAsync();
+
+        Assert.False(vm.Walkways.Single().ShowIrrigationPattern);
+    }
+
+    [Fact]
+    public async Task LoadAsync_WalkwayWithNoMatchingProgram_DoesNotShowPatternLine()
+    {
+        var statusList = new List<WalkwayIrrigationStatusDto>
+        {
+            new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [] }
+        };
+        var (vm, irrigationService, structureService, _) = CreateSut(statusList);
+        structureService.WalkwaysById[WalkwayAId] = new WalkwayDetailDto { Id = WalkwayAId, Code = "A-01", HydraulicSectorId = SectorId };
+        // Programa activo pero de OTRO sector -- no debe aplicar a este andador.
+        irrigationService.ProgramsToReturn =
+        [
+            new IrrigationProgramDto { HydraulicSectorId = Guid.NewGuid(), IsActive = true, DaysOfWeek = "6,7" }
+        ];
+
+        await vm.LoadAsync();
+
+        Assert.False(vm.Walkways.Single().ShowIrrigationPattern);
+    }
+
+    [Fact]
+    public async Task LoadAsync_SectorWithTwoActivePrograms_ShowsOneLinePerProgram()
+    {
+        var statusList = new List<WalkwayIrrigationStatusDto>
+        {
+            new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [] }
+        };
+        var (vm, irrigationService, structureService, _) = CreateSut(statusList);
+        structureService.WalkwaysById[WalkwayAId] = new WalkwayDetailDto { Id = WalkwayAId, Code = "A-01", HydraulicSectorId = SectorId };
+        irrigationService.ProgramsToReturn =
+        [
+            new IrrigationProgramDto { HydraulicSectorId = SectorId, IsActive = true, DaysOfWeek = "1,3,5" },
+            new IrrigationProgramDto { HydraulicSectorId = SectorId, IsActive = true, DaysOfWeek = "6,7" }
+        ];
+
+        await vm.LoadAsync();
+
+        var walkway = vm.Walkways.Single();
+        Assert.Equal(2, walkway.IrrigationPatternLines.Count);
+        Assert.Contains("Este sector riega: Lunes, Miércoles y Viernes", walkway.IrrigationPatternLines);
+        Assert.Contains("Este sector riega: Sábado y Domingo", walkway.IrrigationPatternLines);
+    }
+
+    [Fact]
+    public async Task LoadAsync_WalkwayWithNeighbors_StillResolvesIrrigationPattern()
+    {
+        // El patrón de riego es información del sector, independiente de si hoy hay actividad --
+        // debe mostrarse tanto en andadores con vecinos como en andadores vacíos.
         var statusList = new List<WalkwayIrrigationStatusDto>
         {
             new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId, FullName = "Yo", Status = "Waiting" }] }
         };
         var (vm, irrigationService, structureService, _) = CreateSut(statusList);
+        structureService.WalkwaysById[WalkwayAId] = new WalkwayDetailDto { Id = WalkwayAId, Code = "A-01", HydraulicSectorId = SectorId };
+        irrigationService.ProgramsToReturn =
+        [
+            new IrrigationProgramDto { HydraulicSectorId = SectorId, IsActive = true, DaysOfWeek = "6,7" }
+        ];
 
         await vm.LoadAsync();
 
-        Assert.Null(irrigationService.LastIsIrrigationDayCall);
-        Assert.Null(structureService.LastGetWalkwayCall);
+        Assert.True(vm.Walkways.Single().ShowIrrigationPattern);
+    }
+
+    [Fact]
+    public async Task LoadAsync_WhenWalkwayDetailUnavailable_DoesNotShowPatternLine_AndDoesNotCrash()
+    {
+        var statusList = new List<WalkwayIrrigationStatusDto>
+        {
+            new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [] }
+        };
+        var (vm, irrigationService, _, _) = CreateSut(statusList);
+        irrigationService.ProgramsToReturn =
+        [
+            new IrrigationProgramDto { HydraulicSectorId = SectorId, IsActive = true, DaysOfWeek = "6,7" }
+        ];
+
+        await vm.LoadAsync();
+
+        Assert.False(vm.Walkways.Single().ShowIrrigationPattern);
     }
 
     // ─── EMPEZAR / TERMINAR TURNO ───

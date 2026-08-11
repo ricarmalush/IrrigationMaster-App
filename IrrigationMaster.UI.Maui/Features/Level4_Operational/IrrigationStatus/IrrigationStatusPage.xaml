@@ -43,6 +43,13 @@
                                 </Label.FormattedText>
                             </Label>
 
+                            <!-- PATRÓN DE RIEGO DEL SECTOR: una línea por IrrigationProgram activo
+                                 (puede haber más de uno). Independiente de si hoy hay actividad. -->
+                            <Label Text="{Binding IrrigationPatternText}"
+                                   IsVisible="{Binding ShowIrrigationPattern}"
+                                   FontSize="13"
+                                   TextColor="#666"/>
+
                             <!-- ANDADOR SIN VECINOS: mensaje resuelto vía IsIrrigationDay -->
                             <Label Text="{Binding EmptyStateMessage}"
                                    IsVisible="{Binding ShowEmptyState}"
