@@ -32,6 +32,14 @@
                         Clicked="OnIrrigationStatusClicked"
                         BackgroundColor="Transparent" TextColor="#0277BD" BorderColor="#0277BD" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
 
+                <Label Text="Notificaciones" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
+
+                <!-- Visible para los 3 roles sin restricción: cualquier usuario debe poder ver
+                     sus propias notificaciones. -->
+                <Button Text="🔔 Notificaciones"
+                        Clicked="OnNotificationsClicked"
+                        BackgroundColor="Transparent" TextColor="#8E24AA" BorderColor="#8E24AA" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
+
                 <Label Text="Ajustes de la Aplicación" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
 
                 <Button x:Name="SystemSettingsButton"

@@ -2,6 +2,7 @@
 using IrrigationMaster.UI.Maui.Common;
 using IrrigationMaster.UI.Maui.Features.Level3_Functional.Users;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.IrrigationStatus;
+using IrrigationMaster.UI.Maui.Features.Level4_Operational.Notifications;
 
 namespace IrrigationMaster.UI.Maui.Features.Level4_Operational.AdminConsole;
 
@@ -69,6 +70,31 @@ public partial class AdminMenuPage : ContentPage
             else
             {
                 await DisplayAlert(AppStrings.SystemErrorTitle, "No se pudo cargar el estado de riego.", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Navigation Error]: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// SECCIÓN: NOTIFICACIONES -- sin gating de rol, visible para los 3 (SUPERADMIN/Presidente/Vecino).
+    /// </summary>
+    private async void OnNotificationsClicked(object sender, EventArgs e)
+    {
+        try
+        {
+            var notificationsPage = Handler?.MauiContext?.Services.GetService<NotificationsPage>();
+
+            if (notificationsPage != null)
+            {
+                // PushAsync (no PushModalAsync): mismo motivo que OnUserManagementClicked.
+                await Navigation.PushAsync(notificationsPage);
+            }
+            else
+            {
+                await DisplayAlert(AppStrings.SystemErrorTitle, "No se pudo cargar las notificaciones.", "OK");
             }
         }
         catch (Exception ex)

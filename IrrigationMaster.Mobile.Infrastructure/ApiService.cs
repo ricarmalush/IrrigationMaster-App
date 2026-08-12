@@ -2,6 +2,7 @@
 using IrrigationMaster.Mobile.Application.Constants;
 using IrrigationMaster.Mobile.Application.Features.Models.Auth;
 using IrrigationMaster.Mobile.Application.Features.Models.Irrigation;
+using IrrigationMaster.Mobile.Application.Features.Models.Notifications;
 using IrrigationMaster.Mobile.Application.Features.Models.Structure;
 using IrrigationMaster.Mobile.Application.Features.Models.Structure.Country;
 using IrrigationMaster.Mobile.Application.Features.Models.Users;
@@ -10,7 +11,7 @@ using System.Net.Http.Json;
 
 namespace IrrigationMaster.Mobile.Infrastructure;
 
-public class ApiService : IAuthService, IStructureService, IRegistrationService, IUserManagementService, IIrrigationService
+public class ApiService : IAuthService, IStructureService, IRegistrationService, IUserManagementService, IIrrigationService, INotificationService
 {
     private readonly HttpClient _httpClient;
     private readonly ITokenStorage _tokenStorage;
@@ -600,6 +601,71 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         {
             System.Diagnostics.Debug.WriteLine($"[API Error - IrrigationPrograms]: {ex.Message}");
             return null;
+        }
+    }
+
+    // ─── 6. NOTIFICACIONES ───
+
+    public async Task<List<NotificationDto>?> GetMyNotificationsAsync()
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.GetAsync($"{ApiEndpoints.NotificationsMine}?PageNumber=1&PageSize=100");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var paged = await response.Content.ReadFromJsonAsync<PagedResponse<List<NotificationDto>>>();
+                return paged?.Data;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - Notifications]: {ex.Message}");
+            return null;
+        }
+    }
+
+    public async Task<UserActionResult> MarkAsReadAsync(Guid notificationId)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.PutAsync($"{ApiEndpoints.NotificationsMarkAsRead}/{notificationId}", null);
+            return await ReadUserActionResultAsync(response);
+        }
+        catch (HttpRequestException)
+        {
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - MarkAsRead]: {ex.Message}");
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
+        }
+    }
+
+    public async Task<UserActionResult> MarkAllAsReadAsync()
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.PutAsync(ApiEndpoints.NotificationsMarkAllAsRead, null);
+            return await ReadUserActionResultAsync(response);
+        }
+        catch (HttpRequestException)
+        {
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - MarkAllAsRead]: {ex.Message}");
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
         }
     }
 

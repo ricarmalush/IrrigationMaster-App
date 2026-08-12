@@ -257,7 +257,16 @@ namespace IrrigationMaster.UI.Maui.Common {
                 return ResourceManager.GetString("NetworkFallbackError", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a Notificaciones marcadas como leídas..
+        /// </summary>
+        public static string NotificationsMarkedAllReadSuccess {
+            get {
+                return ResourceManager.GetString("NotificationsMarkedAllReadSuccess", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Busca una cadena traducida similar a Error al crear la organización en el servidor..
         /// </summary>

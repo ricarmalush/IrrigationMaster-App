@@ -5,6 +5,7 @@ using IrrigationMaster.UI.Maui.Features.Level1_Core.Register;
 using IrrigationMaster.UI.Maui.Features.Level3_Functional.Users;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.AdminConsole;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.IrrigationStatus;
+using IrrigationMaster.UI.Maui.Features.Level4_Operational.Notifications;
 using IrrigationMaster.UI.Maui.Services;
 using Microsoft.Extensions.Logging;
 
@@ -40,6 +41,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IRegistrationService>(sp => sp.GetRequiredService<ApiService>());
         builder.Services.AddSingleton<IUserManagementService>(sp => sp.GetRequiredService<ApiService>());
         builder.Services.AddSingleton<IIrrigationService>(sp => sp.GetRequiredService<ApiService>());
+        builder.Services.AddSingleton<INotificationService>(sp => sp.GetRequiredService<ApiService>());
         builder.Services.AddSingleton<IAlertService, ShellAlertService>();
         builder.Services.AddSingleton<INavigationService, ShellNavigationService>();
 
@@ -59,6 +61,8 @@ public static class MauiProgram
         builder.Services.AddTransient<SystemSettingsViewModel>();
         builder.Services.AddTransient<IrrigationStatusPage>();
         builder.Services.AddTransient<IrrigationStatusViewModel>();
+        builder.Services.AddTransient<NotificationsPage>();
+        builder.Services.AddTransient<NotificationsViewModel>();
 
 #if DEBUG
         builder.Logging.AddDebug();
