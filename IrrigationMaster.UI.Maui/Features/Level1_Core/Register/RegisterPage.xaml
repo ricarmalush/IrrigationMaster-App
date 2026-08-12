@@ -7,64 +7,75 @@
              BackgroundColor="{StaticResource AppBackgroundColor}"
              x:DataType="viewmodel:RegisterViewModel">
 
-    <Grid HorizontalOptions="Center" VerticalOptions="Center">
-        <ScrollView>
-            <VerticalStackLayout Spacing="12"
-                                 Padding="20"
-                                 WidthRequest="320"
-                                 HorizontalOptions="Center"
-                                 VerticalOptions="Center">
+    <Grid>
 
-                <Label x:Name="RegisterTitleLabel"
-                       Text="Crear Nueva Cuenta"
-                       FontSize="22"
-                       FontAttributes="Bold"
-                       TextColor="{StaticResource AppPrimaryColor}"
-                       HorizontalOptions="Center" />
+        <!-- ScrollView no centra de forma fiable a su contenido en todas las plataformas
+             (en Windows/WinUI en particular termina desplazado, no realmente centrado), incluso
+             envolviéndolo en un Grid con HorizontalOptions/VerticalOptions="Center". El patrón
+             robusto (funciona igual en todas las plataformas) es la rejilla 3x3: filas/columnas
+             "*" a los lados absorben todo el espacio sobrante de forma simétrica, dejando la
+             celda central (Row=1,Col=1) siempre centrada de verdad. -->
+        <ScrollView HorizontalOptions="Fill" VerticalOptions="Fill">
+            <Grid HorizontalOptions="Fill" VerticalOptions="Fill"
+                  RowDefinitions="*,Auto,*" ColumnDefinitions="*,Auto,*">
+                <VerticalStackLayout Grid.Row="1" Grid.Column="1"
+                                     Spacing="12"
+                                     Padding="20"
+                                     WidthRequest="320"
+                                     HorizontalOptions="Center"
+                                     VerticalOptions="Center">
 
-                <Label x:Name="OrganizationSubtitleLabel"
-                       Text="Completa tus datos de acceso"
-                       FontSize="13"
-                       TextColor="Gray"
-                       HorizontalOptions="Center"
-                       Margin="0,0,0,5" />
+                    <Label x:Name="RegisterTitleLabel"
+                           Text="Crear Nueva Cuenta"
+                           FontSize="22"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource AppPrimaryColor}"
+                           HorizontalOptions="Center" />
 
-                <VerticalStackLayout Spacing="4">
-                    <Label Text="Código de tu comunidad:" Style="{StaticResource FieldLabelStyle}"/>
-                    <Entry Text="{Binding InvitationCode}" Placeholder="Código compartido por tu Presidente/Coordinador" Style="{StaticResource EntryStyle}"/>
+                    <Label x:Name="OrganizationSubtitleLabel"
+                           Text="Completa tus datos de acceso"
+                           FontSize="13"
+                           TextColor="Gray"
+                           HorizontalOptions="Center"
+                           Margin="0,0,0,5" />
+
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Código de tu comunidad:" Style="{StaticResource FieldLabelStyle}"/>
+                        <Entry Text="{Binding InvitationCode}" Placeholder="Código compartido por tu Presidente/Coordinador" Style="{StaticResource EntryStyle}"/>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Nombre:" Style="{StaticResource FieldLabelStyle}"/>
+                        <Entry Text="{Binding FirstName}" Placeholder="Tu nombre" Style="{StaticResource EntryStyle}"/>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Apellidos:" Style="{StaticResource FieldLabelStyle}"/>
+                        <Entry Text="{Binding LastName}" Placeholder="Tus apellidos" Style="{StaticResource EntryStyle}"/>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Correo Electrónico:" Style="{StaticResource FieldLabelStyle}"/>
+                        <Entry Text="{Binding Email}" Placeholder="ejemplo@correo.com" Keyboard="Email" Style="{StaticResource EntryStyle}"/>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Contraseña:" Style="{StaticResource FieldLabelStyle}"/>
+                        <Entry Text="{Binding Password}" Placeholder="********" IsPassword="True" Style="{StaticResource EntryStyle}"/>
+                    </VerticalStackLayout>
+
+                    <Button Text="Confirmar Registro"
+                            Command="{Binding RegisterCommand}"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Margin="0,15,0,0" />
+
+                    <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                       IsVisible="{Binding IsBusy}"
+                                       Color="{StaticResource AppPrimaryColor}"
+                                       HorizontalOptions="Center" />
+
                 </VerticalStackLayout>
-
-                <VerticalStackLayout Spacing="4">
-                    <Label Text="Nombre:" Style="{StaticResource FieldLabelStyle}"/>
-                    <Entry Text="{Binding FirstName}" Placeholder="Tu nombre" Style="{StaticResource EntryStyle}"/>
-                </VerticalStackLayout>
-
-                <VerticalStackLayout Spacing="4">
-                    <Label Text="Apellidos:" Style="{StaticResource FieldLabelStyle}"/>
-                    <Entry Text="{Binding LastName}" Placeholder="Tus apellidos" Style="{StaticResource EntryStyle}"/>
-                </VerticalStackLayout>
-
-                <VerticalStackLayout Spacing="4">
-                    <Label Text="Correo Electrónico:" Style="{StaticResource FieldLabelStyle}"/>
-                    <Entry Text="{Binding Email}" Placeholder="ejemplo@correo.com" Keyboard="Email" Style="{StaticResource EntryStyle}"/>
-                </VerticalStackLayout>
-
-                <VerticalStackLayout Spacing="4">
-                    <Label Text="Contraseña:" Style="{StaticResource FieldLabelStyle}"/>
-                    <Entry Text="{Binding Password}" Placeholder="********" IsPassword="True" Style="{StaticResource EntryStyle}"/>
-                </VerticalStackLayout>
-
-                <Button Text="Confirmar Registro"
-                        Command="{Binding RegisterCommand}"
-                        Style="{StaticResource PrimaryButtonStyle}"
-                        Margin="0,15,0,0" />
-
-                <ActivityIndicator IsRunning="{Binding IsBusy}"
-                                   IsVisible="{Binding IsBusy}"
-                                   Color="{StaticResource AppPrimaryColor}"
-                                   HorizontalOptions="Center" />
-
-            </VerticalStackLayout>
+            </Grid>
         </ScrollView>
     </Grid>
 </ContentPage>
