@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodel="clr-namespace:IrrigationMaster.UI.Maui.Features.Level4_Operational.ReportIncident"
+             x:Class="IrrigationMaster.UI.Maui.Features.Level4_Operational.ReportIncident.ReportIncidentPage"
+             Title="Reportar Incidencia"
+             BackgroundColor="{StaticResource AppBackgroundColor}"
+             x:DataType="viewmodel:ReportIncidentViewModel">
+
+    <VerticalStackLayout Spacing="12" Padding="20">
+
+        <Label Text="Cuéntanos qué está pasando" FontSize="18" FontAttributes="Bold" TextColor="Black" />
+        <Label Text="Tu Presidente recibirá una notificación con la descripción que escribas aquí."
+               FontSize="13" TextColor="Gray" Margin="0,0,0,10" />
+
+        <Label Text="Descripción del problema:" Style="{StaticResource FieldLabelStyle}"/>
+        <Editor Text="{Binding Description}"
+                Placeholder="Describe la incidencia con el mayor detalle posible..."
+                AutoSize="TextChanges"
+                MinimumHeightRequest="150"
+                BackgroundColor="White"
+                TextColor="Black" />
+
+        <Button Text="Enviar"
+                Command="{Binding SendCommand}"
+                IsEnabled="{Binding IsNotBusy}"
+                Style="{StaticResource PrimaryButtonStyle}"
+                Margin="0,10,0,0" />
+
+        <ActivityIndicator IsRunning="{Binding IsBusy}"
+                            IsVisible="{Binding IsBusy}"
+                            Color="{StaticResource AppPrimaryColor}"
+                            HorizontalOptions="Center" />
+
+    </VerticalStackLayout>
+</ContentPage>

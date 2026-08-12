@@ -124,6 +124,15 @@ namespace IrrigationMaster.UI.Maui.Common {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Tu Presidente ha sido notificado..
+        /// </summary>
+        public static string IncidentReportedSuccess {
+            get {
+                return ResourceManager.GetString("IncidentReportedSuccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Busca una cadena traducida similar a Cargando el Estado de Andadores en Tiempo Real....
         /// </summary>
         public static string LiveStatusLoading {
@@ -159,6 +168,15 @@ namespace IrrigationMaster.UI.Maui.Common {
             }
         }
         
+        /// <summary>
+        ///   Busca una cadena traducida similar a Por favor, describe la incidencia antes de enviarla..
+        /// </summary>
+        public static string MsgMissingIncidentDescription {
+            get {
+                return ResourceManager.GetString("MsgMissingIncidentDescription", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Busca una cadena traducida similar a Por favor, completa todos los datos de la organización..
         /// </summary>

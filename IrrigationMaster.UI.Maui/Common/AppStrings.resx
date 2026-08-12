@@ -126,6 +126,9 @@
   <data name="ErrorTitle" xml:space="preserve">
     <value>Error de Acceso</value>
   </data>
+  <data name="IncidentReportedSuccess" xml:space="preserve">
+    <value>Tu Presidente ha sido notificado.</value>
+  </data>
   <data name="LoginValidationWarning" xml:space="preserve">
     <value>Por favor, introduce tu email y contraseña para entrar.</value>
   </data>
@@ -143,6 +146,9 @@
   </data>
   <data name="WalkwayAssignedSuccess" xml:space="preserve">
     <value>Andador actualizado con éxito.</value>
+  </data>
+  <data name="MsgMissingIncidentDescription" xml:space="preserve">
+    <value>Por favor, describe la incidencia antes de enviarla.</value>
   </data>
   <data name="MsgMissingOrgData" xml:space="preserve">
     <value>Por favor, completa todos los datos de la organización.</value>

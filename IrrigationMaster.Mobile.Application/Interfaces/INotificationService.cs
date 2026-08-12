@@ -15,4 +15,9 @@ public interface INotificationService
     // transporta la petición y devuelve tal cual lo que el backend responda.
     Task<UserActionResult> MarkAsReadAsync(Guid notificationId);
     Task<UserActionResult> MarkAllAsReadAsync();
+
+    // El backend resuelve destinatarios (Presidentes de la organización del autor) y permiso
+    // (REPORT_INCIDENT, ya seedeado para VECINO) por su cuenta -- esta capa solo transporta la
+    // descripción.
+    Task<UserActionResult> ReportIncidentAsync(string message);
 }

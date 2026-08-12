@@ -34,5 +34,6 @@ namespace IrrigationMaster.Mobile.Application.Constants
         public const string NotificationsMine = "Notifications/Mine";
         public const string NotificationsMarkAsRead = "Notifications/MarkAsRead";
         public const string NotificationsMarkAllAsRead = "Notifications/MarkAllAsRead";
+        public const string NotificationsReportIncident = "Notifications/ReportIncident";
     }
 }

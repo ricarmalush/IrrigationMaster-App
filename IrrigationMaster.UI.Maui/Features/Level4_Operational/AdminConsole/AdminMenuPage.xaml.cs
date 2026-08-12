@@ -3,6 +3,7 @@ using IrrigationMaster.UI.Maui.Common;
 using IrrigationMaster.UI.Maui.Features.Level3_Functional.Users;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.IrrigationStatus;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.Notifications;
+using IrrigationMaster.UI.Maui.Features.Level4_Operational.ReportIncident;
 
 namespace IrrigationMaster.UI.Maui.Features.Level4_Operational.AdminConsole;
 
@@ -95,6 +96,31 @@ public partial class AdminMenuPage : ContentPage
             else
             {
                 await DisplayAlert(AppStrings.SystemErrorTitle, "No se pudo cargar las notificaciones.", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Navigation Error]: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// SECCIÓN: INCIDENCIAS -- sin gating de rol, visible para los 3 (SUPERADMIN/Presidente/Vecino).
+    /// </summary>
+    private async void OnReportIncidentClicked(object sender, EventArgs e)
+    {
+        try
+        {
+            var reportIncidentPage = Handler?.MauiContext?.Services.GetService<ReportIncidentPage>();
+
+            if (reportIncidentPage != null)
+            {
+                // PushAsync (no PushModalAsync): mismo motivo que OnUserManagementClicked.
+                await Navigation.PushAsync(reportIncidentPage);
+            }
+            else
+            {
+                await DisplayAlert(AppStrings.SystemErrorTitle, "No se pudo cargar el formulario de incidencias.", "OK");
             }
         }
         catch (Exception ex)

@@ -40,6 +40,14 @@
                         Clicked="OnNotificationsClicked"
                         BackgroundColor="Transparent" TextColor="#8E24AA" BorderColor="#8E24AA" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
 
+                <Label Text="Incidencias" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
+
+                <!-- Visible para los 3 roles sin restricción: el caso principal es el Vecino, pero
+                     el backend resuelve permiso y destinatarios por su cuenta. -->
+                <Button Text="🚨 Reportar Incidencia"
+                        Clicked="OnReportIncidentClicked"
+                        BackgroundColor="Transparent" TextColor="#C62828" BorderColor="#C62828" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
+
                 <Label Text="Ajustes de la Aplicación" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
 
                 <Button x:Name="SystemSettingsButton"
