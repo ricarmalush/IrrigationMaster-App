@@ -6,6 +6,7 @@ namespace IrrigationMaster.UI.Maui.Tests.TestDoubles;
 public class FakeUserManagementService : IUserManagementService
 {
     public List<AppUserDto>? UsersToReturn { get; set; } = [];
+    public AppUserDto? UserByIdToReturn { get; set; }
     public List<RoleDto>? RolesToReturn { get; set; } = [];
     public List<WalkwayDto>? WalkwaysToReturn { get; set; } = [];
     public UserActionResult ActivateResult { get; set; } = new() { IsSuccess = true };
@@ -13,6 +14,7 @@ public class FakeUserManagementService : IUserManagementService
     public UserActionResult ChangeRoleResult { get; set; } = new() { IsSuccess = true };
     public UserActionResult ResetPasswordResult { get; set; } = new() { IsSuccess = true };
 
+    public Guid? LastGetUserByIdCall { get; private set; }
     public bool? LastIsActiveFilter { get; private set; }
     public Guid? LastOrganizationIdFilter { get; private set; }
     public Guid? LastActivatedUserId { get; private set; }
@@ -25,6 +27,12 @@ public class FakeUserManagementService : IUserManagementService
         LastIsActiveFilter = isActive;
         LastOrganizationIdFilter = organizationId;
         return Task.FromResult(UsersToReturn);
+    }
+
+    public Task<AppUserDto?> GetUserByIdAsync(Guid userId)
+    {
+        LastGetUserByIdCall = userId;
+        return Task.FromResult(UserByIdToReturn);
     }
 
     public Task<List<RoleDto>?> GetRolesAsync() => Task.FromResult(RolesToReturn);

@@ -48,6 +48,16 @@
                         Clicked="OnReportIncidentClicked"
                         BackgroundColor="Transparent" TextColor="#C62828" BorderColor="#C62828" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
 
+                <Label Text="Avisos" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
+
+                <!-- Visible solo para Presidente/SUPERADMIN: un Vecino no debe poder enviar avisos
+                     masivos, solo incidencias individuales al Presidente. -->
+                <Button x:Name="CommunityBroadcastButton"
+                        Text="📢 Avisar a mi comunidad"
+                        Clicked="OnCommunityBroadcastClicked"
+                        IsVisible="False"
+                        BackgroundColor="Transparent" TextColor="#EF6C00" BorderColor="#EF6C00" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
+
                 <Label Text="Ajustes de la Aplicación" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
 
                 <Button x:Name="SystemSettingsButton"

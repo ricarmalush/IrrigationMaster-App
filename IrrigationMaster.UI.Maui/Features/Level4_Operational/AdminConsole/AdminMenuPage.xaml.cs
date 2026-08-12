@@ -1,6 +1,7 @@
 ﻿using IrrigationMaster.Mobile.Application.Interfaces;
 using IrrigationMaster.UI.Maui.Common;
 using IrrigationMaster.UI.Maui.Features.Level3_Functional.Users;
+using IrrigationMaster.UI.Maui.Features.Level4_Operational.CommunityBroadcast;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.IrrigationStatus;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.Notifications;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.ReportIncident;
@@ -27,7 +28,9 @@ public partial class AdminMenuPage : ContentPage
         base.OnAppearing();
 
         var role = await _currentSession.GetRoleAsync();
-        UserManagementButton.IsVisible = !string.Equals(role, VecinoRoleCode, StringComparison.OrdinalIgnoreCase);
+        var isNotVecino = !string.Equals(role, VecinoRoleCode, StringComparison.OrdinalIgnoreCase);
+        UserManagementButton.IsVisible = isNotVecino;
+        CommunityBroadcastButton.IsVisible = isNotVecino;
     }
 
     private async void OnUserManagementClicked(object sender, EventArgs e)
@@ -121,6 +124,33 @@ public partial class AdminMenuPage : ContentPage
             else
             {
                 await DisplayAlert(AppStrings.SystemErrorTitle, "No se pudo cargar el formulario de incidencias.", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Navigation Error]: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// SECCIÓN: AVISOS -- visible solo para Presidente/SUPERADMIN (mismo gating que
+    /// UserManagementButton). Un Vecino solo puede reportar incidencias individuales al
+    /// Presidente, no enviar avisos masivos a su comunidad.
+    /// </summary>
+    private async void OnCommunityBroadcastClicked(object sender, EventArgs e)
+    {
+        try
+        {
+            var communityBroadcastPage = Handler?.MauiContext?.Services.GetService<CommunityBroadcastPage>();
+
+            if (communityBroadcastPage != null)
+            {
+                // PushAsync (no PushModalAsync): mismo motivo que OnUserManagementClicked.
+                await Navigation.PushAsync(communityBroadcastPage);
+            }
+            else
+            {
+                await DisplayAlert(AppStrings.SystemErrorTitle, "No se pudo cargar el formulario de avisos.", "OK");
             }
         }
         catch (Exception ex)

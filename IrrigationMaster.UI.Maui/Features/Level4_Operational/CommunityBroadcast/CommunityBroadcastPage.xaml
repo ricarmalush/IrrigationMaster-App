@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodel="clr-namespace:IrrigationMaster.UI.Maui.Features.Level4_Operational.CommunityBroadcast"
+             x:Class="IrrigationMaster.UI.Maui.Features.Level4_Operational.CommunityBroadcast.CommunityBroadcastPage"
+             Title="Avisar a mi comunidad"
+             BackgroundColor="{StaticResource AppBackgroundColor}"
+             x:DataType="viewmodel:CommunityBroadcastViewModel">
+
+    <VerticalStackLayout Spacing="12" Padding="20">
+
+        <Label Text="Enviar un aviso" FontSize="18" FontAttributes="Bold" TextColor="Black" />
+        <Label Text="El mensaje llegará a la bandeja de Mis Notificaciones de cada destinatario."
+               FontSize="13" TextColor="Gray" Margin="0,0,0,10" />
+
+        <Label Text="Destinatarios:" Style="{StaticResource FieldLabelStyle}"/>
+        <Picker Title="Selecciona destinatarios"
+                ItemsSource="{Binding AudienceOptions}"
+                SelectedItem="{Binding SelectedAudience}"
+                BackgroundColor="White"
+                HeightRequest="44"/>
+        <!-- Picker en Windows no refresca su texto visible al cambiar SelectedItem (bug conocido,
+             dotnet/maui #5038/#24369); este Label muestra la selección real de forma fiable. -->
+        <Label Text="{Binding AudienceSelectionDisplay}" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource AppPrimaryColor}"/>
+
+        <Label Text="Mensaje del aviso:" Style="{StaticResource FieldLabelStyle}" Margin="0,10,0,0"/>
+        <Editor Text="{Binding Message}"
+                Placeholder="Escribe aquí el aviso para tu comunidad..."
+                AutoSize="TextChanges"
+                MinimumHeightRequest="150"
+                BackgroundColor="White"
+                TextColor="Black" />
+
+        <Button Text="Enviar"
+                Command="{Binding SendCommand}"
+                IsEnabled="{Binding IsNotBusy}"
+                Style="{StaticResource PrimaryButtonStyle}"
+                Margin="0,10,0,0" />
+
+        <ActivityIndicator IsRunning="{Binding IsBusy}"
+                            IsVisible="{Binding IsBusy}"
+                            Color="{StaticResource AppPrimaryColor}"
+                            HorizontalOptions="Center" />
+
+    </VerticalStackLayout>
+</ContentPage>

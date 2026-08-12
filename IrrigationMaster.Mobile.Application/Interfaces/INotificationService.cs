@@ -20,4 +20,10 @@ public interface INotificationService
     // (REPORT_INCIDENT, ya seedeado para VECINO) por su cuenta -- esta capa solo transporta la
     // descripción.
     Task<UserActionResult> ReportIncidentAsync(string message);
+
+    // "Avisar a mi comunidad" (Presidente/SUPERADMIN, permiso SEND_NOTIFICATIONS). audience es
+    // "Organization" o "Walkway" (el backend usa un JsonStringEnumConverter global, no valores
+    // numéricos); targetWalkwayId solo aplica -- y es obligatorio -- cuando audience es "Walkway".
+    // El backend siempre resuelve la organización desde el propio llamador, nunca desde el body.
+    Task<SendNotificationResult> SendNotificationAsync(string audience, string message, Guid? targetWalkwayId);
 }

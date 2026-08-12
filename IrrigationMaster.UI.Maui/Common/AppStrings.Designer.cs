@@ -169,6 +169,15 @@ namespace IrrigationMaster.UI.Maui.Common {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Por favor, escribe el mensaje del aviso antes de enviarlo..
+        /// </summary>
+        public static string MsgMissingBroadcastMessage {
+            get {
+                return ResourceManager.GetString("MsgMissingBroadcastMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Busca una cadena traducida similar a Por favor, describe la incidencia antes de enviarla..
         /// </summary>
         public static string MsgMissingIncidentDescription {
@@ -241,6 +250,15 @@ namespace IrrigationMaster.UI.Maui.Common {
         }
 
         /// <summary>
+        ///   Busca una cadena traducida similar a Selecciona a quién quieres avisar antes de enviarlo..
+        /// </summary>
+        public static string MsgSelectAudienceFirst {
+            get {
+                return ResourceManager.GetString("MsgSelectAudienceFirst", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Busca una cadena traducida similar a Selecciona un rol antes de confirmar el cambio..
         /// </summary>
         public static string MsgSelectRoleFirst {
@@ -273,6 +291,15 @@ namespace IrrigationMaster.UI.Maui.Common {
         public static string NetworkFallbackError {
             get {
                 return ResourceManager.GetString("NetworkFallbackError", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a Aviso enviado a {0} destinatarios..
+        /// </summary>
+        public static string NotificationSentSuccessFormat {
+            get {
+                return ResourceManager.GetString("NotificationSentSuccessFormat", resourceCulture);
             }
         }
 

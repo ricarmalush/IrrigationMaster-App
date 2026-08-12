@@ -11,6 +11,11 @@ public interface IUserManagementService
     // organizationId solo tiene efecto para SUPERADMIN (el backend lo ignora para cualquier otro
     // rol, que ya viene acotado a su propia organización): null trae todas.
     Task<List<AppUserDto>?> GetUsersAsync(bool? isActive, Guid? organizationId = null);
+
+    // Detalle de un único usuario -- usado para resolver el andador propio del llamador (p. ej.
+    // "Avisar a mi comunidad" necesita saber si el Presidente/SUPERADMIN logueado tiene un andador
+    // asignado, dato que no viaja en el JWT).
+    Task<AppUserDto?> GetUserByIdAsync(Guid userId);
     Task<List<RoleDto>?> GetRolesAsync();
     Task<List<WalkwayDto>?> GetWalkwaysAsync();
     Task<UserActionResult> ActivateUserAsync(Guid userId);

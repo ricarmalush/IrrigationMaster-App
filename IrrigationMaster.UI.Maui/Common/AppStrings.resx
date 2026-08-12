@@ -135,6 +135,9 @@
   <data name="MsgInvalidInvitationCode" xml:space="preserve">
     <value>Introduce un código de invitación válido (mínimo 8 caracteres).</value>
   </data>
+  <data name="MsgSelectAudienceFirst" xml:space="preserve">
+    <value>Selecciona a quién quieres avisar antes de enviarlo.</value>
+  </data>
   <data name="MsgSelectRoleFirst" xml:space="preserve">
     <value>Selecciona un rol antes de confirmar el cambio.</value>
   </data>
@@ -146,6 +149,9 @@
   </data>
   <data name="WalkwayAssignedSuccess" xml:space="preserve">
     <value>Andador actualizado con éxito.</value>
+  </data>
+  <data name="MsgMissingBroadcastMessage" xml:space="preserve">
+    <value>Por favor, escribe el mensaje del aviso antes de enviarlo.</value>
   </data>
   <data name="MsgMissingIncidentDescription" xml:space="preserve">
     <value>Por favor, describe la incidencia antes de enviarla.</value>
@@ -179,6 +185,9 @@
   </data>
   <data name="NetworkFallbackError" xml:space="preserve">
     <value>No se pudo conectar con el servidor. Revisa tu conexión o el estado del túnel.</value>
+  </data>
+  <data name="NotificationSentSuccessFormat" xml:space="preserve">
+    <value>Aviso enviado a {0} destinatarios.</value>
   </data>
   <data name="NotificationsMarkedAllReadSuccess" xml:space="preserve">
     <value>Notificaciones marcadas como leídas.</value>

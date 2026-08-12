@@ -357,6 +357,29 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         }
     }
 
+    public async Task<AppUserDto?> GetUserByIdAsync(Guid userId)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.GetAsync($"{ApiEndpoints.UsersGet}/{userId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var wrapped = await response.Content.ReadFromJsonAsync<UserDetailResponse>();
+                return wrapped?.Data;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - GetUserById]: {ex.Message}");
+            return null;
+        }
+    }
+
     public async Task<List<RoleDto>?> GetRolesAsync()
     {
         try
@@ -686,6 +709,50 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         {
             System.Diagnostics.Debug.WriteLine($"[API Error - ReportIncident]: {ex.Message}");
             return new UserActionResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
+        }
+    }
+
+    // Título fijo: la pantalla "Avisar a mi comunidad" solo pide el mensaje, no un título aparte,
+    // pero el backend exige Title no vacío en SendNotificationCommand.
+    private const string BroadcastTitle = "Aviso de tu comunidad";
+
+    public async Task<SendNotificationResult> SendNotificationAsync(string audience, string message, Guid? targetWalkwayId)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.PostAsJsonAsync(ApiEndpoints.NotificationsSend, new SendNotificationRequest
+            {
+                Audience = audience,
+                Title = BroadcastTitle,
+                Message = message,
+                Type = "Info",
+                TargetWalkwayId = targetWalkwayId
+            });
+
+            if (response.IsSuccessStatusCode ||
+                response.StatusCode == System.Net.HttpStatusCode.BadRequest ||
+                response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                var result = await response.Content.ReadFromJsonAsync<SendNotificationResult>();
+                return result ?? new SendNotificationResult { IsSuccess = false, Message = ServiceMessages.UnexpectedError };
+            }
+
+            return new SendNotificationResult
+            {
+                IsSuccess = false,
+                Message = $"{ServiceMessages.ServerErrorCode} {(int)response.StatusCode})"
+            };
+        }
+        catch (HttpRequestException)
+        {
+            return new SendNotificationResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - SendNotification]: {ex.Message}");
+            return new SendNotificationResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
         }
     }
 
