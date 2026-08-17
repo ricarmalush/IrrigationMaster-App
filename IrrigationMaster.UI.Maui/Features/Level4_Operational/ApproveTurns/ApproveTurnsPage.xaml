@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodel="clr-namespace:IrrigationMaster.UI.Maui.Features.Level4_Operational.ApproveTurns"
+             x:Class="IrrigationMaster.UI.Maui.Features.Level4_Operational.ApproveTurns.ApproveTurnsPage"
+             x:Name="RootPage"
+             Title="Aprobar Turnos"
+             BackgroundColor="{StaticResource AppBackgroundColor}"
+             x:DataType="viewmodel:ApproveTurnsViewModel">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <ActivityIndicator Grid.Row="0"
+                            IsRunning="{Binding IsBusy}"
+                            IsVisible="{Binding IsBusy}"
+                            Color="{StaticResource AppPrimaryColor}"
+                            HeightRequest="30"/>
+
+        <CollectionView Grid.Row="1"
+                         ItemsSource="{Binding PendingTurns}"
+                         Margin="10">
+            <CollectionView.EmptyView>
+                <Label Text="No hay turnos pendientes de aprobar." HorizontalOptions="Center" Margin="20" TextColor="Gray"/>
+            </CollectionView.EmptyView>
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="viewmodel:PendingTurnItem">
+                    <Border StrokeThickness="0" BackgroundColor="White" Padding="15" Margin="0,0,0,10">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="12"/>
+                        </Border.StrokeShape>
+                        <Border.Shadow>
+                            <Shadow Brush="Black" Offset="0,2" Opacity="0.1" Radius="5"/>
+                        </Border.Shadow>
+
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="{Binding RequesterFullName}" FontSize="16" FontAttributes="Bold" TextColor="Black"/>
+                            <Label Text="{Binding ScheduleDisplay}" FontSize="13" TextColor="#666"/>
+
+                            <Button Text="Aprobar turno"
+                                    Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.ApproveCommand}"
+                                    CommandParameter="{Binding .}"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    HeightRequest="40"/>
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentPage>

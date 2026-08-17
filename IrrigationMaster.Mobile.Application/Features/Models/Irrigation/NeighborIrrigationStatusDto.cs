@@ -25,4 +25,11 @@ public class NeighborIrrigationStatusDto
 
     [JsonPropertyName("scheduledEnd")]
     public DateTime ScheduledEnd { get; init; }
+
+    // false mientras el turno sigue en Requested (nadie con TURN_APPROVE/SUPERADMIN lo ha
+    // aprobado todavía) -- el propio solicitante lo necesita para saber si ya puede pulsar
+    // "Empezar mi turno" o si sigue esperando aprobación, algo que Status por sí solo no distingue
+    // (Requested y Pending colapsan ambos a "Waiting").
+    [JsonPropertyName("isApproved")]
+    public bool IsApproved { get; init; }
 }

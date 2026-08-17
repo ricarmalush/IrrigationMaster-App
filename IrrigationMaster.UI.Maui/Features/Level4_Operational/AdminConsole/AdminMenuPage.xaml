@@ -32,6 +32,15 @@
                         Clicked="OnIrrigationStatusClicked"
                         BackgroundColor="Transparent" TextColor="#0277BD" BorderColor="#0277BD" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
 
+                <!-- Visible solo para Presidente/Vicepresidente/SUPERADMIN (mismo gating que
+                     CommunityBroadcastButton): un Vecino puede solicitar su propio turno, pero no
+                     aprobar turnos de nadie. -->
+                <Button x:Name="ApproveTurnsButton"
+                        Text="✅ Aprobar Turnos"
+                        Clicked="OnApproveTurnsClicked"
+                        IsVisible="False"
+                        BackgroundColor="Transparent" TextColor="#0277BD" BorderColor="#0277BD" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
+
                 <Label Text="Notificaciones" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
 
                 <!-- Visible para los 3 roles sin restricción: cualquier usuario debe poder ver

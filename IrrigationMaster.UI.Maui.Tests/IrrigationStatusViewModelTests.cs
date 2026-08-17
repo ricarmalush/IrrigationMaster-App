@@ -16,17 +16,18 @@ public class IrrigationStatusViewModelTests
     private static readonly Guid SectorId = Guid.NewGuid();
     private static readonly Guid TurnId = Guid.NewGuid();
 
-    private static (IrrigationStatusViewModel ViewModel, FakeIrrigationService IrrigationService, FakeStructureService StructureService, RecordingAlertService Alerts) CreateSut(
+    private static (IrrigationStatusViewModel ViewModel, FakeIrrigationService IrrigationService, FakeStructureService StructureService, RecordingAlertService Alerts, FakeUserManagementService UserManagementService) CreateSut(
         List<WalkwayIrrigationStatusDto>? statusToReturn = null)
     {
         var irrigationService = new FakeIrrigationService { StatusToReturn = statusToReturn ?? [] };
         var structureService = new FakeStructureService();
+        var userManagementService = new FakeUserManagementService();
         var alerts = new RecordingAlertService();
         var session = new FakeCurrentSession { UserIdToReturn = MyUserId };
 
-        var viewModel = new IrrigationStatusViewModel(irrigationService, structureService, alerts, session);
+        var viewModel = new IrrigationStatusViewModel(irrigationService, structureService, userManagementService, alerts, session);
 
-        return (viewModel, irrigationService, structureService, alerts);
+        return (viewModel, irrigationService, structureService, alerts, userManagementService);
     }
 
     // ─── TRADUCCIÓN DE ESTADO ───
@@ -135,7 +136,7 @@ public class IrrigationStatusViewModelTests
                 ]
             }
         };
-        var (vm, _, _, _) = CreateSut(statusList);
+        var (vm, _, _, _, _) = CreateSut(statusList);
 
         await vm.LoadAsync();
 
@@ -161,7 +162,7 @@ public class IrrigationStatusViewModelTests
             new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId, FullName = "Ana García", Status = "Waiting" }] },
             new() { WalkwayId = WalkwayBId, WalkwayCode = "A-02", Neighbors = [new NeighborIrrigationStatusDto { UserId = OtherUserId, TurnId = Guid.NewGuid(), FullName = "Luis Pérez", Status = "Completed" }] }
         };
-        var (vm, _, _, _) = CreateSut(statusList);
+        var (vm, _, _, _, _) = CreateSut(statusList);
 
         await vm.LoadAsync();
 
@@ -177,9 +178,9 @@ public class IrrigationStatusViewModelTests
     {
         var statusList = new List<WalkwayIrrigationStatusDto>
         {
-            new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId, FullName = "Yo", Status = "Waiting" }] }
+            new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId, FullName = "Yo", Status = "Waiting", IsApproved = true }] }
         };
-        var (vm, _, _, _) = CreateSut(statusList);
+        var (vm, _, _, _, _) = CreateSut(statusList);
 
         await vm.LoadAsync();
 
@@ -195,7 +196,7 @@ public class IrrigationStatusViewModelTests
         {
             new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId, FullName = "Yo", Status = "Watering" }] }
         };
-        var (vm, _, _, _) = CreateSut(statusList);
+        var (vm, _, _, _, _) = CreateSut(statusList);
 
         await vm.LoadAsync();
 
@@ -214,7 +215,7 @@ public class IrrigationStatusViewModelTests
         {
             new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [new NeighborIrrigationStatusDto { UserId = OtherUserId, TurnId = TurnId, FullName = "Otro Vecino", Status = status }] }
         };
-        var (vm, _, _, _) = CreateSut(statusList);
+        var (vm, _, _, _, _) = CreateSut(statusList);
 
         await vm.LoadAsync();
 
@@ -224,13 +225,29 @@ public class IrrigationStatusViewModelTests
     }
 
     [Fact]
+    public async Task LoadAsync_MyOwnRow_Waiting_NotApproved_ShowsWaitingApprovalLabel_NotStartButton()
+    {
+        var statusList = new List<WalkwayIrrigationStatusDto>
+        {
+            new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId, FullName = "Yo", Status = "Waiting", IsApproved = false }] }
+        };
+        var (vm, _, _, _, _) = CreateSut(statusList);
+
+        await vm.LoadAsync();
+
+        var mine = vm.Walkways.Single().Neighbors.Single();
+        Assert.False(mine.ShowStartButton);
+        Assert.True(mine.ShowWaitingApprovalLabel);
+    }
+
+    [Fact]
     public async Task LoadAsync_MyOwnRow_Completed_ShowsNeitherButton()
     {
         var statusList = new List<WalkwayIrrigationStatusDto>
         {
             new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId, FullName = "Yo", Status = "Completed" }] }
         };
-        var (vm, _, _, _) = CreateSut(statusList);
+        var (vm, _, _, _, _) = CreateSut(statusList);
 
         await vm.LoadAsync();
 
@@ -248,7 +265,7 @@ public class IrrigationStatusViewModelTests
         {
             new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [] }
         };
-        var (vm, irrigationService, structureService, _) = CreateSut(statusList);
+        var (vm, irrigationService, structureService, _, _) = CreateSut(statusList);
         structureService.WalkwaysById[WalkwayAId] = new WalkwayDetailDto { Id = WalkwayAId, Code = "A-01", HydraulicSectorId = SectorId };
         irrigationService.IsIrrigationDayBySector[SectorId] = true;
 
@@ -267,7 +284,7 @@ public class IrrigationStatusViewModelTests
         {
             new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [] }
         };
-        var (vm, irrigationService, structureService, _) = CreateSut(statusList);
+        var (vm, irrigationService, structureService, _, _) = CreateSut(statusList);
         structureService.WalkwaysById[WalkwayAId] = new WalkwayDetailDto { Id = WalkwayAId, Code = "A-01", HydraulicSectorId = SectorId };
         irrigationService.IsIrrigationDayBySector[SectorId] = false;
 
@@ -286,7 +303,7 @@ public class IrrigationStatusViewModelTests
         {
             new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [] }
         };
-        var (vm, irrigationService, _, _) = CreateSut(statusList);
+        var (vm, irrigationService, _, _, _) = CreateSut(statusList);
 
         await vm.LoadAsync();
 
@@ -305,7 +322,7 @@ public class IrrigationStatusViewModelTests
         {
             new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId, FullName = "Yo", Status = "Waiting" }] }
         };
-        var (vm, irrigationService, _, _) = CreateSut(statusList);
+        var (vm, irrigationService, _, _, _) = CreateSut(statusList);
 
         await vm.LoadAsync();
 
@@ -321,7 +338,7 @@ public class IrrigationStatusViewModelTests
         {
             new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [] }
         };
-        var (vm, irrigationService, structureService, _) = CreateSut(statusList);
+        var (vm, irrigationService, structureService, _, _) = CreateSut(statusList);
         structureService.WalkwaysById[WalkwayAId] = new WalkwayDetailDto { Id = WalkwayAId, Code = "A-01", HydraulicSectorId = SectorId };
         irrigationService.ProgramsToReturn =
         [
@@ -342,7 +359,7 @@ public class IrrigationStatusViewModelTests
         {
             new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [] }
         };
-        var (vm, irrigationService, structureService, _) = CreateSut(statusList);
+        var (vm, irrigationService, structureService, _, _) = CreateSut(statusList);
         structureService.WalkwaysById[WalkwayAId] = new WalkwayDetailDto { Id = WalkwayAId, Code = "A-01", HydraulicSectorId = SectorId };
         irrigationService.ProgramsToReturn =
         [
@@ -361,7 +378,7 @@ public class IrrigationStatusViewModelTests
         {
             new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [] }
         };
-        var (vm, irrigationService, structureService, _) = CreateSut(statusList);
+        var (vm, irrigationService, structureService, _, _) = CreateSut(statusList);
         structureService.WalkwaysById[WalkwayAId] = new WalkwayDetailDto { Id = WalkwayAId, Code = "A-01", HydraulicSectorId = SectorId };
         // Programa activo pero de OTRO sector -- no debe aplicar a este andador.
         irrigationService.ProgramsToReturn =
@@ -381,7 +398,7 @@ public class IrrigationStatusViewModelTests
         {
             new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [] }
         };
-        var (vm, irrigationService, structureService, _) = CreateSut(statusList);
+        var (vm, irrigationService, structureService, _, _) = CreateSut(statusList);
         structureService.WalkwaysById[WalkwayAId] = new WalkwayDetailDto { Id = WalkwayAId, Code = "A-01", HydraulicSectorId = SectorId };
         irrigationService.ProgramsToReturn =
         [
@@ -406,7 +423,7 @@ public class IrrigationStatusViewModelTests
         {
             new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId, FullName = "Yo", Status = "Waiting" }] }
         };
-        var (vm, irrigationService, structureService, _) = CreateSut(statusList);
+        var (vm, irrigationService, structureService, _, _) = CreateSut(statusList);
         structureService.WalkwaysById[WalkwayAId] = new WalkwayDetailDto { Id = WalkwayAId, Code = "A-01", HydraulicSectorId = SectorId };
         irrigationService.ProgramsToReturn =
         [
@@ -425,7 +442,7 @@ public class IrrigationStatusViewModelTests
         {
             new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [] }
         };
-        var (vm, irrigationService, _, _) = CreateSut(statusList);
+        var (vm, irrigationService, _, _, _) = CreateSut(statusList);
         irrigationService.ProgramsToReturn =
         [
             new IrrigationProgramDto { HydraulicSectorId = SectorId, IsActive = true, DaysOfWeek = "6,7" }
@@ -434,6 +451,114 @@ public class IrrigationStatusViewModelTests
         await vm.LoadAsync();
 
         Assert.False(vm.Walkways.Single().ShowIrrigationPattern);
+    }
+
+    // ─── SOLICITAR MI TURNO (sin turno hoy todavía) ───
+
+    [Fact]
+    public async Task LoadAsync_MyOwnWalkway_NoTurnToday_ShowsCanRequestTurn()
+    {
+        var statusList = new List<WalkwayIrrigationStatusDto>
+        {
+            new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [] }
+        };
+        var (vm, _, structureService, _, userManagementService) = CreateSut(statusList);
+        structureService.WalkwaysById[WalkwayAId] = new WalkwayDetailDto { Id = WalkwayAId, Code = "A-01", HydraulicSectorId = SectorId };
+        userManagementService.UserByIdToReturn = new AppUserDto { Id = MyUserId, WalkwayId = WalkwayAId };
+
+        await vm.LoadAsync();
+
+        var walkway = vm.Walkways.Single();
+        Assert.True(walkway.CanRequestTurn);
+        Assert.Equal(SectorId, walkway.HydraulicSectorId);
+    }
+
+    [Fact]
+    public async Task LoadAsync_MyOwnWalkway_AlreadyHaveTurnToday_DoesNotShowCanRequestTurn()
+    {
+        var statusList = new List<WalkwayIrrigationStatusDto>
+        {
+            new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId, FullName = "Yo", Status = "Waiting", IsApproved = true }] }
+        };
+        var (vm, _, structureService, _, userManagementService) = CreateSut(statusList);
+        structureService.WalkwaysById[WalkwayAId] = new WalkwayDetailDto { Id = WalkwayAId, Code = "A-01", HydraulicSectorId = SectorId };
+        userManagementService.UserByIdToReturn = new AppUserDto { Id = MyUserId, WalkwayId = WalkwayAId };
+
+        await vm.LoadAsync();
+
+        Assert.False(vm.Walkways.Single().CanRequestTurn);
+    }
+
+    [Fact]
+    public async Task LoadAsync_NotMyWalkway_NeverShowsCanRequestTurn()
+    {
+        var statusList = new List<WalkwayIrrigationStatusDto>
+        {
+            new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [] }
+        };
+        var (vm, _, structureService, _, userManagementService) = CreateSut(statusList);
+        structureService.WalkwaysById[WalkwayAId] = new WalkwayDetailDto { Id = WalkwayAId, Code = "A-01", HydraulicSectorId = SectorId };
+        // El usuario logueado pertenece a OTRO andador (B), no al de esta tarjeta (A).
+        userManagementService.UserByIdToReturn = new AppUserDto { Id = MyUserId, WalkwayId = WalkwayBId };
+
+        await vm.LoadAsync();
+
+        Assert.False(vm.Walkways.Single().CanRequestTurn);
+    }
+
+    [Fact]
+    public async Task RequestTurnAsync_OnSuccess_CallsServiceWithMySectorAndUserId_ShowsSuccessAlert_AndReloads()
+    {
+        var statusList = new List<WalkwayIrrigationStatusDto>
+        {
+            new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [] }
+        };
+        var (vm, irrigationService, structureService, alerts, userManagementService) = CreateSut(statusList);
+        structureService.WalkwaysById[WalkwayAId] = new WalkwayDetailDto { Id = WalkwayAId, Code = "A-01", HydraulicSectorId = SectorId };
+        userManagementService.UserByIdToReturn = new AppUserDto { Id = MyUserId, WalkwayId = WalkwayAId };
+        await vm.LoadAsync();
+        var walkway = vm.Walkways.Single();
+
+        await vm.RequestTurnAsync(walkway);
+
+        Assert.NotNull(irrigationService.LastRequestTurnCall);
+        Assert.Equal(SectorId, irrigationService.LastRequestTurnCall!.Value.HydraulicSectorId);
+        Assert.Equal(MyUserId, irrigationService.LastRequestTurnCall!.Value.RequesterId);
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.SuccessTitle, alert.Title);
+        Assert.Equal(AppStrings.TurnRequestedSuccess, alert.Message);
+    }
+
+    [Fact]
+    public async Task RequestTurnAsync_WhenBackendRejects_ShowsExactBackendMessage_WithoutReloading()
+    {
+        var (vm, irrigationService, _, alerts, _) = CreateSut();
+        irrigationService.RequestTurnResult = new UserActionResult
+        {
+            IsSuccess = false,
+            Message = "Ya existe un turno para hoy."
+        };
+        var walkway = new WalkwayStatusItem { WalkwayId = WalkwayAId, WalkwayCode = "A-01", HydraulicSectorId = SectorId };
+
+        await vm.RequestTurnAsync(walkway);
+
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.ErrorTitle, alert.Title);
+        Assert.Equal("Ya existe un turno para hoy.", alert.Message);
+    }
+
+    [Fact]
+    public async Task RequestTurnAsync_WalkwayWithoutHydraulicSectorId_DoesNothing()
+    {
+        // Defensivo: si GetWalkwayAsync no pudo resolver el sector, no hay forma de construir la
+        // petición -- no debe intentarse ni mostrar ningún error.
+        var (vm, irrigationService, _, alerts, _) = CreateSut();
+        var walkway = new WalkwayStatusItem { WalkwayId = WalkwayAId, WalkwayCode = "A-01", HydraulicSectorId = null };
+
+        await vm.RequestTurnAsync(walkway);
+
+        Assert.Null(irrigationService.LastRequestTurnCall);
+        Assert.Empty(alerts.Calls);
     }
 
     // ─── EMPEZAR / TERMINAR TURNO ───
@@ -445,7 +570,7 @@ public class IrrigationStatusViewModelTests
         {
             new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId, FullName = "Yo", Status = "Waiting" }] }
         };
-        var (vm, irrigationService, _, alerts) = CreateSut(statusList);
+        var (vm, irrigationService, _, alerts, _) = CreateSut(statusList);
         await vm.LoadAsync();
         var neighbor = vm.Walkways.Single().Neighbors.Single();
 
@@ -460,7 +585,7 @@ public class IrrigationStatusViewModelTests
     [Fact]
     public async Task StartTurnAsync_WhenBackendRejects_ShowsExactBackendMessage_WithoutReloading()
     {
-        var (vm, irrigationService, _, alerts) = CreateSut();
+        var (vm, irrigationService, _, alerts, _) = CreateSut();
         irrigationService.StartTurnResult = new UserActionResult
         {
             IsSuccess = false,
@@ -482,7 +607,7 @@ public class IrrigationStatusViewModelTests
         {
             new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId, FullName = "Yo", Status = "Watering" }] }
         };
-        var (vm, irrigationService, _, alerts) = CreateSut(statusList);
+        var (vm, irrigationService, _, alerts, _) = CreateSut(statusList);
         await vm.LoadAsync();
         var neighbor = vm.Walkways.Single().Neighbors.Single();
 
@@ -497,7 +622,7 @@ public class IrrigationStatusViewModelTests
     [Fact]
     public async Task CompleteTurnAsync_WhenBackendRejects_ShowsExactBackendMessage()
     {
-        var (vm, irrigationService, _, alerts) = CreateSut();
+        var (vm, irrigationService, _, alerts, _) = CreateSut();
         irrigationService.CompleteTurnResult = new UserActionResult
         {
             IsSuccess = false,

@@ -28,7 +28,9 @@ namespace IrrigationMaster.Mobile.Application.Constants
         public const string WalkwaysPagination = "walkways/pagination";
         public const string WalkwaysGet = "walkways/Get";
         public const string IrrigationTurns = "IrrigationTurns";
+        public const string IrrigationTurnsCreate = "IrrigationTurns/Create";
         public const string IrrigationTurnsStatus = "IrrigationTurns/status";
+        public const string IrrigationTurnsPendingApproval = "IrrigationTurns/pending-approval";
         public const string IrrigationProgramsIsIrrigationDay = "IrrigationPrograms/IsIrrigationDay";
         public const string IrrigationProgramsPagination = "IrrigationPrograms/pagination";
         public const string NotificationsMine = "Notifications/Mine";

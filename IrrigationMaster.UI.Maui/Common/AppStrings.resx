@@ -225,8 +225,17 @@
   <data name="TurnCompletedSuccess" xml:space="preserve">
     <value>Turno terminado con éxito.</value>
   </data>
+  <data name="TurnApprovedSuccess" xml:space="preserve">
+    <value>Turno aprobado con éxito.</value>
+  </data>
+  <data name="TurnRequestedSuccess" xml:space="preserve">
+    <value>Turno solicitado. Espera a que lo apruebe el Presidente de tu organización.</value>
+  </data>
   <data name="TurnStartedSuccess" xml:space="preserve">
     <value>Turno iniciado con éxito.</value>
+  </data>
+  <data name="WaitingApprovalStatus" xml:space="preserve">
+    <value>Esperando aprobación</value>
   </data>
   <data name="UnexpectedError" xml:space="preserve">
     <value>Ocurrió un error inesperado al procesar la solicitud.</value>

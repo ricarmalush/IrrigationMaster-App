@@ -24,8 +24,13 @@ public class NeighborStatusItem
     // bloquea a nivel de negocio que alguien actúe sobre el turno de otro vecino.
     public bool IsMine { get; init; }
 
-    public bool ShowStartButton => IsMine && RawStatus == IrrigationStatusViewModel.WaitingStatus;
+    // false mientras el turno sigue en Requested -- Start() lo rechaza hasta que alguien con
+    // TURN_APPROVE/SUPERADMIN lo apruebe (ver ApproveTurnsViewModel).
+    public bool IsApproved { get; init; }
+
+    public bool ShowStartButton => IsMine && RawStatus == IrrigationStatusViewModel.WaitingStatus && IsApproved;
     public bool ShowCompleteButton => IsMine && RawStatus == IrrigationStatusViewModel.WateringStatus;
+    public bool ShowWaitingApprovalLabel => IsMine && RawStatus == IrrigationStatusViewModel.WaitingStatus && !IsApproved;
 }
 
 public class WalkwayStatusItem
@@ -33,6 +38,15 @@ public class WalkwayStatusItem
     public Guid WalkwayId { get; init; }
     public string WalkwayCode { get; init; } = string.Empty;
     public List<NeighborStatusItem> Neighbors { get; init; } = [];
+
+    // Sector hidráulico de este andador, resuelto vía IStructureService.GetWalkwayAsync -- null si
+    // no se pudo resolver. RequestTurnCommand lo necesita para poder solicitar un turno.
+    public Guid? HydraulicSectorId { get; set; }
+
+    // true solo en el andador del propio usuario logueado, cuando no tiene ningún turno hoy
+    // todavía -- "Empezar mi turno" no tiene sentido sin un IrrigationTurn previo (ver diagnóstico
+    // del flujo real), así que se ofrece "Solicitar mi turno" en su lugar.
+    public bool CanRequestTurn { get; set; }
 
     public bool HasNeighbors => Neighbors.Count > 0;
     public bool ShowEmptyState => !HasNeighbors;
@@ -59,6 +73,7 @@ public partial class IrrigationStatusViewModel : ObservableObject
 {
     private readonly IIrrigationService _irrigationService;
     private readonly IStructureService _structureService;
+    private readonly IUserManagementService _userManagementService;
     private readonly IAlertService _alertService;
     private readonly ICurrentSession _currentSession;
 
@@ -71,6 +86,11 @@ public partial class IrrigationStatusViewModel : ObservableObject
     internal const string NoIrrigationScheduledMessage = "No hay riego programado hoy";
     internal const string NoActivityYetMessage = "Sin actividad todavía";
 
+    // Duración ad-hoc de un turno "Solicitar mi turno": no hay ningún horario preestablecido que
+    // elegir (a diferencia de un IrrigationProgram), así que se pide un bloque fijo a partir de
+    // ahora -- el Presidente/Vicepresidente que aprueba ve las horas exactas antes de aceptar.
+    internal const int DefaultTurnDurationHours = 2;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsNotBusy))]
     public partial bool IsBusy { get; set; }
@@ -82,11 +102,13 @@ public partial class IrrigationStatusViewModel : ObservableObject
     public IrrigationStatusViewModel(
         IIrrigationService irrigationService,
         IStructureService structureService,
+        IUserManagementService userManagementService,
         IAlertService alertService,
         ICurrentSession currentSession)
     {
         _irrigationService = irrigationService;
         _structureService = structureService;
+        _userManagementService = userManagementService;
         _alertService = alertService;
         _currentSession = currentSession;
     }
@@ -100,6 +122,13 @@ public partial class IrrigationStatusViewModel : ObservableObject
             var statusList = await _irrigationService.GetIrrigationStatusAsync();
             var programs = await _irrigationService.GetIrrigationProgramsAsync() ?? [];
             var myUserId = _currentSession.CachedUserId;
+
+            // Necesario para saber en QUÉ andador ofrecer "Solicitar mi turno": el propio vecino
+            // no aparece en ningún WalkwayIrrigationStatusDto.Neighbors si no tiene turno hoy, así
+            // que no hay forma de deducir su andador a partir de statusList.
+            var myWalkwayId = myUserId.HasValue
+                ? (await _userManagementService.GetUserByIdAsync(myUserId.Value))?.WalkwayId
+                : null;
 
             Walkways.Clear();
             foreach (var walkway in statusList ?? [])
@@ -115,14 +144,21 @@ public partial class IrrigationStatusViewModel : ObservableObject
                         FullName = n.FullName,
                         RawStatus = n.Status,
                         StatusDisplay = TranslateStatus(n.Status),
-                        IsMine = myUserId.HasValue && myUserId.Value == n.UserId
+                        IsMine = myUserId.HasValue && myUserId.Value == n.UserId,
+                        IsApproved = n.IsApproved
                     }).ToList()
                 };
 
                 // Se resuelve el andador -> sector para TODOS los andadores (no solo los vacíos):
                 // el patrón de riego es información del sector, independiente de si hoy hay
-                // actividad o no.
+                // actividad o no. RequestTurnCommand también necesita este sector.
                 var walkwayDetail = await _structureService.GetWalkwayAsync(walkway.WalkwayId);
+                item.HydraulicSectorId = walkwayDetail?.HydraulicSectorId;
+
+                item.CanRequestTurn = myWalkwayId.HasValue
+                    && walkway.WalkwayId == myWalkwayId.Value
+                    && item.HydraulicSectorId.HasValue
+                    && !item.Neighbors.Any(n => n.IsMine);
 
                 if (walkwayDetail is not null)
                 {
@@ -235,6 +271,19 @@ public partial class IrrigationStatusViewModel : ObservableObject
 
         var result = await _irrigationService.CompleteTurnAsync(neighbor.TurnId);
         await HandleActionResultAsync(result, AppStrings.TurnCompletedSuccess);
+    }
+
+    [RelayCommand]
+    internal async Task RequestTurnAsync(WalkwayStatusItem? walkway)
+    {
+        var myUserId = _currentSession.CachedUserId;
+        if (walkway?.HydraulicSectorId is null || !myUserId.HasValue) return;
+
+        var start = DateTime.UtcNow.AddMinutes(1);
+        var end = start.AddHours(DefaultTurnDurationHours);
+
+        var result = await _irrigationService.RequestTurnAsync(walkway.HydraulicSectorId.Value, myUserId.Value, start, end);
+        await HandleActionResultAsync(result, AppStrings.TurnRequestedSuccess);
     }
 
     private async Task HandleActionResultAsync(UserActionResult result, string successMessage)

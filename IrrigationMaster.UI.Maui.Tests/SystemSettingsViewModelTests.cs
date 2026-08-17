@@ -107,6 +107,21 @@ public class SystemSettingsViewModelTests
         Assert.True(vm.IsSectoresTabActive);
     }
 
+    [Fact]
+    public void Constructor_WhenRoleIsVicepresidente_ShowsSectoresAndAndadoresButNotEntidad()
+    {
+        var (vm, _, _, _) = CreateSut(role: "VICEPRESIDENTE");
+
+        Assert.False(vm.ShowEntidadTab);
+        Assert.True(vm.ShowSectoresTab);
+        Assert.True(vm.ShowAndadoresTab);
+        // Mismas responsabilidades que el Presidente: también ve y comparte el código de invitación.
+        Assert.True(vm.ShowMyOrganization);
+        // Entidad está oculta para este rol: la primera pestaña visible es Sectores.
+        Assert.Equal(SettingsTab.Sectores, vm.ActiveTab);
+        Assert.True(vm.IsSectoresTabActive);
+    }
+
     [Theory]
     [InlineData("VECINO")]
     [InlineData(null)]

@@ -131,6 +131,7 @@ public partial class SystemSettingsViewModel : ObservableObject
 
     private const string SuperAdminRoleCode = "SUPERADMIN";
     private const string PresidenteRoleCode = "PRESIDENTE";
+    private const string VicepresidenteRoleCode = "VICEPRESIDENTE";
 
     public SystemSettingsViewModel(IStructureService structureService, IAuthService authService, IAlertService alertService, ICurrentSession currentSession)
     {
@@ -177,11 +178,12 @@ public partial class SystemSettingsViewModel : ObservableObject
     {
         bool isSuperAdmin = string.Equals(role, SuperAdminRoleCode, StringComparison.OrdinalIgnoreCase);
         bool isPresidente = string.Equals(role, PresidenteRoleCode, StringComparison.OrdinalIgnoreCase);
+        bool isVicepresidente = string.Equals(role, VicepresidenteRoleCode, StringComparison.OrdinalIgnoreCase);
 
         ShowEntidadTab = isSuperAdmin;
-        ShowSectoresTab = isSuperAdmin || isPresidente;
-        ShowAndadoresTab = isSuperAdmin || isPresidente;
-        ShowMyOrganization = isSuperAdmin || isPresidente;
+        ShowSectoresTab = isSuperAdmin || isPresidente || isVicepresidente;
+        ShowAndadoresTab = isSuperAdmin || isPresidente || isVicepresidente;
+        ShowMyOrganization = isSuperAdmin || isPresidente || isVicepresidente;
 
         // La pestaña inicial es la primera que el rol puede ver, en el mismo orden en que se
         // muestran (Entidad, Sectores, Andadores, Mi Cuenta).

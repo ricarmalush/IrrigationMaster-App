@@ -10,6 +10,9 @@ public class FakeIrrigationService : IIrrigationService
     public List<IrrigationProgramDto>? ProgramsToReturn { get; set; } = [];
     public UserActionResult StartTurnResult { get; set; } = new() { IsSuccess = true };
     public UserActionResult CompleteTurnResult { get; set; } = new() { IsSuccess = true };
+    public UserActionResult RequestTurnResult { get; set; } = new() { IsSuccess = true };
+    public UserActionResult ApproveTurnResult { get; set; } = new() { IsSuccess = true };
+    public List<PendingApprovalIrrigationTurnDto>? PendingApprovalTurnsToReturn { get; set; } = [];
 
     // Clave: HydraulicSectorId consultado -> true/false a devolver. Default true ("sin actividad
     // todavía") si el test no configura una entrada, mismo fallback que ApiService.
@@ -18,6 +21,8 @@ public class FakeIrrigationService : IIrrigationService
     public Guid? LastStartTurnCall { get; private set; }
     public Guid? LastCompleteTurnCall { get; private set; }
     public Guid? LastIsIrrigationDayCall { get; private set; }
+    public Guid? LastApproveTurnCall { get; private set; }
+    public (Guid HydraulicSectorId, Guid RequesterId, DateTime StartTime, DateTime EndTime)? LastRequestTurnCall { get; private set; }
 
     public Task<List<WalkwayIrrigationStatusDto>?> GetIrrigationStatusAsync() => Task.FromResult(StatusToReturn);
 
@@ -34,6 +39,20 @@ public class FakeIrrigationService : IIrrigationService
         LastCompleteTurnCall = turnId;
         return Task.FromResult(CompleteTurnResult);
     }
+
+    public Task<UserActionResult> RequestTurnAsync(Guid hydraulicSectorId, Guid requesterId, DateTime startTime, DateTime endTime)
+    {
+        LastRequestTurnCall = (hydraulicSectorId, requesterId, startTime, endTime);
+        return Task.FromResult(RequestTurnResult);
+    }
+
+    public Task<UserActionResult> ApproveTurnAsync(Guid turnId)
+    {
+        LastApproveTurnCall = turnId;
+        return Task.FromResult(ApproveTurnResult);
+    }
+
+    public Task<List<PendingApprovalIrrigationTurnDto>?> GetPendingApprovalTurnsAsync() => Task.FromResult(PendingApprovalTurnsToReturn);
 
     public Task<bool> IsIrrigationDayAsync(Guid hydraulicSectorId)
     {

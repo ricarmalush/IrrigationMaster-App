@@ -56,6 +56,14 @@
                                    FontSize="14"
                                    TextColor="Gray"/>
 
+                            <!-- ACCIÓN: Solicitar mi turno (solo en mi propio andador, sin turno hoy todavía) -->
+                            <Button Text="Solicitar mi turno"
+                                    Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.RequestTurnCommand}"
+                                    CommandParameter="{Binding .}"
+                                    IsVisible="{Binding CanRequestTurn}"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    HeightRequest="40"/>
+
                             <!-- VECINOS DEL ANDADOR -->
                             <VerticalStackLayout Spacing="10"
                                                   IsVisible="{Binding HasNeighbors}"
@@ -72,6 +80,13 @@
                                                     </FormattedString>
                                                 </Label.FormattedText>
                                             </Label>
+
+                                            <!-- Turno solicitado pero aún sin aprobar (solo sobre mi propia fila) -->
+                                            <Label Text="Esperando aprobación"
+                                                   IsVisible="{Binding ShowWaitingApprovalLabel}"
+                                                   FontSize="13"
+                                                   FontAttributes="Italic"
+                                                   TextColor="#999"/>
 
                                             <!-- ACCIÓN: Empezar mi turno (solo sobre mi propia fila, Pendiente) -->
                                             <Button Text="Empezar mi turno"

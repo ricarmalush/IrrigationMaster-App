@@ -430,11 +430,38 @@ namespace IrrigationMaster.UI.Maui.Common {
         }
 
         /// <summary>
+        ///   Busca una cadena traducida similar a Turno aprobado con éxito..
+        /// </summary>
+        public static string TurnApprovedSuccess {
+            get {
+                return ResourceManager.GetString("TurnApprovedSuccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a Turno solicitado. Espera a que lo apruebe el Presidente de tu organización..
+        /// </summary>
+        public static string TurnRequestedSuccess {
+            get {
+                return ResourceManager.GetString("TurnRequestedSuccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Busca una cadena traducida similar a Turno iniciado con éxito..
         /// </summary>
         public static string TurnStartedSuccess {
             get {
                 return ResourceManager.GetString("TurnStartedSuccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a Esperando aprobación..
+        /// </summary>
+        public static string WaitingApprovalStatus {
+            get {
+                return ResourceManager.GetString("WaitingApprovalStatus", resourceCulture);
             }
         }
 

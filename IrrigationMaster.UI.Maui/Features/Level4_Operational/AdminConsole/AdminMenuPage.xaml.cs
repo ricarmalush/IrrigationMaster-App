@@ -1,6 +1,7 @@
 ﻿using IrrigationMaster.Mobile.Application.Interfaces;
 using IrrigationMaster.UI.Maui.Common;
 using IrrigationMaster.UI.Maui.Features.Level3_Functional.Users;
+using IrrigationMaster.UI.Maui.Features.Level4_Operational.ApproveTurns;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.CommunityBroadcast;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.IrrigationStatus;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.Notifications;
@@ -31,6 +32,7 @@ public partial class AdminMenuPage : ContentPage
         var isNotVecino = !string.Equals(role, VecinoRoleCode, StringComparison.OrdinalIgnoreCase);
         UserManagementButton.IsVisible = isNotVecino;
         CommunityBroadcastButton.IsVisible = isNotVecino;
+        ApproveTurnsButton.IsVisible = isNotVecino;
     }
 
     private async void OnUserManagementClicked(object sender, EventArgs e)
@@ -74,6 +76,32 @@ public partial class AdminMenuPage : ContentPage
             else
             {
                 await DisplayAlert(AppStrings.SystemErrorTitle, "No se pudo cargar el estado de riego.", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Navigation Error]: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// SECCIÓN: RIEGO -- Aprobar Turnos, visible solo para Presidente/Vicepresidente/SUPERADMIN
+    /// (mismo gating que OnCommunityBroadcastClicked).
+    /// </summary>
+    private async void OnApproveTurnsClicked(object sender, EventArgs e)
+    {
+        try
+        {
+            var approveTurnsPage = Handler?.MauiContext?.Services.GetService<ApproveTurnsPage>();
+
+            if (approveTurnsPage != null)
+            {
+                // PushAsync (no PushModalAsync): mismo motivo que OnUserManagementClicked.
+                await Navigation.PushAsync(approveTurnsPage);
+            }
+            else
+            {
+                await DisplayAlert(AppStrings.SystemErrorTitle, "No se pudo cargar la aprobación de turnos.", "OK");
             }
         }
         catch (Exception ex)

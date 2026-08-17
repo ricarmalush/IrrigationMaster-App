@@ -571,6 +571,77 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         }
     }
 
+    public async Task<UserActionResult> RequestTurnAsync(Guid hydraulicSectorId, Guid requesterId, DateTime startTime, DateTime endTime)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var request = new CreateIrrigationTurnRequest
+            {
+                StartTime = startTime,
+                EndTime = endTime,
+                HydraulicSectorId = hydraulicSectorId,
+                RequesterId = requesterId
+            };
+
+            var response = await _httpClient.PostAsJsonAsync(ApiEndpoints.IrrigationTurnsCreate, request);
+            return await ReadUserActionResultAsync(response);
+        }
+        catch (HttpRequestException)
+        {
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - RequestTurn]: {ex.Message}");
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
+        }
+    }
+
+    public async Task<UserActionResult> ApproveTurnAsync(Guid turnId)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.PatchAsync($"{ApiEndpoints.IrrigationTurns}/{turnId}/approve", null);
+            return await ReadUserActionResultAsync(response);
+        }
+        catch (HttpRequestException)
+        {
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - ApproveTurn]: {ex.Message}");
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
+        }
+    }
+
+    public async Task<List<PendingApprovalIrrigationTurnDto>?> GetPendingApprovalTurnsAsync()
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.GetAsync(ApiEndpoints.IrrigationTurnsPendingApproval);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var wrapped = await response.Content.ReadFromJsonAsync<PendingApprovalTurnsResponse>();
+                return wrapped?.Data;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - PendingApprovalTurns]: {ex.Message}");
+            return null;
+        }
+    }
+
     public async Task<bool> IsIrrigationDayAsync(Guid hydraulicSectorId)
     {
         try
