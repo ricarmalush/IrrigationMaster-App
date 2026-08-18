@@ -698,6 +698,46 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         }
     }
 
+    public async Task<UserActionResult> CreateIrrigationProgramAsync(CreateIrrigationProgramRequest request)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.PostAsJsonAsync(ApiEndpoints.IrrigationProgramsCreate, request);
+            return await ReadUserActionResultAsync(response);
+        }
+        catch (HttpRequestException)
+        {
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - CreateIrrigationProgram]: {ex.Message}");
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
+        }
+    }
+
+    public async Task<UserActionResult> UpdateIrrigationProgramAsync(Guid id, UpdateIrrigationProgramRequest request)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.PutAsJsonAsync($"{ApiEndpoints.IrrigationProgramsUpdate}/{id}", request);
+            return await ReadUserActionResultAsync(response);
+        }
+        catch (HttpRequestException)
+        {
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - UpdateIrrigationProgram]: {ex.Message}");
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
+        }
+    }
+
     // ─── 6. NOTIFICACIONES ───
 
     public async Task<List<NotificationDto>?> GetMyNotificationsAsync()

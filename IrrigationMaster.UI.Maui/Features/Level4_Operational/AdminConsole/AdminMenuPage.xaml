@@ -50,6 +50,15 @@
                         IsVisible="False"
                         BackgroundColor="Transparent" TextColor="#0277BD" BorderColor="#0277BD" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
 
+                <!-- Visible para SUPERADMIN/Coordinador de Riego (permiso MANAGE_IRRIGATION_PROGRAMS
+                     en el backend). Antes exclusivo de SUPERADMIN porque el rol Coordinador todavía
+                     no existía. -->
+                <Button x:Name="IrrigationProgramsButton"
+                        Text="📅 Calendario de Riego"
+                        Clicked="OnIrrigationProgramsClicked"
+                        IsVisible="False"
+                        BackgroundColor="Transparent" TextColor="#0277BD" BorderColor="#0277BD" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
+
                 <Label Text="Notificaciones" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
 
                 <!-- Visible para los 3 roles sin restricción: cualquier usuario debe poder ver

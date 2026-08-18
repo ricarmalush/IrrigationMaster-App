@@ -156,6 +156,12 @@
   <data name="MsgMissingIncidentDescription" xml:space="preserve">
     <value>Por favor, describe la incidencia antes de enviarla.</value>
   </data>
+  <data name="MsgMissingIrrigationProgramData" xml:space="preserve">
+    <value>Por favor, completa todos los datos del programa de riego.</value>
+  </data>
+  <data name="MsgInvalidSeasonData" xml:space="preserve">
+    <value>La temporada debe rellenarse completa (inicio y fin) o dejarse completamente vacía.</value>
+  </data>
   <data name="MsgMissingOrgData" xml:space="preserve">
     <value>Por favor, completa todos los datos de la organización.</value>
   </data>
@@ -209,6 +215,12 @@
   </data>
   <data name="SectorCreatedSuccess" xml:space="preserve">
     <value>Sector Hidráulico creado con éxito.</value>
+  </data>
+  <data name="IrrigationProgramCreatedSuccess" xml:space="preserve">
+    <value>Programa de riego creado con éxito.</value>
+  </data>
+  <data name="IrrigationProgramUpdatedSuccess" xml:space="preserve">
+    <value>Programa de riego actualizado con éxito.</value>
   </data>
   <data name="ServerErrorCode" xml:space="preserve">
     <value>Error del servidor (Código:</value>

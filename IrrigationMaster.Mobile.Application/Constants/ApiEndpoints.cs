@@ -33,6 +33,8 @@ namespace IrrigationMaster.Mobile.Application.Constants
         public const string IrrigationTurnsPendingApproval = "IrrigationTurns/pending-approval";
         public const string IrrigationProgramsIsIrrigationDay = "IrrigationPrograms/IsIrrigationDay";
         public const string IrrigationProgramsPagination = "IrrigationPrograms/pagination";
+        public const string IrrigationProgramsCreate = "IrrigationPrograms/Create";
+        public const string IrrigationProgramsUpdate = "IrrigationPrograms/Update";
         public const string NotificationsMine = "Notifications/Mine";
         public const string NotificationsMarkAsRead = "Notifications/MarkAsRead";
         public const string NotificationsMarkAllAsRead = "Notifications/MarkAllAsRead";

@@ -2,6 +2,7 @@
 using IrrigationMaster.Mobile.Infrastructure;
 using IrrigationMaster.UI.Maui.Features.Level1_Core.Login;
 using IrrigationMaster.UI.Maui.Features.Level1_Core.Register;
+using IrrigationMaster.UI.Maui.Features.Level3_Functional.IrrigationPrograms;
 using IrrigationMaster.UI.Maui.Features.Level3_Functional.Users;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.AdminConsole;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.ApproveTurns;
@@ -57,6 +58,8 @@ public static class MauiProgram
         // ─── NIVEL 3: FUNCIONAL (Usuarios y Roles) ───
         builder.Services.AddTransient<UserManagementPage>();
         builder.Services.AddTransient<UserManagementViewModel>();
+        builder.Services.AddTransient<IrrigationProgramsPage>();
+        builder.Services.AddTransient<IrrigationProgramsViewModel>();
 
         // ─── NIVEL 4: OPERACIONAL (Admin Console) ───
         builder.Services.AddTransient<AdminMenuPage>();

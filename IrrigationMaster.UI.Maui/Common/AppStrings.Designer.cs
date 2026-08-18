@@ -187,6 +187,24 @@ namespace IrrigationMaster.UI.Maui.Common {
         }
 
         /// <summary>
+        ///   Busca una cadena traducida similar a Por favor, completa todos los datos del programa de riego..
+        /// </summary>
+        public static string MsgMissingIrrigationProgramData {
+            get {
+                return ResourceManager.GetString("MsgMissingIrrigationProgramData", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a La temporada debe rellenarse completa (inicio y fin) o dejarse completamente vacía..
+        /// </summary>
+        public static string MsgInvalidSeasonData {
+            get {
+                return ResourceManager.GetString("MsgInvalidSeasonData", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Busca una cadena traducida similar a Por favor, completa todos los datos de la organización..
         /// </summary>
         public static string MsgMissingOrgData {
@@ -383,7 +401,25 @@ namespace IrrigationMaster.UI.Maui.Common {
                 return ResourceManager.GetString("SectorCreatedSuccess", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a Programa de riego creado con éxito..
+        /// </summary>
+        public static string IrrigationProgramCreatedSuccess {
+            get {
+                return ResourceManager.GetString("IrrigationProgramCreatedSuccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a Programa de riego actualizado con éxito..
+        /// </summary>
+        public static string IrrigationProgramUpdatedSuccess {
+            get {
+                return ResourceManager.GetString("IrrigationProgramUpdatedSuccess", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Busca una cadena traducida similar a Error del servidor (Código:.
         /// </summary>

@@ -2,6 +2,7 @@
 using IrrigationMaster.UI.Maui.Common;
 using IrrigationMaster.UI.Maui.Features.Level3_Functional.Users;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.ApproveTurns;
+using IrrigationMaster.UI.Maui.Features.Level3_Functional.IrrigationPrograms;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.CommunityBroadcast;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.IrrigationStatus;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.Notifications;
@@ -11,10 +12,17 @@ namespace IrrigationMaster.UI.Maui.Features.Level4_Operational.AdminConsole;
 
 public partial class AdminMenuPage : ContentPage
 {
-    // La App todavía no lee permisos granulares del JWT (pendiente aparte): por ahora, cualquier
-    // usuario autenticado que no sea VECINO puede ver el botón. El backend es quien realmente
-    // decide si la acción concreta (aprobar/asignar andador/cambiar rol) está permitida.
-    private const string VecinoRoleCode = "VECINO";
+    // La App todavía no lee permisos granulares del JWT (pendiente aparte): CachedRole/GetRoleAsync
+    // solo traen un único código de rol, nunca la lista de permisos concedidos. Por eso el gating
+    // real sigue siendo por código de rol -- mismo criterio que SystemSettingsViewModel.
+    // ApplyTabVisibility -- pero ENUMERANDO qué roles concretos ven cada botón, en vez de un único
+    // flag "no es Vecino" (isNotVecino): con 4 roles no-Vecino que ya no comparten exactamente las
+    // mismas acciones (Coordinador de Riego ve Avisos y Calendario, pero no Gestión de Usuarios ni
+    // Aprobar Turnos), ese flag único dejó de alcanzar.
+    private const string SuperAdminRoleCode = "SUPERADMIN";
+    private const string PresidenteRoleCode = "PRESIDENTE";
+    private const string VicepresidenteRoleCode = "VICEPRESIDENTE";
+    private const string CoordinadorRiegoRoleCode = "COORDINADOR_RIEGO";
 
     private readonly ICurrentSession _currentSession;
     private readonly IStructureService _structureService;
@@ -31,18 +39,42 @@ public partial class AdminMenuPage : ContentPage
         base.OnAppearing();
 
         var role = await _currentSession.GetRoleAsync();
-        var isNotVecino = !string.Equals(role, VecinoRoleCode, StringComparison.OrdinalIgnoreCase);
-        UserManagementButton.IsVisible = isNotVecino;
-        CommunityBroadcastButton.IsVisible = isNotVecino;
-        ApproveTurnsButton.IsVisible = isNotVecino;
+        var visibility = ComputeMenuVisibility(role);
 
-        // Estas dos etiquetas de sección agrupan un único botón, también gateado por rol -- deben
-        // ocultarse junto con él para no quedar huérfanas sin ningún botón debajo (a diferencia de
-        // "Riego", que sigue teniendo Estado de Riego visible aunque se oculte Aprobar Turnos).
-        HistorialLabel.IsVisible = isNotVecino;
-        AvisosLabel.IsVisible = isNotVecino;
+        UserManagementButton.IsVisible = visibility.ShowUserManagement;
+        CommunityBroadcastButton.IsVisible = visibility.ShowCommunityBroadcast;
+        ApproveTurnsButton.IsVisible = visibility.ShowApproveTurns;
+        IrrigationProgramsButton.IsVisible = visibility.ShowIrrigationPrograms;
+
+        // Estas dos etiquetas de sección agrupan un único botón cada una: deben ocultarse junto
+        // con SU botón (no con un flag compartido) para no quedar huérfanas sin nada debajo.
+        HistorialLabel.IsVisible = visibility.ShowUserManagement;
+        AvisosLabel.IsVisible = visibility.ShowCommunityBroadcast;
 
         await LoadOrganizationNameAsync();
+    }
+
+    // Estático y testable a propósito (mismo motivo que BuildHeaderText): así el matriz de
+    // visibilidad por rol se puede cubrir con tests reales sin necesitar un ContentPage con
+    // Handler de MAUI corriendo.
+    internal static (bool ShowUserManagement, bool ShowCommunityBroadcast, bool ShowApproveTurns, bool ShowIrrigationPrograms) ComputeMenuVisibility(string? role)
+    {
+        bool isSuperAdmin = string.Equals(role, SuperAdminRoleCode, StringComparison.OrdinalIgnoreCase);
+        bool isPresidente = string.Equals(role, PresidenteRoleCode, StringComparison.OrdinalIgnoreCase);
+        bool isVicepresidente = string.Equals(role, VicepresidenteRoleCode, StringComparison.OrdinalIgnoreCase);
+        bool isCoordinadorRiego = string.Equals(role, CoordinadorRiegoRoleCode, StringComparison.OrdinalIgnoreCase);
+
+        return (
+            // Gestión de Usuarios y Roles / Aprobar Turnos: sin Coordinador de Riego -- solo la
+            // autoridad de organización (Presidente/Vicepresidente) y SUPERADMIN.
+            ShowUserManagement: isSuperAdmin || isPresidente || isVicepresidente,
+            // Avisar a mi comunidad: Presidente/Vicepresidente/Coordinador de Riego/SUPERADMIN.
+            ShowCommunityBroadcast: isSuperAdmin || isPresidente || isVicepresidente || isCoordinadorRiego,
+            ShowApproveTurns: isSuperAdmin || isPresidente || isVicepresidente,
+            // Calendario de Riego: antes exclusivo de SUPERADMIN: ahora también Coordinador de
+            // Riego, el rol pensado precisamente para esto (permiso MANAGE_IRRIGATION_PROGRAMS).
+            ShowIrrigationPrograms: isSuperAdmin || isCoordinadorRiego
+        );
     }
 
     // Mismo endpoint que ya usa "Mi Organización" en SystemSettingsViewModel
@@ -138,6 +170,32 @@ public partial class AdminMenuPage : ContentPage
             else
             {
                 await DisplayAlert(AppStrings.SystemErrorTitle, "No se pudo cargar la aprobación de turnos.", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Navigation Error]: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// SECCIÓN: RIEGO -- Calendario de Riego, visible para SUPERADMIN/Coordinador de Riego
+    /// (permiso MANAGE_IRRIGATION_PROGRAMS en el backend).
+    /// </summary>
+    private async void OnIrrigationProgramsClicked(object sender, EventArgs e)
+    {
+        try
+        {
+            var irrigationProgramsPage = Handler?.MauiContext?.Services.GetService<IrrigationProgramsPage>();
+
+            if (irrigationProgramsPage != null)
+            {
+                // PushAsync (no PushModalAsync): mismo motivo que OnUserManagementClicked.
+                await Navigation.PushAsync(irrigationProgramsPage);
+            }
+            else
+            {
+                await DisplayAlert(AppStrings.SystemErrorTitle, "No se pudo cargar el calendario de riego.", "OK");
             }
         }
         catch (Exception ex)

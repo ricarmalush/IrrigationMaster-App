@@ -11,6 +11,7 @@ namespace IrrigationMaster.UI.Maui.Tests.TestDoubles;
 public class FakeStructureService : IStructureService
 {
     public List<OrganizationDto>? OrganizationsToReturn { get; set; } = [];
+    public List<HydraulicSectorDto>? HydraulicSectorsToReturn { get; set; } = [];
 
     // Clave: WalkwayId consultado -> detalle a devolver. Permite a IrrigationStatusViewModelTests
     // configurar el HydraulicSectorId de cada andador vacío sin tener que implementar todo el
@@ -30,6 +31,6 @@ public class FakeStructureService : IStructureService
     public Task<StructureOperationResult> CreateHydraulicSectorAsync(CreateHydraulicSectorRequest request) => throw new NotImplementedException();
     public Task<StructureOperationResult> CreateWalkwayAsync(CreateWalkwayRequest request) => throw new NotImplementedException();
     public Task<List<CountryDto>?> GetCountriesAsync() => throw new NotImplementedException();
-    public Task<List<HydraulicSectorDto>?> GetHydraulicSectorsAsync() => throw new NotImplementedException();
+    public Task<List<HydraulicSectorDto>?> GetHydraulicSectorsAsync() => Task.FromResult(HydraulicSectorsToReturn);
     public Task<OrganizationDto?> GetOrganizationAsync(Guid organizationId) => throw new NotImplementedException();
 }

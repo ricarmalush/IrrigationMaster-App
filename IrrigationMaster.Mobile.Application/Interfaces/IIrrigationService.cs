@@ -35,4 +35,12 @@ public interface IIrrigationService
     // filtrado por IsActive lo hace el consumidor). No hay filtro por HydraulicSectorId en el
     // backend, así que se trae todo de una vez y se cruza en memoria.
     Task<List<IrrigationProgramDto>?> GetIrrigationProgramsAsync();
+
+    // Requiere SUPERADMIN o el permiso MANAGE_IRRIGATION_PROGRAMS (rol Coordinador de Riego) en
+    // el backend -- esta capa no duplica esa comprobación, solo transporta la petición.
+    Task<UserActionResult> CreateIrrigationProgramAsync(CreateIrrigationProgramRequest request);
+
+    // Mismo gating que CreateIrrigationProgramAsync. El sector hidráulico no es editable aquí (ver
+    // UpdateIrrigationProgramRequest).
+    Task<UserActionResult> UpdateIrrigationProgramAsync(Guid id, UpdateIrrigationProgramRequest request);
 }

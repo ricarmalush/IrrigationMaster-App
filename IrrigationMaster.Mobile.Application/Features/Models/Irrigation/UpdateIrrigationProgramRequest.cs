@@ -2,14 +2,11 @@ using System.Text.Json.Serialization;
 
 namespace IrrigationMaster.Mobile.Application.Features.Models.Irrigation;
 
-// Espejo de IrrigationProgramResponseDto del backend (IrrigationPrograms/pagination). Id/Name/
-// StartTime/DurationMinutes se añadieron para la pantalla de Calendario de Riego (crear/editar);
-// Estado de Riego solo usa HydraulicSectorId/DaysOfWeek/IsActive/temporada para la línea de patrón.
-public class IrrigationProgramDto
+// Espejo de UpdateIrrigationProgramRequestDto del backend (IrrigationPrograms/Update/{id}). Sin
+// HydraulicSectorId a propósito: el backend no permite cambiar el sector de un programa existente,
+// solo su configuración horaria/de recurrencia y su estado activo/inactivo.
+public class UpdateIrrigationProgramRequest
 {
-    [JsonPropertyName("id")]
-    public Guid Id { get; init; }
-
     [JsonPropertyName("name")]
     public string Name { get; init; } = string.Empty;
 
@@ -19,20 +16,12 @@ public class IrrigationProgramDto
     [JsonPropertyName("durationMinutes")]
     public int DurationMinutes { get; init; }
 
-    [JsonPropertyName("hydraulicSectorId")]
-    public Guid HydraulicSectorId { get; init; }
-
-    // CSV de enteros ISO-8601: Lunes=1 ... Domingo=7 (p. ej. "1,3,5"). Convención asumida por el
-    // propio backend (ver GetIsIrrigationDayHandler), no forzada por ningún enum ni validación de
-    // formato del lado servidor.
     [JsonPropertyName("daysOfWeek")]
     public string DaysOfWeek { get; init; } = string.Empty;
 
     [JsonPropertyName("isActive")]
     public bool IsActive { get; init; }
 
-    // Todo-o-nada: o los 4 vienen con valor, o los 4 son null (sin restricción de temporada,
-    // riega todo el año) -- validado así en el propio backend.
     [JsonPropertyName("seasonStartMonth")]
     public int? SeasonStartMonth { get; init; }
 

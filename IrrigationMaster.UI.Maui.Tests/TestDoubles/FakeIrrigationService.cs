@@ -13,6 +13,11 @@ public class FakeIrrigationService : IIrrigationService
     public UserActionResult RequestTurnResult { get; set; } = new() { IsSuccess = true };
     public UserActionResult ApproveTurnResult { get; set; } = new() { IsSuccess = true };
     public List<PendingApprovalIrrigationTurnDto>? PendingApprovalTurnsToReturn { get; set; } = [];
+    public UserActionResult CreateIrrigationProgramResult { get; set; } = new() { IsSuccess = true };
+    public UserActionResult UpdateIrrigationProgramResult { get; set; } = new() { IsSuccess = true };
+
+    public CreateIrrigationProgramRequest? LastCreateIrrigationProgramCall { get; private set; }
+    public (Guid Id, UpdateIrrigationProgramRequest Request)? LastUpdateIrrigationProgramCall { get; private set; }
 
     // Clave: HydraulicSectorId consultado -> true/false a devolver. Default true ("sin actividad
     // todavía") si el test no configura una entrada, mismo fallback que ApiService.
@@ -53,6 +58,18 @@ public class FakeIrrigationService : IIrrigationService
     }
 
     public Task<List<PendingApprovalIrrigationTurnDto>?> GetPendingApprovalTurnsAsync() => Task.FromResult(PendingApprovalTurnsToReturn);
+
+    public Task<UserActionResult> CreateIrrigationProgramAsync(CreateIrrigationProgramRequest request)
+    {
+        LastCreateIrrigationProgramCall = request;
+        return Task.FromResult(CreateIrrigationProgramResult);
+    }
+
+    public Task<UserActionResult> UpdateIrrigationProgramAsync(Guid id, UpdateIrrigationProgramRequest request)
+    {
+        LastUpdateIrrigationProgramCall = (id, request);
+        return Task.FromResult(UpdateIrrigationProgramResult);
+    }
 
     public Task<bool> IsIrrigationDayAsync(Guid hydraulicSectorId)
     {
