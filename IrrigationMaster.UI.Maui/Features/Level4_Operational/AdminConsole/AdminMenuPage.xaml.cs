@@ -33,6 +33,12 @@ public partial class AdminMenuPage : ContentPage
         UserManagementButton.IsVisible = isNotVecino;
         CommunityBroadcastButton.IsVisible = isNotVecino;
         ApproveTurnsButton.IsVisible = isNotVecino;
+
+        // Estas dos etiquetas de sección agrupan un único botón, también gateado por rol -- deben
+        // ocultarse junto con él para no quedar huérfanas sin ningún botón debajo (a diferencia de
+        // "Riego", que sigue teniendo Estado de Riego visible aunque se oculte Aprobar Turnos).
+        HistorialLabel.IsVisible = isNotVecino;
+        AvisosLabel.IsVisible = isNotVecino;
     }
 
     private async void OnUserManagementClicked(object sender, EventArgs e)

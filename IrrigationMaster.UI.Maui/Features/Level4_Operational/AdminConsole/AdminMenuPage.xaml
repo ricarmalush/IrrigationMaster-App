@@ -16,7 +16,9 @@
                 <Label Text="CONSOLA DE CONTROL MAESTRO" FontSize="12" FontAttributes="Bold" TextColor="#2E7D32" HorizontalOptions="Center" CharacterSpacing="1.5"/>
                 <Label Text="Gestión Operativa - El Saso" FontSize="20" FontAttributes="Bold" TextColor="Black" HorizontalOptions="Center" Margin="0,0,0,10"/>
 
-                <Label Text="Historial y Estructura" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
+                <!-- Único botón bajo esta etiqueta es UserManagementButton, gateado por rol: la
+                     etiqueta debe ocultarse junto con él para no quedar huérfana ante un Vecino. -->
+                <Label x:Name="HistorialLabel" Text="Historial y Estructura" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
 
                 <Button x:Name="UserManagementButton"
                         Text="🧑‍🤝‍🧑 Gestión de Usuarios y Roles"
@@ -57,7 +59,9 @@
                         Clicked="OnReportIncidentClicked"
                         BackgroundColor="Transparent" TextColor="#C62828" BorderColor="#C62828" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
 
-                <Label Text="Avisos" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
+                <!-- Único botón bajo esta etiqueta es CommunityBroadcastButton, gateado por rol: la
+                     etiqueta debe ocultarse junto con él para no quedar huérfana ante un Vecino. -->
+                <Label x:Name="AvisosLabel" Text="Avisos" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
 
                 <!-- Visible solo para Presidente/SUPERADMIN: un Vecino no debe poder enviar avisos
                      masivos, solo incidencias individuales al Presidente. -->
