@@ -17,11 +17,13 @@ public partial class AdminMenuPage : ContentPage
     private const string VecinoRoleCode = "VECINO";
 
     private readonly ICurrentSession _currentSession;
+    private readonly IStructureService _structureService;
 
-    public AdminMenuPage(ICurrentSession currentSession)
+    public AdminMenuPage(ICurrentSession currentSession, IStructureService structureService)
     {
         InitializeComponent();
         _currentSession = currentSession;
+        _structureService = structureService;
     }
 
     protected override async void OnAppearing()
@@ -39,7 +41,35 @@ public partial class AdminMenuPage : ContentPage
         // "Riego", que sigue teniendo Estado de Riego visible aunque se oculte Aprobar Turnos).
         HistorialLabel.IsVisible = isNotVecino;
         AvisosLabel.IsVisible = isNotVecino;
+
+        await LoadOrganizationNameAsync();
     }
+
+    // Mismo endpoint que ya usa "Mi Organización" en SystemSettingsViewModel
+    // (LoadMyOrganizationAsync) -- se lee tras el login, nunca un nombre fijo en el XAML, para que
+    // cada organización vea el suyo propio en este mismo APK multi-tenant.
+    private async Task LoadOrganizationNameAsync()
+    {
+        try
+        {
+            var organizationIdRaw = await _currentSession.GetOrganizationIdAsync();
+            if (!Guid.TryParse(organizationIdRaw, out var organizationId)) return;
+
+            var organization = await _structureService.GetOrganizationAsync(organizationId);
+            HeaderTitleLabel.Text = BuildHeaderText(organization?.Name);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Error Loading OrganizationName]: {ex.Message}");
+        }
+    }
+
+    // "Gestión Operativa" a secas si el nombre no llegó a cargar (fallo de red, aún no
+    // resuelto) -- nunca debe volver a mostrarse un nombre de cliente fijo.
+    internal static string BuildHeaderText(string? organizationName) =>
+        string.IsNullOrWhiteSpace(organizationName)
+            ? "Gestión Operativa"
+            : $"Gestión Operativa - {organizationName}";
 
     private async void OnUserManagementClicked(object sender, EventArgs e)
     {

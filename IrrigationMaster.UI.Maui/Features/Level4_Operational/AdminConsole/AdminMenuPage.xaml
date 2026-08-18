@@ -13,8 +13,15 @@
                                  HorizontalOptions="Center"
                                  VerticalOptions="Center">
 
-                <Label Text="CONSOLA DE CONTROL MAESTRO" FontSize="12" FontAttributes="Bold" TextColor="#2E7D32" HorizontalOptions="Center" CharacterSpacing="1.5"/>
-                <Label Text="Gestión Operativa - El Saso" FontSize="20" FontAttributes="Bold" TextColor="Black" HorizontalOptions="Center" Margin="0,0,0,10"/>
+                <Label Text="CONSOLA DE CONTROL MAESTRO" FontSize="12" FontAttributes="Bold" TextColor="#2E7D32" HorizontalOptions="Center" HorizontalTextAlignment="Center" CharacterSpacing="1.5"/>
+
+                <!-- Texto por defecto sin nombre de organización: OnAppearing lo completa con el
+                     nombre real en cuanto GetOrganizationAsync responde (ver BuildHeaderText).
+                     HorizontalTextAlignment (no solo HorizontalOptions) es necesario aquí: con un
+                     nombre de organización largo el texto envuelve a dos líneas, y sin él cada
+                     línea envuelta queda alineada a la izquierda dentro de la etiqueta aunque la
+                     etiqueta en sí esté centrada. -->
+                <Label x:Name="HeaderTitleLabel" Text="Gestión Operativa" FontSize="20" FontAttributes="Bold" TextColor="Black" HorizontalOptions="Center" HorizontalTextAlignment="Center" Margin="0,0,0,10"/>
 
                 <!-- Único botón bajo esta etiqueta es UserManagementButton, gateado por rol: la
                      etiqueta debe ocultarse junto con él para no quedar huérfana ante un Vecino. -->

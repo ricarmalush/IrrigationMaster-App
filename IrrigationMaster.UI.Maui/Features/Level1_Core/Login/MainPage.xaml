@@ -25,7 +25,7 @@
                                      HorizontalOptions="Center"
                                      VerticalOptions="Center">
 
-                    <Label Text="GESTIÓN DE RIEGO - EL SASO"
+                    <Label Text="GESTIÓN DE RIEGO"
                            FontSize="18"
                            FontAttributes="Bold"
                            TextColor="Black"
@@ -33,7 +33,10 @@
                            HorizontalOptions="Center"
                            Margin="0,10,0,15" />
 
-                    <Image Source="logo_saso.png"
+                    <!-- Logo genérico: el login es previo a la autenticación, así que todavía no
+                         se sabe de qué organización es el usuario (ver AdminMenuPage, que sí
+                         muestra el nombre real tras el login). -->
+                    <Image Source="logo_generic.svg"
                            HeightRequest="110"
                            HorizontalOptions="Center"
                            Margin="0,0,0,5"/>
