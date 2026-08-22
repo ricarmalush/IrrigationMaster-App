@@ -38,9 +38,25 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
 
             var response = await _httpClient.PostAsJsonAsync(ApiEndpoints.Login, requestData);
 
-            if (response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            // 401 (credenciales inválidas/cuenta inactiva) y 402 (sin licencia activa, ver
+            // AuthController.Login) llevan el mismo cuerpo Response<string> que un 400 o un 200 --
+            // hay que leerlo siempre para no perder el mensaje real del backend.
+            if (response.IsSuccessStatusCode ||
+                response.StatusCode == System.Net.HttpStatusCode.BadRequest ||
+                response.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
+                response.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
             {
-                return await response.Content.ReadFromJsonAsync<LoginResponse>();
+                var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponse>();
+                if (loginResponse is null) return loginResponse;
+
+                return new LoginResponse
+                {
+                    Data = loginResponse.Data,
+                    IsSuccess = loginResponse.IsSuccess,
+                    Message = loginResponse.Message,
+                    Errors = loginResponse.Errors,
+                    IsLicenceError = response.StatusCode == System.Net.HttpStatusCode.PaymentRequired
+                };
             }
 
             return new LoginResponse

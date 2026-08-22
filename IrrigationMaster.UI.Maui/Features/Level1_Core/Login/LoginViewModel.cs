@@ -73,7 +73,12 @@ public partial class LoginViewModel : ObservableObject
         {
             // El inicio de sesión falló. Pintamos el mensaje que viene del backend o el de respaldo de red.
             string errorMsg = loginResult?.Message ?? AppStrings.NetworkFallbackError;
-            await _alertService.ShowAsync(AppStrings.ErrorTitle, errorMsg);
+
+            // Sin licencia activa (402) es una advertencia a resolver (contratar/renovar), no un
+            // fallo de credenciales -- mismo criterio que isLicenceError en el Front Angular, aquí
+            // señalizado por ApiService a partir del status code, no comparando el mensaje.
+            string title = loginResult?.IsLicenceError == true ? AppStrings.LicenceRequiredTitle : AppStrings.ErrorTitle;
+            await _alertService.ShowAsync(title, errorMsg);
         }
     }
 

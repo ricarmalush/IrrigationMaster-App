@@ -55,6 +55,32 @@ public class LoginViewModelTests
     }
 
     [Fact]
+    public async Task ExecuteLoginAsync_WithoutActiveLicence_ShowsLicenceWarningTitle_WithRealBackendMessage()
+    {
+        // ApiService marca IsLicenceError=true a partir del 402 (ver ApiServiceTests) -- aquí solo
+        // se cubre que el ViewModel reaccione a ese flag con un título distinto (mismo criterio que
+        // isLicenceError en el Front Angular), no de dónde viene el flag.
+        var (vm, auth, session, alerts, navigation) = CreateSut();
+        auth.ResponseToReturn = new LoginResponse
+        {
+            IsSuccess = false,
+            Message = "Tu organización no dispone de una licencia activa, y no tienes una licencia individual propia. Contacta con soporte.",
+            IsLicenceError = true
+        };
+        vm.Email = "sinlicencia@test.com";
+        vm.Password = "clave-valida";
+
+        await vm.ExecuteLoginAsync();
+
+        Assert.False(vm.IsLoading);
+        Assert.Null(session.EstablishedWithToken);
+        Assert.Empty(navigation.Routes);
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.LicenceRequiredTitle, alert.Title);
+        Assert.Equal("Tu organización no dispone de una licencia activa, y no tienes una licencia individual propia. Contacta con soporte.", alert.Message);
+    }
+
+    [Fact]
     public async Task ExecuteLoginAsync_OnNetworkFailure_ShowsNetworkErrorMessage()
     {
         // IAuthService/ApiService nunca lanza: un fallo de red vuelve como IsSuccess=false

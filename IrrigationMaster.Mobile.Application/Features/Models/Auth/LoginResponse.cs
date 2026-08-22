@@ -17,4 +17,10 @@ public class LoginResponse
     // El backend serializa IEnumerable<BaseError> como array de objetos, no como diccionario.
     [JsonPropertyName("errors")]
     public List<ApiError>? Errors { get; init; }
+
+    // No viene del JSON: ApiService lo rellena a partir del status code (402 Payment Required),
+    // igual que isLicenceError en el Front Angular -- así el ViewModel distingue "sin licencia
+    // activa" de un fallo de credenciales normal sin tener que comparar el texto del mensaje.
+    [JsonIgnore]
+    public bool IsLicenceError { get; init; }
 }

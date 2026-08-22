@@ -104,7 +104,16 @@ namespace IrrigationMaster.UI.Maui.Common {
                 return ResourceManager.GetString("ErrorTitle", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a ⚠️ Licencia requerida.
+        /// </summary>
+        public static string LicenceRequiredTitle {
+            get {
+                return ResourceManager.GetString("LicenceRequiredTitle", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Busca una cadena traducida similar a Accediendo al Historial Auditado de Riego....
         /// </summary>

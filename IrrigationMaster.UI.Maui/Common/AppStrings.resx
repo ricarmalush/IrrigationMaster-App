@@ -126,6 +126,9 @@
   <data name="ErrorTitle" xml:space="preserve">
     <value>Error de Acceso</value>
   </data>
+  <data name="LicenceRequiredTitle" xml:space="preserve">
+    <value>⚠️ Licencia requerida</value>
+  </data>
   <data name="IncidentReportedSuccess" xml:space="preserve">
     <value>Tu Presidente ha sido notificado.</value>
   </data>

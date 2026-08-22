@@ -177,6 +177,58 @@ public class ApiServiceTests
         Assert.Contains("500", result.Message);
     }
 
+    [Fact]
+    public async Task LoginAsync_OnInvalidCredentials401_ReturnsRealBackendMessage_NotGenericCode()
+    {
+        // Antes del fix, un 401 caía en la misma rama genérica que un 500 y descartaba el
+        // mensaje real (ver AuthController.Login: Unauthorized(result) sigue el mismo shape
+        // Response<string> que el resto de respuestas de Login).
+        const string responseJson = """
+        { "isSuccess": false, "message": "Credenciales inválidas" }
+        """;
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.Unauthorized, responseJson);
+        var sut = CreateSut(handler, storedToken: null);
+
+        var result = await sut.LoginAsync("admin@elsaso.test", "clave-incorrecta");
+
+        Assert.NotNull(result);
+        Assert.False(result!.IsSuccess);
+        Assert.Equal("Credenciales inválidas", result.Message);
+        Assert.False(result.IsLicenceError);
+    }
+
+    [Fact]
+    public async Task LoginAsync_OnNoActiveLicence402_ReturnsRealBackendMessage_AndFlagsIsLicenceError()
+    {
+        const string responseJson = """
+        { "isSuccess": false, "message": "Tu organización no dispone de una licencia activa, y no tienes una licencia individual propia. Contacta con soporte." }
+        """;
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.PaymentRequired, responseJson);
+        var sut = CreateSut(handler, storedToken: null);
+
+        var result = await sut.LoginAsync("sinlicencia@test.com", "clave-valida");
+
+        Assert.NotNull(result);
+        Assert.False(result!.IsSuccess);
+        Assert.Equal("Tu organización no dispone de una licencia activa, y no tienes una licencia individual propia. Contacta con soporte.", result.Message);
+        Assert.True(result.IsLicenceError);
+    }
+
+    [Fact]
+    public async Task LoginAsync_OnSuccess_NeverFlagsIsLicenceError()
+    {
+        const string responseJson = """
+        { "isSuccess": true, "message": "OK", "data": "un-jwt-cualquiera" }
+        """;
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, responseJson);
+        var sut = CreateSut(handler, storedToken: null);
+
+        var result = await sut.LoginAsync("admin@elsaso.test", "clave-valida");
+
+        Assert.NotNull(result);
+        Assert.False(result!.IsLicenceError);
+    }
+
     // ─── AUTO-REGISTRO (ANÓNIMO) ───
 
     [Fact]
