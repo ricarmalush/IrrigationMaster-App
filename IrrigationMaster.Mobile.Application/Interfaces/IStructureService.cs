@@ -24,4 +24,10 @@ public interface IStructureService
     // IrrigationStatusViewModel: para consultar IrrigationPrograms/IsIrrigationDay sobre un
     // andador sin ningún vecino con turno hoy, necesita saber a qué sector pertenece.
     Task<WalkwayDetailDto?> GetWalkwayAsync(Guid walkwayId);
+
+    // Regenera el código de invitación de una organización (PUT Organizations/RegenerateInvitationCode/{id}).
+    // El backend exige SUPERADMIN o el permiso MANAGE_ORGANIZATION_CODE (Presidente/VicePresidente
+    // lo tienen sembrado), y solo alcanza la propia organización del llamador salvo SUPERADMIN --
+    // esta llamada no duplica esa comprobación, solo transporta la petición.
+    Task<RegenerateInvitationCodeResult> RegenerateInvitationCodeAsync(Guid organizationId);
 }

@@ -33,4 +33,5 @@ public class FakeStructureService : IStructureService
     public Task<List<CountryDto>?> GetCountriesAsync() => throw new NotImplementedException();
     public Task<List<HydraulicSectorDto>?> GetHydraulicSectorsAsync() => Task.FromResult(HydraulicSectorsToReturn);
     public Task<OrganizationDto?> GetOrganizationAsync(Guid organizationId) => throw new NotImplementedException();
+    public Task<RegenerateInvitationCodeResult> RegenerateInvitationCodeAsync(Guid organizationId) => throw new NotImplementedException();
 }

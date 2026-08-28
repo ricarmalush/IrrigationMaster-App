@@ -214,6 +214,15 @@ namespace IrrigationMaster.UI.Maui.Common {
         }
 
         /// <summary>
+        ///   Busca una cadena traducida similar a El código de invitación actual dejará de funcionar de inmediato para nuevos autoregistros. ¿Quieres regenerarlo?.
+        /// </summary>
+        public static string MsgConfirmRegenerateInvitationCode {
+            get {
+                return ResourceManager.GetString("MsgConfirmRegenerateInvitationCode", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Busca una cadena traducida similar a Por favor, completa todos los datos de la organización..
         /// </summary>
         public static string MsgMissingOrgData {
@@ -543,6 +552,15 @@ namespace IrrigationMaster.UI.Maui.Common {
         public static string WalkwayAssignedSuccess {
             get {
                 return ResourceManager.GetString("WalkwayAssignedSuccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a Código de invitación regenerado con éxito..
+        /// </summary>
+        public static string InvitationCodeRegeneratedSuccess {
+            get {
+                return ResourceManager.GetString("InvitationCodeRegeneratedSuccess", resourceCulture);
             }
         }
 

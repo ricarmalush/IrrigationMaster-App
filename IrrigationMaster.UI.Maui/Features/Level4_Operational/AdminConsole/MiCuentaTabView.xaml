@@ -9,9 +9,9 @@
     <ScrollView Padding="20">
         <VerticalStackLayout Spacing="15">
 
-            <!-- Solo SUPERADMIN y Presidente: un Vecino no debe poder ver ni compartir
-                 libremente el código de invitación de su organización; a quién se lo comparte
-                 lo decide el Presidente. -->
+            <!-- Solo SUPERADMIN, Presidente y VicePresidente (ShowMyOrganization): un Vecino no
+                 debe poder ver ni compartir libremente el código de invitación de su
+                 organización; a quién se lo comparte lo decide el Presidente/VicePresidente. -->
             <VerticalStackLayout Spacing="15" IsVisible="{Binding ShowMyOrganization}">
                 <Label Text="MI ORGANIZACIÓN" FontSize="12" FontAttributes="Bold" TextColor="#2E7D32" HorizontalOptions="Center" CharacterSpacing="1.5"/>
 
@@ -29,6 +29,14 @@
 
                         <Label Text="Código de invitación (compártelo con nuevos vecinos):" FontAttributes="Bold" TextColor="#444"/>
                         <Entry Text="{Binding MyOrganizationInvitationCode}" IsReadOnly="True" TextColor="Black" BackgroundColor="#FAFAFA" FontAttributes="Bold"/>
+
+                        <!-- Mismo gating que la sección entera (ShowMyOrganization): el backend
+                             (RegenerateInvitationCodeCommandHandler) exige además SUPERADMIN o el
+                             permiso MANAGE_ORGANIZATION_CODE, así que esto no es la única defensa. -->
+                        <Button Text="🔄 Regenerar código"
+                                Command="{Binding RegenerateInvitationCodeCommand}"
+                                IsEnabled="{Binding IsNotLoading}"
+                                BackgroundColor="Transparent" TextColor="#2E7D32" BorderColor="#2E7D32" BorderWidth="1.5" HeightRequest="44" CornerRadius="10"/>
                     </VerticalStackLayout>
                 </Border>
             </VerticalStackLayout>

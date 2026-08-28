@@ -5,4 +5,9 @@ namespace IrrigationMaster.Mobile.Application.Interfaces;
 public interface IAlertService
 {
     Task ShowAsync(string title, string message);
+
+    // Diálogo de confirmación Sí/No -- true si el usuario acepta. Para acciones que necesitan
+    // una confirmación explícita antes de ejecutarse (p. ej. regenerar el código de invitación:
+    // el código anterior deja de servir de inmediato).
+    Task<bool> ShowConfirmAsync(string title, string message, string acceptText, string cancelText);
 }

@@ -276,6 +276,50 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         }
     }
 
+    public async Task<RegenerateInvitationCodeResult> RegenerateInvitationCodeAsync(Guid organizationId)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.PutAsJsonAsync(
+                $"{ApiEndpoints.OrganizationsRegenerateInvitationCode}/{organizationId}",
+                new RegenerateInvitationCodeRequest { OrganizationId = organizationId, CustomCode = null });
+
+            return await ReadRegenerateInvitationCodeResultAsync(response);
+        }
+        catch (HttpRequestException)
+        {
+            return new RegenerateInvitationCodeResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - RegenerateInvitationCode]: {ex.Message}");
+            return new RegenerateInvitationCodeResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
+        }
+    }
+
+    // El backend responde 200 (éxito), 400 (permiso denegado / código en uso) o 404 (organización
+    // cross-tenant, tratada como "no existe") -- ver ResponseExtensions.ToActionResult. Los tres
+    // llevan un cuerpo Response<string> parseable, a diferencia de ReadStructureResultAsync (que
+    // solo cubre 200/400 porque sus endpoints de creación nunca devuelven 404).
+    private static async Task<RegenerateInvitationCodeResult> ReadRegenerateInvitationCodeResultAsync(HttpResponseMessage response)
+    {
+        if (response.IsSuccessStatusCode ||
+            response.StatusCode == System.Net.HttpStatusCode.BadRequest ||
+            response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            var result = await response.Content.ReadFromJsonAsync<RegenerateInvitationCodeResult>();
+            return result ?? new RegenerateInvitationCodeResult { IsSuccess = false, Message = ServiceMessages.UnexpectedError };
+        }
+
+        return new RegenerateInvitationCodeResult
+        {
+            IsSuccess = false,
+            Message = $"{ServiceMessages.ServerErrorCode} {(int)response.StatusCode})"
+        };
+    }
+
     public async Task<List<OrganizationDto>?> GetOrganizationsAsync()
     {
         try

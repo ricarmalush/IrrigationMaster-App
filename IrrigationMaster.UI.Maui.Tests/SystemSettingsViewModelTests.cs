@@ -334,6 +334,93 @@ public class SystemSettingsViewModelTests
         Assert.Equal(ServiceMessages.NetworkConnectionError, alert.Message);
     }
 
+    // ─── MI ORGANIZACIÓN: regenerar código de invitación ───
+
+    [Fact]
+    public async Task ExecuteRegenerateInvitationCodeAsync_WhenUserConfirms_OnSuccess_UpdatesCodeAndShowsSuccessAlert()
+    {
+        var organizationId = Guid.NewGuid();
+        var (vm, handler, alerts, _) = CreateSut(organizationId.ToString());
+        alerts.ConfirmResult = true;
+        const string responseJson = """{ "isSuccess": true, "message": "OK", "data": "NEWC0DE9" }""";
+        handler.AddRoute(IsPutTo($"organizations/RegenerateInvitationCode/{organizationId}"), HttpStatusCode.OK, responseJson);
+
+        await vm.ExecuteRegenerateInvitationCodeAsync();
+
+        Assert.False(vm.IsLoading);
+        Assert.Equal("NEWC0DE9", vm.MyOrganizationInvitationCode);
+        var confirm = Assert.Single(alerts.ConfirmCalls);
+        Assert.Equal(AppStrings.MsgConfirmRegenerateInvitationCode, confirm.Message);
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.SuccessTitle, alert.Title);
+        Assert.Equal(AppStrings.InvitationCodeRegeneratedSuccess, alert.Message);
+    }
+
+    [Fact]
+    public async Task ExecuteRegenerateInvitationCodeAsync_WhenUserCancelsConfirmation_DoesNotCallApi_AndLeavesCodeUnchanged()
+    {
+        var organizationId = Guid.NewGuid();
+        var (vm, handler, alerts, _) = CreateSut(organizationId.ToString());
+        alerts.ConfirmResult = false;
+        vm.MyOrganizationInvitationCode = "OLDCODE1";
+
+        await vm.ExecuteRegenerateInvitationCodeAsync();
+
+        Assert.DoesNotContain(handler.Requests, r => r.RequestUri!.AbsolutePath.Contains("RegenerateInvitationCode", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal("OLDCODE1", vm.MyOrganizationInvitationCode);
+        Assert.Empty(alerts.Calls);
+    }
+
+    [Fact]
+    public async Task ExecuteRegenerateInvitationCodeAsync_OnBackendFailure_ShowsExactBackendMessage_AndLeavesCodeUnchanged()
+    {
+        // No debe dejar el código en un estado inconsistente: si el backend rechaza (p. ej. sin
+        // permiso, o la organización no es la propia), MyOrganizationInvitationCode conserva el
+        // valor anterior.
+        var organizationId = Guid.NewGuid();
+        var (vm, handler, alerts, _) = CreateSut(organizationId.ToString());
+        vm.MyOrganizationInvitationCode = "OLDCODE1";
+        const string errorJson = """{ "isSuccess": false, "message": "La acción sobre 'Organización' no está permitida o el estado es inválido." }""";
+        handler.AddRoute(IsPutTo($"organizations/RegenerateInvitationCode/{organizationId}"), HttpStatusCode.BadRequest, errorJson);
+
+        await vm.ExecuteRegenerateInvitationCodeAsync();
+
+        Assert.False(vm.IsLoading);
+        Assert.Equal("OLDCODE1", vm.MyOrganizationInvitationCode);
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.ErrorTitle, alert.Title);
+        Assert.Equal("La acción sobre 'Organización' no está permitida o el estado es inválido.", alert.Message);
+    }
+
+    [Fact]
+    public async Task ExecuteRegenerateInvitationCodeAsync_OnNetworkFailure_ShowsNetworkErrorAlert_AndLeavesCodeUnchanged()
+    {
+        var organizationId = Guid.NewGuid();
+        var (vm, handler, alerts, _) = CreateSut(organizationId.ToString());
+        vm.MyOrganizationInvitationCode = "OLDCODE1";
+        handler.AddThrowingRoute(IsPutTo($"organizations/RegenerateInvitationCode/{organizationId}"));
+
+        await vm.ExecuteRegenerateInvitationCodeAsync();
+
+        Assert.False(vm.IsLoading);
+        Assert.Equal("OLDCODE1", vm.MyOrganizationInvitationCode);
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.ErrorTitle, alert.Title);
+        Assert.Equal(ServiceMessages.NetworkConnectionError, alert.Message);
+    }
+
+    [Fact]
+    public async Task ExecuteRegenerateInvitationCodeAsync_WhenSessionHasNoOrganizationId_DoesNotCallApi()
+    {
+        var (vm, handler, alerts, _) = CreateSut(organizationId: null);
+        alerts.ConfirmResult = true;
+
+        await vm.ExecuteRegenerateInvitationCodeAsync();
+
+        Assert.DoesNotContain(handler.Requests, r => r.RequestUri!.AbsolutePath.Contains("RegenerateInvitationCode", StringComparison.OrdinalIgnoreCase));
+        Assert.Empty(alerts.Calls);
+    }
+
     // ─── MI CUENTA: cambio de contraseña ───
 
     private static void SetValidChangePasswordFields(SystemSettingsViewModel vm)

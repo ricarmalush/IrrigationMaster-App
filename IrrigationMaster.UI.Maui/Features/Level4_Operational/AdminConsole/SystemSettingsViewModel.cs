@@ -124,6 +124,7 @@ public partial class SystemSettingsViewModel : ObservableObject
     public ICommand LoadCountriesCommand { get; }
     public ICommand LoadHydraulicSectorsCommand { get; }
     public ICommand LoadMyOrganizationCommand { get; }
+    public ICommand RegenerateInvitationCodeCommand { get; }
     public ICommand SelectEntidadTabCommand { get; }
     public ICommand SelectSectoresTabCommand { get; }
     public ICommand SelectAndadoresTabCommand { get; }
@@ -147,6 +148,7 @@ public partial class SystemSettingsViewModel : ObservableObject
         LoadCountriesCommand = new Command(async () => await LoadCountriesAsync());
         LoadHydraulicSectorsCommand = new Command(async () => await LoadHydraulicSectorsAsync());
         LoadMyOrganizationCommand = new Command(async () => await LoadMyOrganizationAsync());
+        RegenerateInvitationCodeCommand = new Command(async () => await ExecuteRegenerateInvitationCodeAsync());
         SelectEntidadTabCommand = new Command(() => ActiveTab = SettingsTab.Entidad);
         SelectSectoresTabCommand = new Command(() => ActiveTab = SettingsTab.Sectores);
         SelectAndadoresTabCommand = new Command(() => ActiveTab = SettingsTab.Andadores);
@@ -211,6 +213,55 @@ public partial class SystemSettingsViewModel : ObservableObject
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[Error Loading MyOrganization]: {ex.Message}");
+        }
+    }
+
+    // Regenera el código de invitación de la organización del usuario logueado. Visible solo si
+    // ShowMyOrganization es true (SUPERADMIN/Presidente/VicePresidente) -- mismo gating que ya
+    // protege la sección entera "Mi Organización" donde vive el código, así que no hace falta una
+    // propiedad de visibilidad nueva. El backend vuelve a exigir SUPERADMIN o el permiso
+    // MANAGE_ORGANIZATION_CODE de todos modos, así que esto no es la única defensa.
+    internal async Task ExecuteRegenerateInvitationCodeAsync()
+    {
+        var confirmed = await _alertService.ShowConfirmAsync(
+            AppStrings.AttentionTitle,
+            AppStrings.MsgConfirmRegenerateInvitationCode,
+            "Regenerar",
+            "Cancelar");
+
+        if (!confirmed)
+            return;
+
+        var organizationIdRaw = await _currentSession.GetOrganizationIdAsync();
+        if (!Guid.TryParse(organizationIdRaw, out var organizationId))
+            return;
+
+        IsLoading = true;
+        try
+        {
+            var result = await _structureService.RegenerateInvitationCodeAsync(organizationId);
+
+            if (result.IsSuccess && !string.IsNullOrWhiteSpace(result.Data))
+            {
+                // Solo se actualiza el código en pantalla si el backend confirmó éxito -- un fallo
+                // nunca debe dejar MyOrganizationInvitationCode en un estado a medias ni distinto
+                // del que de verdad hay en el backend.
+                MyOrganizationInvitationCode = result.Data;
+                await _alertService.ShowAsync(AppStrings.SuccessTitle, AppStrings.InvitationCodeRegeneratedSuccess);
+            }
+            else
+            {
+                await _alertService.ShowAsync(AppStrings.ErrorTitle, BuildFailureMessage(result));
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Error RegenerateInvitationCode]: {ex.Message}");
+            await _alertService.ShowAsync(AppStrings.ErrorTitle, AppStrings.ApiConnectionError);
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
 
@@ -443,6 +494,14 @@ public partial class SystemSettingsViewModel : ObservableObject
     }
 
     private static string BuildFailureMessage(UserActionResult result)
+    {
+        if (result.Errors is { Count: > 0 })
+            return string.Join("\n", result.Errors.Select(e => $"{e.PropertyMessage}: {e.ErrorMessage}"));
+
+        return string.IsNullOrWhiteSpace(result.Message) ? AppStrings.ApiConnectionError : result.Message;
+    }
+
+    private static string BuildFailureMessage(RegenerateInvitationCodeResult result)
     {
         if (result.Errors is { Count: > 0 })
             return string.Join("\n", result.Errors.Select(e => $"{e.PropertyMessage}: {e.ErrorMessage}"));
