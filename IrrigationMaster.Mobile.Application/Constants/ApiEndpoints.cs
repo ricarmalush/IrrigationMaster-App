@@ -17,7 +17,11 @@ namespace IrrigationMaster.Mobile.Application.Constants
         public const string Walkways = "walkways/Create";
         public const string WalkwaysPublic = "walkways/public";
         public const string Countries = "Countries/pagination";
-        public const string Users = "Users/Create";
+        // Auto-registro público, anónimo. Ruta separada de "Users/Create" (que ahora exige un
+        // caller autenticado con permiso) tras el diagnóstico de seguridad: un único endpoint
+        // condicional según currentUser.IsAuthenticated permitía que un HttpClient con un token de
+        // otra sesión creara usuarios ya Activos sin pasar por aprobación.
+        public const string UsersRegister = "Users/Register";
         public const string UsersPagination = "Users/pagination";
         public const string UsersActivate = "Users/Activate";
         public const string UsersAssignWalkway = "Users/AssignWalkway";

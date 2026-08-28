@@ -10,11 +10,18 @@ public class CurrentSessionTests
     private static string BuildJwt(IEnumerable<Claim> claims)
         => new JwtSecurityTokenHandler().WriteToken(new JwtSecurityToken(claims: claims));
 
+    private static (CurrentSession Session, FakeTokenStorage TokenStorage, FakeAuthService AuthService) CreateSut()
+    {
+        var tokenStorage = new FakeTokenStorage();
+        var authService = new FakeAuthService();
+        var session = new CurrentSession(tokenStorage, authService);
+        return (session, tokenStorage, authService);
+    }
+
     [Fact]
     public async Task EstablishAsync_WithValidToken_SavesOrganizationIdAndRole()
     {
-        var tokenStorage = new FakeTokenStorage();
-        var session = new CurrentSession(tokenStorage);
+        var (session, tokenStorage, _) = CreateSut();
         var organizationId = Guid.NewGuid().ToString();
         var jwt = BuildJwt([
             new Claim("organizationId", organizationId),
@@ -35,8 +42,7 @@ public class CurrentSessionTests
     [Fact]
     public async Task EstablishAsync_WithTokenMissingClaims_SavesEmptyValues()
     {
-        var tokenStorage = new FakeTokenStorage();
-        var session = new CurrentSession(tokenStorage);
+        var (session, tokenStorage, _) = CreateSut();
         var jwt = BuildJwt([]);
 
         await session.EstablishAsync(jwt);
@@ -48,7 +54,7 @@ public class CurrentSessionTests
     [Fact]
     public async Task EstablishAsync_WithMalformedToken_Throws()
     {
-        var session = new CurrentSession(new FakeTokenStorage());
+        var (session, _, _) = CreateSut();
 
         await Assert.ThrowsAnyAsync<Exception>(() => session.EstablishAsync("esto-no-es-un-jwt"));
     }
@@ -56,8 +62,8 @@ public class CurrentSessionTests
     [Fact]
     public async Task GetOrganizationIdAsync_DelegatesToTokenStorage()
     {
-        var tokenStorage = new FakeTokenStorage { StoredOrganizationId = "org-123" };
-        var session = new CurrentSession(tokenStorage);
+        var (session, tokenStorage, _) = CreateSut();
+        tokenStorage.StoredOrganizationId = "org-123";
 
         var result = await session.GetOrganizationIdAsync();
 
@@ -67,8 +73,8 @@ public class CurrentSessionTests
     [Fact]
     public async Task GetRoleAsync_DelegatesToTokenStorage()
     {
-        var tokenStorage = new FakeTokenStorage { StoredRole = "SUPERADMIN" };
-        var session = new CurrentSession(tokenStorage);
+        var (session, tokenStorage, _) = CreateSut();
+        tokenStorage.StoredRole = "SUPERADMIN";
 
         var result = await session.GetRoleAsync();
 
@@ -78,8 +84,7 @@ public class CurrentSessionTests
     [Fact]
     public async Task ClearAsync_DelegatesToTokenStorage()
     {
-        var tokenStorage = new FakeTokenStorage();
-        var session = new CurrentSession(tokenStorage);
+        var (session, tokenStorage, _) = CreateSut();
 
         await session.ClearAsync();
 
@@ -89,8 +94,7 @@ public class CurrentSessionTests
     [Fact]
     public async Task ClearAsync_ClearsCachedRole()
     {
-        var tokenStorage = new FakeTokenStorage();
-        var session = new CurrentSession(tokenStorage);
+        var (session, _, _) = CreateSut();
         await session.EstablishAsync(BuildJwt([new Claim(ClaimTypes.Role, "SUPERADMIN")]));
 
         await session.ClearAsync();
@@ -98,10 +102,37 @@ public class CurrentSessionTests
         Assert.Null(session.CachedRole);
     }
 
+    // ─── MECANISMO DE LOGOUT: limpieza de la cabecera Authorization del HttpClient compartido ───
+    // No existe hoy ningún botón "Cerrar sesión" en la App, pero el mecanismo debe existir y
+    // quedar testeado, para que cuando se añada no vuelva a fallar por lo mismo que RegisterAsync
+    // (un HttpClient Singleton que arrastra el token de otra sesión entre pantallas).
+
+    [Fact]
+    public async Task ClearAsync_AlsoClearsTheSharedHttpClientAuthHeader()
+    {
+        var (session, _, authService) = CreateSut();
+
+        await session.ClearAsync();
+
+        Assert.True(authService.ClearAuthHeaderCalled);
+    }
+
+    [Fact]
+    public async Task ClearAsync_ClearsAuthHeader_EvenWhenNoSessionWasEverEstablished()
+    {
+        // Defensivo: limpiar debe ser seguro de llamar en cualquier momento, no solo tras un login
+        // real -- un futuro botón "Cerrar sesión" podría dispararse en estados inesperados.
+        var (session, _, authService) = CreateSut();
+
+        await session.ClearAsync();
+
+        Assert.True(authService.ClearAuthHeaderCalled);
+    }
+
     [Fact]
     public void CachedRole_BeforeEstablishAsync_IsNull()
     {
-        var session = new CurrentSession(new FakeTokenStorage());
+        var (session, _, _) = CreateSut();
 
         Assert.Null(session.CachedRole);
     }

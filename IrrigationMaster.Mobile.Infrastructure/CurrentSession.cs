@@ -7,10 +7,12 @@ namespace IrrigationMaster.Mobile.Infrastructure;
 public class CurrentSession : ICurrentSession
 {
     private readonly ITokenStorage _tokenStorage;
+    private readonly IAuthService _authService;
 
-    public CurrentSession(ITokenStorage tokenStorage)
+    public CurrentSession(ITokenStorage tokenStorage, IAuthService authService)
     {
         _tokenStorage = tokenStorage;
+        _authService = authService;
     }
 
     public string? CachedRole { get; private set; }
@@ -34,10 +36,17 @@ public class CurrentSession : ICurrentSession
 
     public Task<string?> GetRoleAsync() => _tokenStorage.GetRoleAsync();
 
+    // No existe hoy ningún botón "Cerrar sesión" en la App (ver diagnóstico de seguridad), pero
+    // este método ya deja el mecanismo completo listo para cuando se añada: limpia el
+    // almacenamiento de sesión Y la cabecera Authorization del HttpClient autenticado compartido.
+    // Si algún día se llama solo a _tokenStorage.ClearSessionAsync() sin pasar por aquí, la
+    // siguiente pantalla que reutilice ese HttpClient (incluida una pensada para ser anónima)
+    // volvería a arrastrar el token de la sesión recién cerrada.
     public Task ClearAsync()
     {
         CachedRole = null;
         CachedUserId = null;
+        _authService.ClearAuthHeader();
         return _tokenStorage.ClearSessionAsync();
     }
 }

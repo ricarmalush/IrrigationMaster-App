@@ -17,7 +17,8 @@ public class SystemSettingsViewModelTests
     {
         var handler = new RoutingFakeHttpMessageHandler();
         var httpClient = new HttpClient(handler) { BaseAddress = new Uri(FakeBaseUrl) };
-        var apiService = new ApiService(httpClient, new FakeTokenStorage { StoredToken = "token-123" });
+        var anonymousHttpClient = new HttpClient(handler) { BaseAddress = new Uri(FakeBaseUrl) };
+        var apiService = new ApiService(httpClient, anonymousHttpClient, new FakeTokenStorage { StoredToken = "token-123" });
         var alerts = new RecordingAlertService();
         // RoleToReturn debe fijarse ANTES de construir el ViewModel: éste lee
         // ICurrentSession.CachedRole de forma síncrona en su propio constructor (para poder

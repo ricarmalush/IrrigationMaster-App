@@ -33,13 +33,24 @@ public static class MauiProgram
         builder.Services.AddSingleton<ITokenStorage, SecureTokenStorage>();
         // Fuente única de verdad de la sesión activa (parsea el JWT una sola vez, en Infrastructure)
         builder.Services.AddSingleton<ICurrentSession, CurrentSession>();
-        // El motor de red: una única instancia, resuelta por sus dos contratos (Auth y Structure)
-        builder.Services.AddSingleton(sp => new HttpClient
-        {
-            BaseAddress = new Uri(ApiConfig.BaseUrl),
-            Timeout = TimeSpan.FromSeconds(15) // Evita que la app se quede colgada infinitamente en el campo
-        });
-        builder.Services.AddSingleton<ApiService>();
+        // El motor de red: ApiService se resuelve por todos sus contratos (Auth, Structure...).
+        // Dos HttpClient independientes -- uno autenticado (acumula el Bearer de la sesión activa
+        // vía AttachAuthHeadersAsync) y uno exclusivamente anónimo (RegisterAsync; nunca recibe
+        // esa cabecera) -- para que una pantalla pensada para ser anónima no pueda arrastrar en
+        // silencio el token de otra sesión ya abierta en el mismo cliente compartido. Ver
+        // ApiService.ClearAuthHeader/_anonymousHttpClient.
+        builder.Services.AddSingleton(sp => new ApiService(
+            httpClient: new HttpClient
+            {
+                BaseAddress = new Uri(ApiConfig.BaseUrl),
+                Timeout = TimeSpan.FromSeconds(15) // Evita que la app se quede colgada infinitamente en el campo
+            },
+            anonymousHttpClient: new HttpClient
+            {
+                BaseAddress = new Uri(ApiConfig.BaseUrl),
+                Timeout = TimeSpan.FromSeconds(15)
+            },
+            tokenStorage: sp.GetRequiredService<ITokenStorage>()));
         builder.Services.AddSingleton<IAuthService>(sp => sp.GetRequiredService<ApiService>());
         builder.Services.AddSingleton<IStructureService>(sp => sp.GetRequiredService<ApiService>());
         builder.Services.AddSingleton<IRegistrationService>(sp => sp.GetRequiredService<ApiService>());

@@ -14,14 +14,35 @@ namespace IrrigationMaster.Mobile.Infrastructure;
 public class ApiService : IAuthService, IStructureService, IRegistrationService, IUserManagementService, IIrrigationService, INotificationService
 {
     private readonly HttpClient _httpClient;
+
+    // Cliente SEPARADO, exclusivo para peticiones genuinamente anónimas (hoy solo RegisterAsync).
+    // _httpClient es un Singleton mutable: AttachAuthHeadersAsync() le pega
+    // DefaultRequestHeaders.Authorization en cuanto se hace CUALQUIER llamada autenticada durante
+    // la sesión, y nada lo limpiaba (ver ClearAuthHeader) -- así que una pantalla "anónima" que
+    // reutilizara ese mismo cliente heredaba en silencio el token de la sesión activa (bug
+    // reproducido: con la sesión de Presidente abierta, el auto-registro creaba usuarios Activos
+    // sin aprobación). _anonymousHttpClient nunca pasa por AttachAuthHeadersAsync, así que nunca
+    // puede arrastrar esa cabecera, sin importar el estado del cliente autenticado.
+    private readonly HttpClient _anonymousHttpClient;
     private readonly ITokenStorage _tokenStorage;
 
-    // El HttpClient se recibe ya configurado (BaseAddress/Timeout) para poder
-    // sustituirlo por uno con un HttpMessageHandler falso en los tests.
-    public ApiService(HttpClient httpClient, ITokenStorage tokenStorage)
+    // Los HttpClient se reciben ya configurados (BaseAddress/Timeout) para poder sustituirlos por
+    // uno con un HttpMessageHandler falso en los tests.
+    public ApiService(HttpClient httpClient, HttpClient anonymousHttpClient, ITokenStorage tokenStorage)
     {
         _httpClient = httpClient;
+        _anonymousHttpClient = anonymousHttpClient;
         _tokenStorage = tokenStorage;
+    }
+
+    // Ver IAuthService.ClearAuthHeader: debe llamarse al cerrar sesión (CurrentSession.ClearAsync
+    // ya lo hace por delegación) para que el HttpClient autenticado no arrastre el token de la
+    // sesión recién cerrada a la siguiente pantalla que lo reutilice. _anonymousHttpClient se
+    // limpia también por robustez defensiva, aunque AttachAuthHeadersAsync nunca lo toca.
+    public void ClearAuthHeader()
+    {
+        _httpClient.DefaultRequestHeaders.Authorization = null;
+        _anonymousHttpClient.DefaultRequestHeaders.Authorization = null;
     }
 
     // ─── 1. AUTENTICACIÓN ───
@@ -307,7 +328,10 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
     {
         try
         {
-            var response = await _httpClient.PostAsJsonAsync(ApiEndpoints.Users, request);
+            // _anonymousHttpClient, no _httpClient: esta petición debe ser SIEMPRE anónima, sin
+            // importar si hay una sesión autenticada activa en el resto de la App (ver comentario
+            // en el campo _anonymousHttpClient).
+            var response = await _anonymousHttpClient.PostAsJsonAsync(ApiEndpoints.UsersRegister, request);
             return await ReadStructureResultAsync(response);
         }
         catch (HttpRequestException)

@@ -13,9 +13,24 @@ public class ApiServiceTests
 
     private static ApiService CreateSut(FakeHttpMessageHandler handler, string? storedToken = "token-123")
     {
+        // Los dos HttpClient comparten el MISMO FakeHttpMessageHandler (son instancias
+        // independientes -- lo que importa aquí, cada una con su propio DefaultRequestHeaders --
+        // pero necesitan responder igual y dejar rastro en el mismo handler.LastRequest).
         var httpClient = new HttpClient(handler) { BaseAddress = new Uri(FakeBaseUrl) };
+        var anonymousHttpClient = new HttpClient(handler) { BaseAddress = new Uri(FakeBaseUrl) };
         var tokenStorage = new FakeTokenStorage { StoredToken = storedToken };
-        return new ApiService(httpClient, tokenStorage);
+        return new ApiService(httpClient, anonymousHttpClient, tokenStorage);
+    }
+
+    // Igual que CreateSut, pero además devuelve el FakeTokenStorage -- solo lo necesitan los tests
+    // que simulan cambiar el token a mitad de prueba (p. ej. "el storage queda sin token tras un
+    // logout"), así que se mantiene separado para no tocar el resto de tests de este archivo.
+    private static (ApiService Sut, FakeTokenStorage TokenStorage) CreateSutWithTokenStorage(FakeHttpMessageHandler handler, string? storedToken = "token-123")
+    {
+        var httpClient = new HttpClient(handler) { BaseAddress = new Uri(FakeBaseUrl) };
+        var anonymousHttpClient = new HttpClient(handler) { BaseAddress = new Uri(FakeBaseUrl) };
+        var tokenStorage = new FakeTokenStorage { StoredToken = storedToken };
+        return (new ApiService(httpClient, anonymousHttpClient, tokenStorage), tokenStorage);
     }
 
     [Fact]
@@ -250,11 +265,101 @@ public class ApiServiceTests
         });
 
         Assert.True(result.IsSuccess);
-        Assert.EndsWith("Users/Create", handler.LastRequest!.RequestUri!.ToString());
+        Assert.EndsWith("Users/Register", handler.LastRequest!.RequestUri!.ToString());
         Assert.Null(handler.LastRequest.Headers.Authorization);
         Assert.Contains(invitationCode, handler.LastRequestBody);
         Assert.Contains(roleId.ToString(), handler.LastRequestBody);
         Assert.DoesNotContain("organizationId", handler.LastRequestBody, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task RegisterAsync_AfterAnAuthenticatedCallOnTheSharedClient_StillSendsNoAuthorizationHeader()
+    {
+        // Reproduce el bug real: con una sesión autenticada ya activa (cualquier llamada previa a
+        // AttachAuthHeadersAsync deja el Bearer pegado en el HttpClient compartido, y nada lo
+        // limpiaba), el auto-registro debe seguir siendo genuinamente anónimo porque usa un
+        // HttpClient SEPARADO (_anonymousHttpClient), no el mismo que acumula el token.
+        // Un único handler "tonto" responde igual a cualquier petición -- no importa que la
+        // respuesta de GetUsersAsync no encaje con su forma real, aquí solo nos interesa la
+        // cabecera de la petición capturada, no lo que GetUsersAsync devuelva.
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.Created, CreatedResponseJson);
+        var sut = CreateSut(handler, storedToken: "token-de-otra-sesion-ya-abierta");
+
+        // 1. Cualquier llamada autenticada dentro de la misma sesión de App -- deja el Bearer
+        // pegado en el HttpClient autenticado (_httpClient), como en producción.
+        await sut.GetUsersAsync(isActive: true);
+        Assert.NotNull(handler.LastRequest!.Headers.Authorization); // confirma que SÍ quedó pegado
+
+        // 2. El auto-registro, inmediatamente después, en el mismo ApiService/proceso.
+        var result = await sut.RegisterAsync(new CreateUserRequest
+        {
+            FirstName = "Jose",
+            LastName = "Vecino",
+            Email = "jose.vecino@test.com",
+            Password = "clave12345",
+            InvitationCode = "ABCD1234",
+            RoleId = Guid.NewGuid()
+        });
+
+        Assert.True(result.IsSuccess);
+        Assert.EndsWith("Users/Register", handler.LastRequest!.RequestUri!.ToString());
+        Assert.Null(handler.LastRequest.Headers.Authorization); // sigue sin cabecera, pese al paso 1
+    }
+
+    [Fact]
+    public async Task RegisterAsync_NeverAttachesAnyAuthorizationHeader_EvenWithoutAnyPriorAuthenticatedCall()
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.Created, CreatedResponseJson);
+        var sut = CreateSut(handler, storedToken: null);
+
+        var result = await sut.RegisterAsync(new CreateUserRequest
+        {
+            FirstName = "Nadie",
+            LastName = "Test",
+            Email = "nadie@test.com",
+            Password = "clave12345",
+            InvitationCode = "ABCD1234",
+            RoleId = Guid.NewGuid()
+        });
+
+        Assert.True(result.IsSuccess);
+        Assert.Null(handler.LastRequest!.Headers.Authorization);
+    }
+
+    // ─── LOGOUT: LIMPIEZA DE LA CABECERA AUTHORIZATION (ClearAuthHeader) ───
+
+    [Fact]
+    public async Task ClearAuthHeader_RemovesStaleAuthorizationHeader_FromTheSharedAuthenticatedClient()
+    {
+        // Reproduce el escenario de "cerrar sesión sin limpiar la cabecera": AttachAuthHeadersAsync
+        // solo AÑADE la cabecera cuando hay token en el storage -- nunca la QUITA cuando el token
+        // pasa a ser null (p. ej. tras un logout que solo limpia el storage). ClearAuthHeader debe
+        // encargarse de eso explícitamente, sin depender de que se repita ninguna llamada.
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, "{}");
+        var (sut, tokenStorage) = CreateSutWithTokenStorage(handler, storedToken: "token-de-la-sesion-que-se-va-a-cerrar");
+
+        await sut.GetUsersAsync(isActive: true);
+        Assert.NotNull(handler.LastRequest!.Headers.Authorization); // sesión activa: cabecera puesta
+
+        sut.ClearAuthHeader();
+
+        // Simula lo que ya hace ICurrentSession.ClearAsync: el storage queda sin token también.
+        tokenStorage.StoredToken = null;
+
+        await sut.GetUsersAsync(isActive: true);
+
+        Assert.Null(handler.LastRequest!.Headers.Authorization);
+    }
+
+    [Fact]
+    public async Task ClearAuthHeader_DoesNotThrow_WhenCalledBeforeAnyAuthenticatedRequestEverRan()
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, "{}");
+        var sut = CreateSut(handler, storedToken: null);
+
+        var exception = Record.Exception(() => sut.ClearAuthHeader());
+
+        Assert.Null(exception);
     }
 
     [Fact]

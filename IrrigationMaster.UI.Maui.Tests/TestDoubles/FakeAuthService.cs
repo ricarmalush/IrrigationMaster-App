@@ -13,6 +13,8 @@ public class FakeAuthService : IAuthService
     public UserActionResult ChangePasswordResult { get; set; } = new() { IsSuccess = true };
     public (string CurrentPassword, string NewPassword, string ConfirmNewPassword)? LastChangePasswordCall { get; private set; }
 
+    public bool ClearAuthHeaderCalled { get; private set; }
+
     public Task<LoginResponse?> LoginAsync(string email, string password)
     {
         LastCall = (email, password);
@@ -28,4 +30,6 @@ public class FakeAuthService : IAuthService
         LastChangePasswordCall = (currentPassword, newPassword, confirmNewPassword);
         return Task.FromResult(ChangePasswordResult);
     }
+
+    public void ClearAuthHeader() => ClearAuthHeaderCalled = true;
 }
