@@ -111,10 +111,19 @@
                                         </FormattedString>
                                     </Label.FormattedText>
                                 </Label>
+                                <!-- Gris solo cuando el estado es "Desactivado" (mismo tono que
+                                     el botón "Desactivar"); "Activo" y "Pendiente" conservan el
+                                     verde de siempre, sin tocar. -->
                                 <Label Text="{Binding StatusDisplay}"
                                        FontSize="13"
                                        FontAttributes="Bold"
-                                       TextColor="{StaticResource AppPrimaryColor}"/>
+                                       TextColor="{StaticResource AppPrimaryColor}">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding IsDeactivatedStatus}" Value="True">
+                                            <Setter Property="TextColor" Value="Gray"/>
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
                             </HorizontalStackLayout>
 
                             <!-- ACCIÓN: Aprobar (solo pendientes) -->
@@ -123,6 +132,20 @@
                                     CommandParameter="{Binding .}"
                                     IsVisible="{Binding ShowApprove}"
                                     Style="{StaticResource PrimaryButtonStyle}"
+                                    HeightRequest="40"
+                                    Margin="0,8,0,0"/>
+
+                            <!-- ACCIÓN: Desactivar (solo usuarios activos; espejo de Aprobar).
+                                 Gating de rol/organización lo decide el backend
+                                 (DEACTIVATE_USERS + tenant-scoping): la lista ya viene acotada. -->
+                            <Button Text="🚫 Desactivar"
+                                    Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.DeactivateCommand}"
+                                    CommandParameter="{Binding .}"
+                                    IsVisible="{Binding ShowDeactivate}"
+                                    BackgroundColor="Transparent"
+                                    TextColor="Gray"
+                                    BorderColor="Gray"
+                                    BorderWidth="1.5"
                                     HeightRequest="40"
                                     Margin="0,8,0,0"/>
 

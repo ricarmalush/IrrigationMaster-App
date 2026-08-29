@@ -115,6 +115,15 @@ namespace IrrigationMaster.UI.Maui.Common {
         }
 
         /// <summary>
+        ///   Busca una cadena traducida similar a 🚫 Cuenta desactivada.
+        /// </summary>
+        public static string AccountDeactivatedTitle {
+            get {
+                return ResourceManager.GetString("AccountDeactivatedTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Busca una cadena traducida similar a Accediendo al Historial Auditado de Riego....
         /// </summary>
         public static string HistoryLogLoading {
@@ -219,6 +228,15 @@ namespace IrrigationMaster.UI.Maui.Common {
         public static string MsgConfirmRegenerateInvitationCode {
             get {
                 return ResourceManager.GetString("MsgConfirmRegenerateInvitationCode", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a El usuario dejará de poder iniciar sesión de inmediato. ¿Quieres desactivarlo?.
+        /// </summary>
+        public static string MsgConfirmDeactivateUser {
+            get {
+                return ResourceManager.GetString("MsgConfirmDeactivateUser", resourceCulture);
             }
         }
 
@@ -561,6 +579,15 @@ namespace IrrigationMaster.UI.Maui.Common {
         public static string InvitationCodeRegeneratedSuccess {
             get {
                 return ResourceManager.GetString("InvitationCodeRegeneratedSuccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a Usuario desactivado con éxito..
+        /// </summary>
+        public static string UserDeactivatedSuccess {
+            get {
+                return ResourceManager.GetString("UserDeactivatedSuccess", resourceCulture);
             }
         }
 

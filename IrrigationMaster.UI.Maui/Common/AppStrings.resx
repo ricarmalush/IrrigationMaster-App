@@ -129,6 +129,9 @@
   <data name="LicenceRequiredTitle" xml:space="preserve">
     <value>⚠️ Licencia requerida</value>
   </data>
+  <data name="AccountDeactivatedTitle" xml:space="preserve">
+    <value>🚫 Cuenta desactivada</value>
+  </data>
   <data name="IncidentReportedSuccess" xml:space="preserve">
     <value>Tu Presidente ha sido notificado.</value>
   </data>
@@ -156,6 +159,9 @@
   <data name="InvitationCodeRegeneratedSuccess" xml:space="preserve">
     <value>Código de invitación regenerado con éxito.</value>
   </data>
+  <data name="UserDeactivatedSuccess" xml:space="preserve">
+    <value>Usuario desactivado con éxito.</value>
+  </data>
   <data name="MsgMissingBroadcastMessage" xml:space="preserve">
     <value>Por favor, escribe el mensaje del aviso antes de enviarlo.</value>
   </data>
@@ -170,6 +176,9 @@
   </data>
   <data name="MsgConfirmRegenerateInvitationCode" xml:space="preserve">
     <value>El código de invitación actual dejará de funcionar de inmediato para nuevos autoregistros. ¿Quieres regenerarlo?</value>
+  </data>
+  <data name="MsgConfirmDeactivateUser" xml:space="preserve">
+    <value>El usuario dejará de poder iniciar sesión de inmediato. ¿Quieres desactivarlo?</value>
   </data>
   <data name="MsgMissingOrgData" xml:space="preserve">
     <value>Por favor, completa todos los datos de la organización.</value>

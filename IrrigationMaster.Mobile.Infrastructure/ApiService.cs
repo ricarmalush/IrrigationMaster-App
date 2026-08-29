@@ -59,13 +59,15 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
 
             var response = await _httpClient.PostAsJsonAsync(ApiEndpoints.Login, requestData);
 
-            // 401 (credenciales inválidas/cuenta inactiva) y 402 (sin licencia activa, ver
-            // AuthController.Login) llevan el mismo cuerpo Response<string> que un 400 o un 200 --
-            // hay que leerlo siempre para no perder el mensaje real del backend.
+            // 401 (credenciales inválidas/pendiente de aprobación), 402 (sin licencia activa) y
+            // 403 (cuenta desactivada por un admin, ver AuthController.Login) llevan el mismo
+            // cuerpo Response<string> que un 400 o un 200 -- hay que leerlo siempre para no perder
+            // el mensaje real del backend.
             if (response.IsSuccessStatusCode ||
                 response.StatusCode == System.Net.HttpStatusCode.BadRequest ||
                 response.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
-                response.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
+                response.StatusCode == System.Net.HttpStatusCode.PaymentRequired ||
+                response.StatusCode == System.Net.HttpStatusCode.Forbidden)
             {
                 var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponse>();
                 if (loginResponse is null) return loginResponse;
@@ -76,7 +78,8 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
                     IsSuccess = loginResponse.IsSuccess,
                     Message = loginResponse.Message,
                     Errors = loginResponse.Errors,
-                    IsLicenceError = response.StatusCode == System.Net.HttpStatusCode.PaymentRequired
+                    IsLicenceError = response.StatusCode == System.Net.HttpStatusCode.PaymentRequired,
+                    IsAccountDeactivated = response.StatusCode == System.Net.HttpStatusCode.Forbidden
                 };
             }
 
@@ -526,6 +529,26 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[API Error - ActivateUser]: {ex.Message}");
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
+        }
+    }
+
+    public async Task<UserActionResult> DeactivateUserAsync(Guid userId)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.PutAsync($"{ApiEndpoints.UsersDeactivate}/{userId}", null);
+            return await ReadUserActionResultAsync(response);
+        }
+        catch (HttpRequestException)
+        {
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - DeactivateUser]: {ex.Message}");
             return new UserActionResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
         }
     }

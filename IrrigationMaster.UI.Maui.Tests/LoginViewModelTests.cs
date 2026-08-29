@@ -81,6 +81,32 @@ public class LoginViewModelTests
     }
 
     [Fact]
+    public async Task ExecuteLoginAsync_WithDeactivatedAccount_ShowsAccountDeactivatedTitle_WithRealBackendMessage()
+    {
+        // ApiService marca IsAccountDeactivated=true a partir del 403 (ver ApiServiceTests) --
+        // aquí solo se cubre que el ViewModel reaccione a ese flag con un título distinto, no de
+        // dónde viene el flag.
+        var (vm, auth, session, alerts, navigation) = CreateSut();
+        auth.ResponseToReturn = new LoginResponse
+        {
+            IsSuccess = false,
+            Message = "Tu cuenta ha sido desactivada por un administrador. Contacta con tu organización.",
+            IsAccountDeactivated = true
+        };
+        vm.Email = "desactivado@test.com";
+        vm.Password = "clave-valida";
+
+        await vm.ExecuteLoginAsync();
+
+        Assert.False(vm.IsLoading);
+        Assert.Null(session.EstablishedWithToken);
+        Assert.Empty(navigation.Routes);
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.AccountDeactivatedTitle, alert.Title);
+        Assert.Equal("Tu cuenta ha sido desactivada por un administrador. Contacta con tu organización.", alert.Message);
+    }
+
+    [Fact]
     public async Task ExecuteLoginAsync_OnNetworkFailure_ShowsNetworkErrorMessage()
     {
         // IAuthService/ApiService nunca lanza: un fallo de red vuelve como IsSuccess=false

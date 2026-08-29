@@ -41,8 +41,27 @@ public partial class UserListItem : ObservableObject
     public string WalkwayDisplay { get; init; } = "Sin asignar";
     public string OrganizationName { get; init; } = string.Empty;
 
-    public string StatusDisplay => IsActive ? "Activo" : "Pendiente";
+    // Distingue "nunca aprobado" de "desactivado deliberadamente por un admin" -- antes ambos
+    // mostraban el mismo "Pendiente" (ver AppUserDto.DeactivatedAt). Un usuario activo nunca
+    // tiene DeactivatedAt (Activate() no lo limpia hoy, pero tampoco importa: IsActive ya manda).
+    public DateTime? DeactivatedAt { get; init; }
+
+    public string StatusDisplay => IsActive ? "Activo" : IsDeactivatedStatus ? "🚫 Desactivado" : "Pendiente";
+
+    // Puramente descriptivo para que UserManagementPage.xaml pinte StatusDisplay en gris solo en
+    // este caso vía DataTrigger -- mismo patrón que ShowOnlyPending para los botones de filtro.
+    // No se resuelve el color aquí (Color/AppPrimaryColor exigirían un runtime MAUI corriendo,
+    // y UserListItem debe seguir siendo instanciable en tests sin él).
+    public bool IsDeactivatedStatus => !IsActive && DeactivatedAt.HasValue;
+
     public bool ShowApprove => !IsActive;
+
+    // Mismo criterio que ShowApprove, en espejo: solo tiene sentido desactivar a alguien que hoy
+    // puede iniciar sesión. El gating por rol/organización lo decide el backend (permiso
+    // DEACTIVATE_USERS + tenant-scoping en DeactivateUserCommandHandler) -- la lista de Users que
+    // llega aquí ya viene acotada a lo que el llamador puede ver, igual que el resto de acciones
+    // de esta pantalla (ninguna tiene gating adicional en el cliente).
+    public bool ShowDeactivate => IsActive;
 
     // Picker en Windows tiene un bug conocido y sin arreglo oficial (dotnet/maui #5038, #24369):
     // no refresca su texto visible al cambiar SelectedItem, ni al precargarlo por binding ni tras
@@ -178,6 +197,7 @@ public partial class UserManagementViewModel : ObservableObject
                     Email = user.Email,
                     Role = user.Role,
                     IsActive = user.IsActive,
+                    DeactivatedAt = user.DeactivatedAt,
                     WalkwayDisplay = user.WalkwayCode ?? "Sin asignar",
                     OrganizationName = user.OrganizationName,
                     SelectedRole = Roles.FirstOrDefault(r => r.Name == user.Role),
@@ -239,6 +259,26 @@ public partial class UserManagementViewModel : ObservableObject
 
         var result = await _userManagementService.ActivateUserAsync(user.Id);
         await HandleActionResultAsync(result, AppStrings.UserApprovedSuccess);
+    }
+
+    [RelayCommand]
+    internal async Task DeactivateAsync(UserListItem? user)
+    {
+        if (user is null) return;
+
+        // Impacto real e inmediato (el usuario deja de poder iniciar sesión): mismo criterio que
+        // ExecuteRegenerateInvitationCodeAsync en SystemSettingsViewModel -- confirmar antes de
+        // llamar al backend, no solo deshabilitar/avisar después.
+        var confirmed = await _alertService.ShowConfirmAsync(
+            AppStrings.AttentionTitle,
+            AppStrings.MsgConfirmDeactivateUser,
+            "Desactivar",
+            "Cancelar");
+
+        if (!confirmed) return;
+
+        var result = await _userManagementService.DeactivateUserAsync(user.Id);
+        await HandleActionResultAsync(result, AppStrings.UserDeactivatedSuccess);
     }
 
     [RelayCommand]

@@ -25,6 +25,7 @@ namespace IrrigationMaster.Mobile.Application.Constants
         public const string UsersRegister = "Users/Register";
         public const string UsersPagination = "Users/pagination";
         public const string UsersActivate = "Users/Activate";
+        public const string UsersDeactivate = "Users/Deactivate";
         public const string UsersAssignWalkway = "Users/AssignWalkway";
         public const string UsersChangeRole = "Users/ChangeRole";
         public const string UsersChangePassword = "Users/ChangePassword";

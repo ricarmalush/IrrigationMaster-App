@@ -145,6 +145,65 @@ public class UserManagementViewModelTests
         Assert.DoesNotContain(vm.Roles, r => r.Id == superAdminRoleId);
     }
 
+    // ─── ESTADO: Activo / 🚫 Desactivado / Pendiente (UserListItem.StatusDisplay) ───
+    // Antes de DeactivatedAt, IsActive=false solo podía significar "pendiente de aprobación" --
+    // ahora también puede significar "desactivado deliberadamente por un admin", y ambos casos
+    // deben distinguirse tanto en el texto como en el color (ver IsDeactivatedStatus + el
+    // DataTrigger de UserManagementPage.xaml).
+
+    [Fact]
+    public void StatusDisplay_WhenActive_IsActivo_RegardlessOfDeactivatedAt()
+    {
+        var user = new UserListItem { IsActive = true, DeactivatedAt = DateTime.UtcNow };
+
+        Assert.Equal("Activo", user.StatusDisplay);
+        Assert.False(user.IsDeactivatedStatus);
+    }
+
+    [Fact]
+    public void StatusDisplay_WhenInactive_WithoutDeactivatedAt_IsPendiente()
+    {
+        var user = new UserListItem { IsActive = false, DeactivatedAt = null };
+
+        Assert.Equal("Pendiente", user.StatusDisplay);
+        Assert.False(user.IsDeactivatedStatus);
+    }
+
+    [Fact]
+    public void StatusDisplay_WhenInactive_WithDeactivatedAt_IsDesactivado()
+    {
+        var user = new UserListItem { IsActive = false, DeactivatedAt = DateTime.UtcNow };
+
+        Assert.Equal("🚫 Desactivado", user.StatusDisplay);
+        Assert.True(user.IsDeactivatedStatus);
+    }
+
+    [Fact]
+    public async Task LoadAsync_PropagatesDeactivatedAt_FromAppUserDto_ToUserListItem()
+    {
+        var deactivatedAt = new DateTime(2026, 1, 15, 10, 30, 0, DateTimeKind.Utc);
+        var userService = new FakeUserManagementService
+        {
+            RolesToReturn = [],
+            WalkwaysToReturn = [],
+            UsersToReturn =
+            [
+                new AppUserDto { Id = Guid.NewGuid(), FirstName = "Jose", LastName = "Vecino", Email = "jose@test.com", IsActive = false, DeactivatedAt = deactivatedAt }
+            ]
+        };
+        var vm = new UserManagementViewModel(userService, new FakeStructureService(), new RecordingAlertService(), new FakeCurrentSession { RoleToReturn = "PRESIDENTE" });
+
+        await vm.LoadAsync();
+
+        var user = Assert.Single(vm.Users);
+        Assert.Equal(deactivatedAt, user.DeactivatedAt);
+        Assert.Equal("🚫 Desactivado", user.StatusDisplay);
+        // ShowApprove sigue siendo true: el mismo botón "Aprobar" (ActivateUserAsync) reactiva a
+        // un usuario desactivado, igual que aprueba a uno pendiente -- el backend no distingue el
+        // origen, PUT Users/Activate/{id} es la reversión declarada de Deactivate.
+        Assert.True(user.ShowApprove);
+    }
+
     // ─── FILTRO: Organización (solo SUPERADMIN) ───
 
     [Fact]
@@ -264,6 +323,58 @@ public class UserManagementViewModelTests
         var alert = Assert.Single(alerts.Calls);
         Assert.Equal(AppStrings.SuccessTitle, alert.Title);
         Assert.Equal(AppStrings.UserApprovedSuccess, alert.Message);
+    }
+
+    // ─── DESACTIVAR (espejo de Aprobar, con confirmación previa) ───
+
+    [Fact]
+    public async Task DeactivateAsync_WhenUserConfirms_OnSuccess_DeactivatesUser_ShowsSuccessAlert_AndReloads()
+    {
+        var (vm, userService, alerts) = CreateSut();
+        alerts.ConfirmResult = true;
+        var user = new UserListItem { Id = ActiveUserId, IsActive = true };
+
+        await vm.DeactivateAsync(user);
+
+        Assert.Equal(ActiveUserId, userService.LastDeactivatedUserId);
+        var confirm = Assert.Single(alerts.ConfirmCalls);
+        Assert.Equal(AppStrings.MsgConfirmDeactivateUser, confirm.Message);
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.SuccessTitle, alert.Title);
+        Assert.Equal(AppStrings.UserDeactivatedSuccess, alert.Message);
+    }
+
+    [Fact]
+    public async Task DeactivateAsync_WhenUserCancelsConfirmation_DoesNotCallService()
+    {
+        var (vm, userService, alerts) = CreateSut();
+        alerts.ConfirmResult = false;
+        var user = new UserListItem { Id = ActiveUserId, IsActive = true };
+
+        await vm.DeactivateAsync(user);
+
+        Assert.Null(userService.LastDeactivatedUserId);
+        Assert.Empty(alerts.Calls);
+    }
+
+    [Fact]
+    public async Task DeactivateAsync_WhenBackendRejects_ShowsExactBackendMessage()
+    {
+        // P. ej. autodesactivación bloqueada por el backend, u organización distinta.
+        var (vm, userService, alerts) = CreateSut();
+        alerts.ConfirmResult = true;
+        userService.DeactivateResult = new UserActionResult
+        {
+            IsSuccess = false,
+            Message = "Por motivos de seguridad, no está permitido eliminar su propia cuenta de usuario en sesión."
+        };
+        var user = new UserListItem { Id = ActiveUserId, IsActive = true };
+
+        await vm.DeactivateAsync(user);
+
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.ErrorTitle, alert.Title);
+        Assert.Equal("Por motivos de seguridad, no está permitido eliminar su propia cuenta de usuario en sesión.", alert.Message);
     }
 
     // ─── ASIGNAR ANDADOR ───

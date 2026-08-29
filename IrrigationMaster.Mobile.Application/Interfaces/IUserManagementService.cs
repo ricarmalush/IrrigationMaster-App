@@ -19,6 +19,11 @@ public interface IUserManagementService
     Task<List<RoleDto>?> GetRolesAsync();
     Task<List<WalkwayDto>?> GetWalkwaysAsync();
     Task<UserActionResult> ActivateUserAsync(Guid userId);
+
+    // Suspensión deliberada por un admin -- distinta del borrado y del "pendiente de aprobación"
+    // (ver diagnóstico: el backend ahora distingue los tres casos, incluso en el login con un 403
+    // propio para este). Reversible con ActivateUserAsync.
+    Task<UserActionResult> DeactivateUserAsync(Guid userId);
     Task<UserActionResult> AssignWalkwayAsync(Guid userId, Guid? walkwayId);
     Task<UserActionResult> ChangeRoleAsync(Guid userId, Guid roleId);
 

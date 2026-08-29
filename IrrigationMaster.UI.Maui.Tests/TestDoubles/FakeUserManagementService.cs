@@ -10,6 +10,7 @@ public class FakeUserManagementService : IUserManagementService
     public List<RoleDto>? RolesToReturn { get; set; } = [];
     public List<WalkwayDto>? WalkwaysToReturn { get; set; } = [];
     public UserActionResult ActivateResult { get; set; } = new() { IsSuccess = true };
+    public UserActionResult DeactivateResult { get; set; } = new() { IsSuccess = true };
     public UserActionResult AssignWalkwayResult { get; set; } = new() { IsSuccess = true };
     public UserActionResult ChangeRoleResult { get; set; } = new() { IsSuccess = true };
     public UserActionResult ResetPasswordResult { get; set; } = new() { IsSuccess = true };
@@ -18,6 +19,7 @@ public class FakeUserManagementService : IUserManagementService
     public bool? LastIsActiveFilter { get; private set; }
     public Guid? LastOrganizationIdFilter { get; private set; }
     public Guid? LastActivatedUserId { get; private set; }
+    public Guid? LastDeactivatedUserId { get; private set; }
     public (Guid UserId, Guid? WalkwayId)? LastAssignWalkwayCall { get; private set; }
     public (Guid UserId, Guid RoleId)? LastChangeRoleCall { get; private set; }
     public (Guid UserId, string NewPassword)? LastResetPasswordCall { get; private set; }
@@ -43,6 +45,12 @@ public class FakeUserManagementService : IUserManagementService
     {
         LastActivatedUserId = userId;
         return Task.FromResult(ActivateResult);
+    }
+
+    public Task<UserActionResult> DeactivateUserAsync(Guid userId)
+    {
+        LastDeactivatedUserId = userId;
+        return Task.FromResult(DeactivateResult);
     }
 
     public Task<UserActionResult> AssignWalkwayAsync(Guid userId, Guid? walkwayId)

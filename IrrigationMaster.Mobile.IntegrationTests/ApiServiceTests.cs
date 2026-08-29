@@ -244,6 +244,39 @@ public class ApiServiceTests
         Assert.False(result!.IsLicenceError);
     }
 
+    [Fact]
+    public async Task LoginAsync_OnAccountDeactivated403_ReturnsRealBackendMessage_AndFlagsIsAccountDeactivated()
+    {
+        const string responseJson = """
+        { "isSuccess": false, "message": "Tu cuenta ha sido desactivada por un administrador. Contacta con tu organización." }
+        """;
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.Forbidden, responseJson);
+        var sut = CreateSut(handler, storedToken: null);
+
+        var result = await sut.LoginAsync("desactivado@test.com", "clave-valida");
+
+        Assert.NotNull(result);
+        Assert.False(result!.IsSuccess);
+        Assert.Equal("Tu cuenta ha sido desactivada por un administrador. Contacta con tu organización.", result.Message);
+        Assert.True(result.IsAccountDeactivated);
+        Assert.False(result.IsLicenceError);
+    }
+
+    [Fact]
+    public async Task LoginAsync_OnSuccess_NeverFlagsIsAccountDeactivated()
+    {
+        const string responseJson = """
+        { "isSuccess": true, "message": "OK", "data": "un-jwt-cualquiera" }
+        """;
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, responseJson);
+        var sut = CreateSut(handler, storedToken: null);
+
+        var result = await sut.LoginAsync("admin@elsaso.test", "clave-valida");
+
+        Assert.NotNull(result);
+        Assert.False(result!.IsAccountDeactivated);
+    }
+
     // ─── AUTO-REGISTRO (ANÓNIMO) ───
 
     [Fact]
@@ -691,6 +724,36 @@ public class ApiServiceTests
         Assert.Equal(HttpMethod.Put, handler.LastRequest!.Method);
         Assert.EndsWith($"Users/Activate/{userId}", handler.LastRequest.RequestUri!.ToString());
         Assert.Equal("token-123", handler.LastRequest.Headers.Authorization!.Parameter);
+    }
+
+    [Fact]
+    public async Task DeactivateUserAsync_PutsToDeactivateRoute_WithAuthHeader()
+    {
+        const string responseJson = """{ "isSuccess": true, "message": "OK" }""";
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, responseJson);
+        var sut = CreateSut(handler);
+        var userId = Guid.NewGuid();
+
+        var result = await sut.DeactivateUserAsync(userId);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(HttpMethod.Put, handler.LastRequest!.Method);
+        Assert.EndsWith($"Users/Deactivate/{userId}", handler.LastRequest.RequestUri!.ToString());
+        Assert.Equal("token-123", handler.LastRequest.Headers.Authorization!.Parameter);
+    }
+
+    [Fact]
+    public async Task DeactivateUserAsync_WhenBackendRejects_ReturnsExactBackendMessage()
+    {
+        const string responseJson = """{ "isSuccess": false, "message": "Por motivos de seguridad, no está permitido eliminar su propia cuenta de usuario en sesión." }""";
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.BadRequest, responseJson);
+        var sut = CreateSut(handler);
+        var userId = Guid.NewGuid();
+
+        var result = await sut.DeactivateUserAsync(userId);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Por motivos de seguridad, no está permitido eliminar su propia cuenta de usuario en sesión.", result.Message);
     }
 
     [Fact]

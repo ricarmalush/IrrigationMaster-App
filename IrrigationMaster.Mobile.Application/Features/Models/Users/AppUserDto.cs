@@ -37,4 +37,13 @@ public class AppUserDto
 
     [JsonPropertyName("organizationName")]
     public string OrganizationName { get; init; } = string.Empty;
+
+    // El backend ya lo manda en cada fila de Users/pagination (UserProfile.cs, ConstructUsing) --
+    // hasta ahora la App lo descartaba en silencio al no tener una propiedad que lo recogiera.
+    // Distingue "nunca aprobado" (IsActive=false, DeactivatedAt=null) de "desactivado
+    // deliberadamente por un admin" (IsActive=false, DeactivatedAt con valor) -- ambos mostraban
+    // el mismo "Pendiente" en UserManagementPage. DeactivatedBy no se expone todavía: no hace
+    // falta para esta distinción, solo para mostrar "quién" (decisión explícita: no por ahora).
+    [JsonPropertyName("deactivatedAt")]
+    public DateTime? DeactivatedAt { get; init; }
 }
