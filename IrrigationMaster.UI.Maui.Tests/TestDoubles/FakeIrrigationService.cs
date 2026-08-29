@@ -7,6 +7,7 @@ namespace IrrigationMaster.UI.Maui.Tests.TestDoubles;
 public class FakeIrrigationService : IIrrigationService
 {
     public List<WalkwayIrrigationStatusDto>? StatusToReturn { get; set; } = [];
+    public MyWalkwayIrrigationStatusDto? MyWalkwayStatusToReturn { get; set; }
     public List<IrrigationProgramDto>? ProgramsToReturn { get; set; } = [];
     public UserActionResult StartTurnResult { get; set; } = new() { IsSuccess = true };
     public UserActionResult CompleteTurnResult { get; set; } = new() { IsSuccess = true };
@@ -30,6 +31,8 @@ public class FakeIrrigationService : IIrrigationService
     public (Guid HydraulicSectorId, Guid RequesterId, DateTime StartTime, DateTime EndTime)? LastRequestTurnCall { get; private set; }
 
     public Task<List<WalkwayIrrigationStatusDto>?> GetIrrigationStatusAsync() => Task.FromResult(StatusToReturn);
+
+    public Task<MyWalkwayIrrigationStatusDto?> GetMyWalkwayStatusAsync() => Task.FromResult(MyWalkwayStatusToReturn);
 
     public Task<List<IrrigationProgramDto>?> GetIrrigationProgramsAsync() => Task.FromResult(ProgramsToReturn);
 

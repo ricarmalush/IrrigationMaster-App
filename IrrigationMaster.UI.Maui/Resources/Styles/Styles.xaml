@@ -26,7 +26,20 @@
     <Style TargetType="Button">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}" />
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
-        <Setter Property="FontFamily" Value="OpenSansRegular"/>
+        <!-- Solo Android/iOS usan la fuente de marca (OpenSansRegular): en Windows, esa fuente
+             personalizada rompe el fallback automático a la fuente de emoji del sistema (WinUI no
+             resuelve bien el fallback de glifos para fuentes registradas por MAUI), sustituyendo
+             el emoji de los botones (📅, 🚫, 🌊...) por un glifo equivocado de otra fuente en vez
+             de mostrarlo o dejarlo en blanco. Segoe UI sí hace ese fallback correctamente, al ser
+             la fuente nativa del propio sistema operativo. -->
+        <Setter Property="FontFamily">
+            <Setter.Value>
+                <OnPlatform x:TypeArguments="x:String">
+                    <On Platform="Android, iOS, MacCatalyst" Value="OpenSansRegular"/>
+                    <On Platform="WinUI" Value="Segoe UI"/>
+                </OnPlatform>
+            </Setter.Value>
+        </Setter>
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="BorderWidth" Value="0"/>
         <Setter Property="CornerRadius" Value="8"/>
@@ -157,7 +170,16 @@
     <Style TargetType="Label">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
-        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <!-- Mismo motivo que el Style de Button: en Windows, OpenSansRegular rompe el fallback a
+             la fuente de emoji del sistema. -->
+        <Setter Property="FontFamily">
+            <Setter.Value>
+                <OnPlatform x:TypeArguments="x:String">
+                    <On Platform="Android, iOS, MacCatalyst" Value="OpenSansRegular"/>
+                    <On Platform="WinUI" Value="Segoe UI"/>
+                </OnPlatform>
+            </Setter.Value>
+        </Setter>
         <Setter Property="FontSize" Value="14" />
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>

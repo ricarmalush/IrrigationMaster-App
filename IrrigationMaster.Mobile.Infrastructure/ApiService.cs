@@ -638,6 +638,29 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         }
     }
 
+    public async Task<MyWalkwayIrrigationStatusDto?> GetMyWalkwayStatusAsync()
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.GetAsync(ApiEndpoints.IrrigationTurnsMyWalkwayStatus);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var wrapped = await response.Content.ReadFromJsonAsync<MyWalkwayIrrigationStatusResponse>();
+                return wrapped?.Data;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - MyWalkwayIrrigationStatus]: {ex.Message}");
+            return null;
+        }
+    }
+
     public async Task<UserActionResult> StartTurnAsync(Guid turnId)
     {
         try

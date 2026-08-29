@@ -816,4 +816,105 @@ public class ApiServiceTests
         Assert.False(result.IsSuccess);
         Assert.Equal("La acción sobre 'Usuario' no está permitida o el estado es inválido.", result.Message);
     }
+
+    // ─── MI RIEGO (IrrigationTurns/my-walkway-status) ───
+
+    [Fact]
+    public async Task GetMyWalkwayStatusAsync_GetsToMyWalkwayStatusRoute_WithAuthHeader()
+    {
+        var walkwayId = Guid.NewGuid();
+        var turnId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var responseJson = $$"""
+        {
+            "isSuccess": true,
+            "message": "OK",
+            "data": {
+                "walkwayId": "{{walkwayId}}",
+                "walkwayCode": "A-01",
+                "requestsTomorrow": [
+                    { "turnId": "{{turnId}}", "userId": "{{userId}}", "fullName": "Ana García", "status": "Requested", "scheduledStart": "2026-03-10T07:00:00Z", "scheduledEnd": "2026-03-10T09:00:00Z" }
+                ],
+                "liveToday": []
+            }
+        }
+        """;
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, responseJson);
+        var sut = CreateSut(handler);
+
+        var result = await sut.GetMyWalkwayStatusAsync();
+
+        Assert.NotNull(result);
+        Assert.Equal(walkwayId, result!.WalkwayId);
+        Assert.Equal("A-01", result.WalkwayCode);
+        var request = Assert.Single(result.RequestsTomorrow);
+        Assert.Equal("Ana García", request.FullName);
+        Assert.Empty(result.LiveToday);
+        Assert.EndsWith("IrrigationTurns/my-walkway-status", handler.LastRequest!.RequestUri!.ToString());
+        Assert.Equal("token-123", handler.LastRequest.Headers.Authorization!.Parameter);
+    }
+
+    [Fact]
+    public async Task GetMyWalkwayStatusAsync_WhenCallerHasNoWalkway_ReturnsNullWalkwayId_AndEmptyLists()
+    {
+        const string responseJson = """
+        {
+            "isSuccess": true,
+            "message": "OK",
+            "data": { "walkwayId": null, "walkwayCode": null, "requestsTomorrow": [], "liveToday": [] }
+        }
+        """;
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, responseJson);
+        var sut = CreateSut(handler);
+
+        var result = await sut.GetMyWalkwayStatusAsync();
+
+        Assert.NotNull(result);
+        Assert.Null(result!.WalkwayId);
+        Assert.Null(result.WalkwayCode);
+        Assert.Empty(result.RequestsTomorrow);
+        Assert.Empty(result.LiveToday);
+    }
+
+    [Fact]
+    public async Task GetMyWalkwayStatusAsync_PopulatesLiveToday_WithNeighborStatusShape()
+    {
+        var walkwayId = Guid.NewGuid();
+        var turnId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var responseJson = $$"""
+        {
+            "isSuccess": true,
+            "message": "OK",
+            "data": {
+                "walkwayId": "{{walkwayId}}",
+                "walkwayCode": "A-01",
+                "requestsTomorrow": [],
+                "liveToday": [
+                    { "userId": "{{userId}}", "turnId": "{{turnId}}", "fullName": "Luis Pérez", "status": "Watering", "scheduledStart": "2026-03-09T07:00:00Z", "scheduledEnd": "2026-03-09T09:00:00Z", "isApproved": true }
+                ]
+            }
+        }
+        """;
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, responseJson);
+        var sut = CreateSut(handler);
+
+        var result = await sut.GetMyWalkwayStatusAsync();
+
+        Assert.NotNull(result);
+        var live = Assert.Single(result!.LiveToday);
+        Assert.Equal("Luis Pérez", live.FullName);
+        Assert.Equal("Watering", live.Status);
+    }
+
+    [Fact]
+    public async Task GetMyWalkwayStatusAsync_OnServerError_ReturnsNull_WithoutThrowing()
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.InternalServerError);
+        var sut = CreateSut(handler);
+
+        var result = await sut.GetMyWalkwayStatusAsync();
+
+        Assert.Null(result);
+    }
 }

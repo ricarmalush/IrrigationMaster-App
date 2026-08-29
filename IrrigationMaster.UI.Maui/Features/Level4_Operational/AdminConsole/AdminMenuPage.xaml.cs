@@ -5,6 +5,7 @@ using IrrigationMaster.UI.Maui.Features.Level4_Operational.ApproveTurns;
 using IrrigationMaster.UI.Maui.Features.Level3_Functional.IrrigationPrograms;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.CommunityBroadcast;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.IrrigationStatus;
+using IrrigationMaster.UI.Maui.Features.Level4_Operational.MyIrrigation;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.Notifications;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.ReportIncident;
 
@@ -144,6 +145,32 @@ public partial class AdminMenuPage : ContentPage
             else
             {
                 await DisplayAlert(AppStrings.SystemErrorTitle, "No se pudo cargar el estado de riego.", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Navigation Error]: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// SECCIÓN: RIEGO -- Mi Riego, sin gating de rol, visible para los 3 (SUPERADMIN/Presidente/
+    /// Vecino) -- igual que OnIrrigationStatusClicked.
+    /// </summary>
+    private async void OnMyIrrigationClicked(object sender, EventArgs e)
+    {
+        try
+        {
+            var myIrrigationPage = Handler?.MauiContext?.Services.GetService<MyIrrigationPage>();
+
+            if (myIrrigationPage != null)
+            {
+                // PushAsync (no PushModalAsync): mismo motivo que OnUserManagementClicked.
+                await Navigation.PushAsync(myIrrigationPage);
+            }
+            else
+            {
+                await DisplayAlert(AppStrings.SystemErrorTitle, "No se pudo cargar Mi Riego.", "OK");
             }
         }
         catch (Exception ex)

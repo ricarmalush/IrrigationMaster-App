@@ -12,6 +12,12 @@ public interface IIrrigationService
     // Sin parámetro Date: siempre consulta "hoy" (el backend lo asume por defecto cuando se omite).
     Task<List<WalkwayIrrigationStatusDto>?> GetIrrigationStatusAsync();
 
+    // Visibilidad en tiempo real acotada SIEMPRE al andador del propio llamador (resuelto
+    // server-side, nunca un parámetro) -- pantalla "Mi Riego". Sin permiso adicional ni gate de
+    // licencia. WalkwayId null en la respuesta significa "sin andador asignado" (p. ej. un
+    // Presidente), no un error.
+    Task<MyWalkwayIrrigationStatusDto?> GetMyWalkwayStatusAsync();
+
     Task<UserActionResult> StartTurnAsync(Guid turnId);
     Task<UserActionResult> CompleteTurnAsync(Guid turnId);
 

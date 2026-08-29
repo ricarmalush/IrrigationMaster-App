@@ -41,6 +41,13 @@
                         Clicked="OnIrrigationStatusClicked"
                         BackgroundColor="Transparent" TextColor="#0277BD" BorderColor="#0277BD" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
 
+                <!-- Visible para los 3 roles sin restricción, igual que Estado de Riego: el
+                     backend (GetMyWalkwayIrrigationStatusHandler) no exige permiso adicional ni
+                     gate de licencia: solicitudes de mañana y riego de hoy del propio andador. -->
+                <Button Text="🌊 Mi Riego"
+                        Clicked="OnMyIrrigationClicked"
+                        BackgroundColor="Transparent" TextColor="#0277BD" BorderColor="#0277BD" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
+
                 <!-- Visible solo para Presidente/Vicepresidente/SUPERADMIN (mismo gating que
                      CommunityBroadcastButton): un Vecino puede solicitar su propio turno, pero no
                      aprobar turnos de nadie. -->
