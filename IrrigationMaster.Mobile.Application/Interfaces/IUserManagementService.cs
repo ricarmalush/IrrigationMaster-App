@@ -16,6 +16,13 @@ public interface IUserManagementService
     // "Avisar a mi comunidad" necesita saber si el Presidente/SUPERADMIN logueado tiene un andador
     // asignado, dato que no viaja en el JWT).
     Task<AppUserDto?> GetUserByIdAsync(Guid userId);
+
+    // Actualiza el perfil de un usuario (Nombre/Apellidos/Email/Calle/Número de casa). Usado hoy
+    // solo para auto-edición ("Editar mi perfil" en Mi Cuenta) -- el backend permite auto-edición
+    // sin ningún permiso especial (ver UpdateUserCommandHandler), y editar a OTRO usuario exige
+    // VIEW_ORG_USERS, que esta capa no comprueba.
+    Task<UserActionResult> UpdateUserAsync(Guid userId, UpdateUserRequest request);
+
     Task<List<RoleDto>?> GetRolesAsync();
     Task<List<WalkwayDto>?> GetWalkwaysAsync();
     Task<UserActionResult> ActivateUserAsync(Guid userId);

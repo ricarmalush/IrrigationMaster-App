@@ -259,6 +259,24 @@ namespace IrrigationMaster.UI.Maui.Common {
         }
 
         /// <summary>
+        ///   Busca una cadena traducida similar a Por favor, completa Nombre, Apellidos y Email..
+        /// </summary>
+        public static string MsgMissingProfileData {
+            get {
+                return ResourceManager.GetString("MsgMissingProfileData", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a El número de casa debe ser un número entero mayor que cero..
+        /// </summary>
+        public static string MsgInvalidHouseNumber {
+            get {
+                return ResourceManager.GetString("MsgInvalidHouseNumber", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Busca una cadena traducida similar a Por favor, completa todos los datos obligatorios del registro..
         /// </summary>
         public static string MsgMissingRegisterData {
@@ -399,6 +417,15 @@ namespace IrrigationMaster.UI.Maui.Common {
         public static string PasswordResetSuccess {
             get {
                 return ResourceManager.GetString("PasswordResetSuccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Busca una cadena traducida similar a Perfil actualizado con éxito..
+        /// </summary>
+        public static string ProfileUpdatedSuccess {
+            get {
+                return ResourceManager.GetString("ProfileUpdatedSuccess", resourceCulture);
             }
         }
 

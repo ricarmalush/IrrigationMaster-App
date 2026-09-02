@@ -41,6 +41,7 @@ public partial class SystemSettingsViewModel : ObservableObject
 {
     private readonly IStructureService _structureService;
     private readonly IAuthService _authService;
+    private readonly IUserManagementService _userManagementService;
     private readonly IAlertService _alertService;
     private readonly ICurrentSession _currentSession;
 
@@ -104,6 +105,17 @@ public partial class SystemSettingsViewModel : ObservableObject
     // Colección para alimentar el Picker de XAML
     public ObservableCollection<HydraulicSectorItem> HydraulicSectors { get; } = [];
 
+    // --- MI PERFIL (Nombre/Apellidos/Email/Calle/Nº de casa, disponible para cualquier rol
+    // autenticado -- auto-edición vía UpdateUserCommand, sin permiso especial) ---
+    [ObservableProperty] public partial string ProfileFirstName { get; set; } = string.Empty;
+    [ObservableProperty] public partial string ProfileLastName { get; set; } = string.Empty;
+    [ObservableProperty] public partial string ProfileEmail { get; set; } = string.Empty;
+    [ObservableProperty] public partial string ProfileStreet { get; set; } = string.Empty;
+
+    // String, no int?, para enlazar directamente a un Entry -- se parsea al guardar (mismo criterio
+    // que SectorAreaSize/WalkwayLength).
+    [ObservableProperty] public partial string ProfileHouseNumber { get; set; } = string.Empty;
+
     // --- MI CUENTA (cambio de contraseña, disponible para cualquier rol autenticado) ---
     [ObservableProperty] public partial string CurrentPassword { get; set; } = string.Empty;
     [ObservableProperty] public partial string NewPassword { get; set; } = string.Empty;
@@ -124,6 +136,8 @@ public partial class SystemSettingsViewModel : ObservableObject
     public ICommand LoadCountriesCommand { get; }
     public ICommand LoadHydraulicSectorsCommand { get; }
     public ICommand LoadMyOrganizationCommand { get; }
+    public ICommand LoadMyProfileCommand { get; }
+    public ICommand SaveMyProfileCommand { get; }
     public ICommand RegenerateInvitationCodeCommand { get; }
     public ICommand SelectEntidadTabCommand { get; }
     public ICommand SelectSectoresTabCommand { get; }
@@ -134,10 +148,11 @@ public partial class SystemSettingsViewModel : ObservableObject
     private const string PresidenteRoleCode = "PRESIDENTE";
     private const string VicepresidenteRoleCode = "VICEPRESIDENTE";
 
-    public SystemSettingsViewModel(IStructureService structureService, IAuthService authService, IAlertService alertService, ICurrentSession currentSession)
+    public SystemSettingsViewModel(IStructureService structureService, IAuthService authService, IUserManagementService userManagementService, IAlertService alertService, ICurrentSession currentSession)
     {
         _structureService = structureService;
         _authService = authService;
+        _userManagementService = userManagementService;
         _alertService = alertService;
         _currentSession = currentSession;
 
@@ -148,6 +163,8 @@ public partial class SystemSettingsViewModel : ObservableObject
         LoadCountriesCommand = new Command(async () => await LoadCountriesAsync());
         LoadHydraulicSectorsCommand = new Command(async () => await LoadHydraulicSectorsAsync());
         LoadMyOrganizationCommand = new Command(async () => await LoadMyOrganizationAsync());
+        LoadMyProfileCommand = new Command(async () => await LoadMyProfileAsync());
+        SaveMyProfileCommand = new Command(async () => await ExecuteSaveMyProfileAsync());
         RegenerateInvitationCodeCommand = new Command(async () => await ExecuteRegenerateInvitationCodeAsync());
         SelectEntidadTabCommand = new Command(() => ActiveTab = SettingsTab.Entidad);
         SelectSectoresTabCommand = new Command(() => ActiveTab = SettingsTab.Sectores);
@@ -156,10 +173,11 @@ public partial class SystemSettingsViewModel : ObservableObject
 
         ApplyTabVisibility(currentSession.CachedRole);
 
-        // Cargamos los catálogos y los datos de "Mi Organización" al instanciar el ViewModel
+        // Cargamos los catálogos y los datos de "Mi Organización"/"Mi Perfil" al instanciar el ViewModel
         LoadCountriesCommand.Execute(null);
         LoadHydraulicSectorsCommand.Execute(null);
         LoadMyOrganizationCommand.Execute(null);
+        LoadMyProfileCommand.Execute(null);
     }
 
     // Síncrono a propósito: SystemSettingsPage lo llama desde su propio constructor, antes de
@@ -213,6 +231,93 @@ public partial class SystemSettingsViewModel : ObservableObject
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[Error Loading MyOrganization]: {ex.Message}");
+        }
+    }
+
+    // Precarga los 5 campos editables del propio perfil -- self-lookup vía
+    // ICurrentSession.CachedUserId, nunca un parámetro. Mismo criterio defensivo que
+    // LoadMyOrganizationAsync: un fallo se traga en silencio (log a Debug), sin bloquear el resto
+    // de la pantalla.
+    internal async Task LoadMyProfileAsync()
+    {
+        try
+        {
+            if (!_currentSession.CachedUserId.HasValue) return;
+
+            var user = await _userManagementService.GetUserByIdAsync(_currentSession.CachedUserId.Value);
+            if (user != null)
+            {
+                ProfileFirstName = user.FirstName;
+                ProfileLastName = user.LastName;
+                ProfileEmail = user.Email;
+                ProfileStreet = user.Street ?? string.Empty;
+                ProfileHouseNumber = user.HouseNumber?.ToString() ?? string.Empty;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Error Loading MyProfile]: {ex.Message}");
+        }
+    }
+
+    // Guarda los 5 campos vía UpdateUserCommand, auto-editando el propio perfil (currentSession.CachedUserId
+    // como Id de ruta) -- el backend permite esta auto-edición sin ningún permiso especial.
+    internal async Task ExecuteSaveMyProfileAsync()
+    {
+        if (string.IsNullOrWhiteSpace(ProfileFirstName) || string.IsNullOrWhiteSpace(ProfileLastName) || string.IsNullOrWhiteSpace(ProfileEmail))
+        {
+            await _alertService.ShowAsync(AppStrings.AttentionTitle, AppStrings.MsgMissingProfileData);
+            return;
+        }
+
+        int? houseNumber = null;
+        if (!string.IsNullOrWhiteSpace(ProfileHouseNumber))
+        {
+            if (!int.TryParse(ProfileHouseNumber, out var parsedHouseNumber) || parsedHouseNumber < 1)
+            {
+                await _alertService.ShowAsync(AppStrings.AttentionTitle, AppStrings.MsgInvalidHouseNumber);
+                return;
+            }
+            houseNumber = parsedHouseNumber;
+        }
+
+        if (!_currentSession.CachedUserId.HasValue) return;
+        var userId = _currentSession.CachedUserId.Value;
+
+        var organizationIdRaw = await _currentSession.GetOrganizationIdAsync();
+        if (!Guid.TryParse(organizationIdRaw, out var organizationId)) return;
+
+        IsLoading = true;
+        try
+        {
+            var result = await _userManagementService.UpdateUserAsync(userId, new UpdateUserRequest
+            {
+                Id = userId,
+                FirstName = ProfileFirstName.Trim(),
+                LastName = ProfileLastName.Trim(),
+                Email = ProfileEmail.Trim(),
+                OrganizationId = organizationId,
+                Street = string.IsNullOrWhiteSpace(ProfileStreet) ? null : ProfileStreet.Trim(),
+                HouseNumber = houseNumber
+            });
+
+            if (result.IsSuccess)
+            {
+                await _alertService.ShowAsync(AppStrings.SuccessTitle, AppStrings.ProfileUpdatedSuccess);
+            }
+            else
+            {
+                await _alertService.ShowAsync(AppStrings.ErrorTitle, BuildFailureMessage(result));
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Error SaveMyProfile]: {ex.Message}");
+            await _alertService.ShowAsync(AppStrings.ErrorTitle, AppStrings.ApiConnectionError);
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
 

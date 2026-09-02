@@ -14,6 +14,7 @@ public class FakeUserManagementService : IUserManagementService
     public UserActionResult AssignWalkwayResult { get; set; } = new() { IsSuccess = true };
     public UserActionResult ChangeRoleResult { get; set; } = new() { IsSuccess = true };
     public UserActionResult ResetPasswordResult { get; set; } = new() { IsSuccess = true };
+    public UserActionResult UpdateUserResult { get; set; } = new() { IsSuccess = true };
 
     public Guid? LastGetUserByIdCall { get; private set; }
     public bool? LastIsActiveFilter { get; private set; }
@@ -23,6 +24,7 @@ public class FakeUserManagementService : IUserManagementService
     public (Guid UserId, Guid? WalkwayId)? LastAssignWalkwayCall { get; private set; }
     public (Guid UserId, Guid RoleId)? LastChangeRoleCall { get; private set; }
     public (Guid UserId, string NewPassword)? LastResetPasswordCall { get; private set; }
+    public (Guid UserId, UpdateUserRequest Request)? LastUpdateUserCall { get; private set; }
 
     public Task<List<AppUserDto>?> GetUsersAsync(bool? isActive, Guid? organizationId = null)
     {
@@ -69,5 +71,11 @@ public class FakeUserManagementService : IUserManagementService
     {
         LastResetPasswordCall = (userId, newPassword);
         return Task.FromResult(ResetPasswordResult);
+    }
+
+    public Task<UserActionResult> UpdateUserAsync(Guid userId, UpdateUserRequest request)
+    {
+        LastUpdateUserCall = (userId, request);
+        return Task.FromResult(UpdateUserResult);
     }
 }

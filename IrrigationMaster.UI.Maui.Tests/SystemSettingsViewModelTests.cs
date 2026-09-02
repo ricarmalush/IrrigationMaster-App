@@ -13,7 +13,7 @@ public class SystemSettingsViewModelTests
     private const string FakeBaseUrl = "https://fake-backend.test/api/v1/";
     private const string CreatedResponseJson = """{ "isSuccess": true, "message": "Operación completada exitosamente.", "data": "3fa85f64-5717-4562-b3fc-2c963f66afa6" }""";
 
-    private static (SystemSettingsViewModel ViewModel, RoutingFakeHttpMessageHandler Handler, RecordingAlertService Alerts, FakeCurrentSession Session) CreateSut(string? organizationId = null, string? role = null)
+    private static (SystemSettingsViewModel ViewModel, RoutingFakeHttpMessageHandler Handler, RecordingAlertService Alerts, FakeCurrentSession Session) CreateSut(string? organizationId = null, string? role = null, Guid? userId = null)
     {
         var handler = new RoutingFakeHttpMessageHandler();
         var httpClient = new HttpClient(handler) { BaseAddress = new Uri(FakeBaseUrl) };
@@ -22,10 +22,12 @@ public class SystemSettingsViewModelTests
         var alerts = new RecordingAlertService();
         // RoleToReturn debe fijarse ANTES de construir el ViewModel: éste lee
         // ICurrentSession.CachedRole de forma síncrona en su propio constructor (para poder
-        // decidir las pestañas antes del primer render), no de forma perezosa.
-        var session = new FakeCurrentSession { OrganizationIdToReturn = organizationId, RoleToReturn = role };
+        // decidir las pestañas antes del primer render), no de forma perezosa. UserIdToReturn nulo
+        // por defecto: así el constructor (que ya llama a LoadMyProfileCommand.Execute(null)) no
+        // dispara ninguna petición HTTP en los tests que no lo necesitan.
+        var session = new FakeCurrentSession { OrganizationIdToReturn = organizationId, RoleToReturn = role, UserIdToReturn = userId };
 
-        var viewModel = new SystemSettingsViewModel(apiService, apiService, alerts, session);
+        var viewModel = new SystemSettingsViewModel(apiService, apiService, apiService, alerts, session);
 
         return (viewModel, handler, alerts, session);
     }
@@ -73,6 +75,192 @@ public class SystemSettingsViewModelTests
         Assert.DoesNotContain(handler.Requests, r => r.RequestUri!.AbsolutePath.Contains("organizations/Get", StringComparison.OrdinalIgnoreCase));
         Assert.Equal(string.Empty, vm.MyOrganizationName);
         Assert.Equal(string.Empty, vm.MyOrganizationInvitationCode);
+    }
+
+    // ─── MI PERFIL: auto-edición de Nombre/Apellidos/Email/Calle/Nº de casa vía UpdateUserCommand,
+    // sin ningún permiso especial (ver UpdateUserCommandHandler) ───
+
+    [Fact]
+    public async Task LoadMyProfileAsync_OnSuccess_PopulatesAllFiveFields()
+    {
+        var userId = Guid.NewGuid();
+        var (vm, handler, _, session) = CreateSut();
+        session.UserIdToReturn = userId;
+        const string responseJson = """
+        {
+            "isSuccess": true,
+            "message": "OK",
+            "data": {
+                "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "firstName": "Ana",
+                "lastName": "García",
+                "email": "ana@test.com",
+                "organizationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "role": "VECINO",
+                "isActive": true,
+                "fullName": "Ana García",
+                "organizationName": "Comunidad",
+                "street": "Calle Mayor",
+                "houseNumber": 12
+            }
+        }
+        """;
+        handler.AddRoute(IsGetTo($"Users/Get/{userId}"), HttpStatusCode.OK, responseJson);
+
+        await vm.LoadMyProfileAsync();
+
+        Assert.Equal("Ana", vm.ProfileFirstName);
+        Assert.Equal("García", vm.ProfileLastName);
+        Assert.Equal("ana@test.com", vm.ProfileEmail);
+        Assert.Equal("Calle Mayor", vm.ProfileStreet);
+        Assert.Equal("12", vm.ProfileHouseNumber);
+    }
+
+    [Fact]
+    public async Task LoadMyProfileAsync_WhenHouseNumberAndStreetAreNull_LeavesThoseFieldsEmpty()
+    {
+        var userId = Guid.NewGuid();
+        var (vm, handler, _, session) = CreateSut();
+        session.UserIdToReturn = userId;
+        const string responseJson = """
+        {
+            "isSuccess": true,
+            "message": "OK",
+            "data": {
+                "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "firstName": "Ana",
+                "lastName": "García",
+                "email": "ana@test.com",
+                "organizationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "role": "VECINO",
+                "isActive": true,
+                "fullName": "Ana García",
+                "organizationName": "Comunidad"
+            }
+        }
+        """;
+        handler.AddRoute(IsGetTo($"Users/Get/{userId}"), HttpStatusCode.OK, responseJson);
+
+        await vm.LoadMyProfileAsync();
+
+        Assert.Equal(string.Empty, vm.ProfileStreet);
+        Assert.Equal(string.Empty, vm.ProfileHouseNumber);
+    }
+
+    [Fact]
+    public async Task LoadMyProfileAsync_WhenSessionHasNoUserId_DoesNotCallApi()
+    {
+        var (vm, handler, _, _) = CreateSut();
+
+        await vm.LoadMyProfileAsync();
+
+        Assert.DoesNotContain(handler.Requests, r => r.RequestUri!.AbsolutePath.Contains("Users/Get", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task ExecuteSaveMyProfileAsync_OnSuccess_ShowsSuccessAlert_WithFullPayload()
+    {
+        var userId = Guid.NewGuid();
+        var organizationId = Guid.NewGuid();
+        var (vm, handler, alerts, session) = CreateSut(organizationId.ToString());
+        session.UserIdToReturn = userId;
+        handler.AddRoute(IsPutTo($"Users/Update/{userId}"), HttpStatusCode.OK, """{ "isSuccess": true, "message": "Perfil actualizado con éxito." }""");
+
+        vm.ProfileFirstName = "Ana";
+        vm.ProfileLastName = "García";
+        vm.ProfileEmail = "ana@test.com";
+        vm.ProfileStreet = "Calle Mayor";
+        vm.ProfileHouseNumber = "12";
+
+        await vm.ExecuteSaveMyProfileAsync();
+
+        Assert.False(vm.IsLoading);
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.SuccessTitle, alert.Title);
+
+        var request = Assert.Single(handler.Requests, r => r.RequestUri!.AbsolutePath.Contains("Users/Update", StringComparison.OrdinalIgnoreCase));
+        var body = await request.Content!.ReadAsStringAsync();
+        // ApiService serializa en camelCase (confirmado empíricamente: "id", no "Id") -- el binding
+        // [FromBody] de ASP.NET Core es case-insensitive de todos modos.
+        Assert.Contains("\"firstName\":\"Ana\"", body);
+        Assert.Contains("\"street\":\"Calle Mayor\"", body);
+        Assert.Contains("\"houseNumber\":12", body);
+    }
+
+    [Fact]
+    public async Task ExecuteSaveMyProfileAsync_WithEmptyOptionalFields_SendsNullStreetAndHouseNumber()
+    {
+        var userId = Guid.NewGuid();
+        var organizationId = Guid.NewGuid();
+        var (vm, handler, _, session) = CreateSut(organizationId.ToString());
+        session.UserIdToReturn = userId;
+        handler.AddRoute(IsPutTo($"Users/Update/{userId}"), HttpStatusCode.OK, """{ "isSuccess": true, "message": "ok" }""");
+
+        vm.ProfileFirstName = "Ana";
+        vm.ProfileLastName = "García";
+        vm.ProfileEmail = "ana@test.com";
+        // ProfileStreet/ProfileHouseNumber quedan en blanco (opcionales).
+
+        await vm.ExecuteSaveMyProfileAsync();
+
+        var request = Assert.Single(handler.Requests, r => r.RequestUri!.AbsolutePath.Contains("Users/Update", StringComparison.OrdinalIgnoreCase));
+        var body = await request.Content!.ReadAsStringAsync();
+        Assert.Contains("\"street\":null", body);
+        Assert.Contains("\"houseNumber\":null", body);
+    }
+
+    [Fact]
+    public async Task ExecuteSaveMyProfileAsync_WhenRequiredFieldsAreMissing_ShowsAttentionAlert_AndDoesNotCallApi()
+    {
+        var (vm, handler, alerts, session) = CreateSut();
+        session.UserIdToReturn = Guid.NewGuid();
+        vm.ProfileFirstName = string.Empty;
+
+        await vm.ExecuteSaveMyProfileAsync();
+
+        Assert.DoesNotContain(handler.Requests, r => r.RequestUri!.AbsolutePath.Contains("Users/Update", StringComparison.OrdinalIgnoreCase));
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.AttentionTitle, alert.Title);
+        Assert.Equal(AppStrings.MsgMissingProfileData, alert.Message);
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-1")]
+    [InlineData("abc")]
+    public async Task ExecuteSaveMyProfileAsync_WhenHouseNumberIsInvalid_ShowsAttentionAlert_AndDoesNotCallApi(string invalidHouseNumber)
+    {
+        var (vm, handler, alerts, session) = CreateSut();
+        session.UserIdToReturn = Guid.NewGuid();
+        vm.ProfileFirstName = "Ana";
+        vm.ProfileLastName = "García";
+        vm.ProfileEmail = "ana@test.com";
+        vm.ProfileHouseNumber = invalidHouseNumber;
+
+        await vm.ExecuteSaveMyProfileAsync();
+
+        Assert.DoesNotContain(handler.Requests, r => r.RequestUri!.AbsolutePath.Contains("Users/Update", StringComparison.OrdinalIgnoreCase));
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.MsgInvalidHouseNumber, alert.Message);
+    }
+
+    [Fact]
+    public async Task ExecuteSaveMyProfileAsync_OnBackendValidationFailure_ShowsErrorAlert_WithBackendMessage()
+    {
+        var userId = Guid.NewGuid();
+        var (vm, handler, alerts, session) = CreateSut(Guid.NewGuid().ToString());
+        session.UserIdToReturn = userId;
+        handler.AddRoute(IsPutTo($"Users/Update/{userId}"), HttpStatusCode.BadRequest, """{ "isSuccess": false, "message": "El formato del correo electrónico no es válido." }""");
+
+        vm.ProfileFirstName = "Ana";
+        vm.ProfileLastName = "García";
+        vm.ProfileEmail = "email-invalido";
+
+        await vm.ExecuteSaveMyProfileAsync();
+
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.ErrorTitle, alert.Title);
+        Assert.Equal("El formato del correo electrónico no es válido.", alert.Message);
     }
 
     // ─── VISIBILIDAD DE PESTAÑAS POR ROL: decide qué Children mutará SystemSettingsPage en su
