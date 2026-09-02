@@ -36,15 +36,19 @@
                 <Label Text="Riego" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
 
                 <!-- Visible para los 3 roles sin restricción: cualquier vecino debe poder ver el
-                     estado de riego de su organización. -->
-                <Button Text="🚰 Estado de Riego"
+                     estado de riego de su organización. Mismo texto para todos: para Vecino,
+                     OnIrrigationStatusClicked navega directamente a MyIrrigationPage (su propio
+                     andador) en vez de IrrigationStatusPage (ver ComputeMenuVisibility). "Mi Riego"
+                     (más abajo) se oculta para Vecino por quedar redundante con este destino. -->
+                <Button x:Name="IrrigationStatusButton"
+                        Text="🚰 Estado de Riego"
                         Clicked="OnIrrigationStatusClicked"
                         BackgroundColor="Transparent" TextColor="#0277BD" BorderColor="#0277BD" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
 
-                <!-- Visible para los 3 roles sin restricción, igual que Estado de Riego: el
-                     backend (GetMyWalkwayIrrigationStatusHandler) no exige permiso adicional ni
-                     gate de licencia: solicitudes de mañana y riego de hoy del propio andador. -->
-                <Button Text="🌊 Mi Riego"
+                <!-- Visible para Presidente/Vicepresidente/Coordinador de Riego/SUPERADMIN: oculto
+                     para Vecino, para quien "Estado de Riego" ya apunta aquí mismo (ver arriba). -->
+                <Button x:Name="MyIrrigationButton"
+                        Text="🌊 Mi Riego"
                         Clicked="OnMyIrrigationClicked"
                         BackgroundColor="Transparent" TextColor="#0277BD" BorderColor="#0277BD" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
 

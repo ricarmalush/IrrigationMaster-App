@@ -29,8 +29,10 @@ public interface IIrrigationService
     // comprobación, solo transporta la petición.
     Task<UserActionResult> ApproveTurnAsync(Guid turnId);
 
-    // Turnos en Requested de la organización del llamante, para la pantalla de aprobación.
-    Task<List<PendingApprovalIrrigationTurnDto>?> GetPendingApprovalTurnsAsync();
+    // Turnos en Requested de la organización del llamante, para la pantalla de aprobación -- ya
+    // agrupados por andador (solo los que tienen al menos uno) y ordenados dentro de cada grupo por
+    // prioridad (HouseNumber descendente, ThenBy hora de solicitud).
+    Task<List<PendingApprovalTurnsByWalkwayDto>?> GetPendingApprovalTurnsAsync();
 
     // Plantilla teórica (IrrigationProgram + HolidayCalendar), no confirma que exista un turno
     // real -- distingue "sin actividad todavía" (true) de "no hay riego programado hoy" (false)

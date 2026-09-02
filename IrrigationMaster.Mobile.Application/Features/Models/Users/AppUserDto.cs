@@ -46,4 +46,14 @@ public class AppUserDto
     // falta para esta distinción, solo para mostrar "quién" (decisión explícita: no por ahora).
     [JsonPropertyName("deactivatedAt")]
     public DateTime? DeactivatedAt { get; init; }
+
+    // Dirección: ambos opcionales, no mostrados todavía en ninguna pantalla de la App (no existe
+    // una "ficha de usuario" de creación/edición aquí, a diferencia de Angular -- UserManagementPage
+    // es de solo lectura + acciones puntuales). Se reciben ya para no perder el dato si en el
+    // futuro se añade esa pantalla.
+    [JsonPropertyName("street")]
+    public string? Street { get; init; }
+
+    [JsonPropertyName("houseNumber")]
+    public int? HouseNumber { get; init; }
 }

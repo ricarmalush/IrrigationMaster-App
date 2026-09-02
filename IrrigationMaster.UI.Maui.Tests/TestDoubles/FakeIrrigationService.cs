@@ -13,7 +13,7 @@ public class FakeIrrigationService : IIrrigationService
     public UserActionResult CompleteTurnResult { get; set; } = new() { IsSuccess = true };
     public UserActionResult RequestTurnResult { get; set; } = new() { IsSuccess = true };
     public UserActionResult ApproveTurnResult { get; set; } = new() { IsSuccess = true };
-    public List<PendingApprovalIrrigationTurnDto>? PendingApprovalTurnsToReturn { get; set; } = [];
+    public List<PendingApprovalTurnsByWalkwayDto>? PendingApprovalTurnsToReturn { get; set; } = [];
     public UserActionResult CreateIrrigationProgramResult { get; set; } = new() { IsSuccess = true };
     public UserActionResult UpdateIrrigationProgramResult { get; set; } = new() { IsSuccess = true };
 
@@ -60,7 +60,7 @@ public class FakeIrrigationService : IIrrigationService
         return Task.FromResult(ApproveTurnResult);
     }
 
-    public Task<List<PendingApprovalIrrigationTurnDto>?> GetPendingApprovalTurnsAsync() => Task.FromResult(PendingApprovalTurnsToReturn);
+    public Task<List<PendingApprovalTurnsByWalkwayDto>?> GetPendingApprovalTurnsAsync() => Task.FromResult(PendingApprovalTurnsToReturn);
 
     public Task<UserActionResult> CreateIrrigationProgramAsync(CreateIrrigationProgramRequest request)
     {

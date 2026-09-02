@@ -82,4 +82,42 @@ public class AdminMenuPageTests
 
         Assert.True(visibility.ShowIrrigationPrograms);
     }
+
+    // ─── "Estado de Riego" para Vecino: pasa a apuntar a MyIrrigationPage, "Mi Riego" se oculta ───
+
+    [Fact]
+    public void ComputeMenuVisibility_Vecino_HidesMyIrrigation_AndRedirectsIrrigationStatusToMyWalkway()
+    {
+        var visibility = AdminMenuPage.ComputeMenuVisibility("VECINO");
+
+        Assert.False(visibility.ShowMyIrrigation);
+        Assert.True(visibility.IrrigationStatusGoesToMyWalkway);
+    }
+
+    [Theory]
+    [InlineData("SUPERADMIN")]
+    [InlineData("PRESIDENTE")]
+    [InlineData("VICEPRESIDENTE")]
+    [InlineData("COORDINADOR_RIEGO")]
+    public void ComputeMenuVisibility_NonVecino_ShowsMyIrrigation_AndDoesNotRedirectIrrigationStatus(string role)
+    {
+        var visibility = AdminMenuPage.ComputeMenuVisibility(role);
+
+        Assert.True(visibility.ShowMyIrrigation);
+        Assert.False(visibility.IrrigationStatusGoesToMyWalkway);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("SOME_UNKNOWN_ROLE")]
+    public void ComputeMenuVisibility_NullOrUnknownRole_ShowsMyIrrigation_AndDoesNotRedirectIrrigationStatus(string? role)
+    {
+        // Sin rol resuelto todavía (o un rol desconocido), no se asume Vecino -- ambos botones se
+        // comportan como para el resto de roles hasta que el rol real llegue.
+        var visibility = AdminMenuPage.ComputeMenuVisibility(role);
+
+        Assert.True(visibility.ShowMyIrrigation);
+        Assert.False(visibility.IrrigationStatusGoesToMyWalkway);
+    }
 }

@@ -16,15 +16,18 @@
                             Color="{StaticResource AppPrimaryColor}"
                             HeightRequest="30"/>
 
+        <!-- Agrupado por andador (ya viene así del backend): una tarjeta por andador, con sus
+             turnos pendientes dentro ordenados por prioridad. Mismo patrón anidado que
+             IrrigationStatusPage (Walkways con Neighbors dentro). -->
         <CollectionView Grid.Row="1"
-                         ItemsSource="{Binding PendingTurns}"
+                         ItemsSource="{Binding Groups}"
                          Margin="10">
             <CollectionView.EmptyView>
                 <Label Text="No hay turnos pendientes de aprobar." HorizontalOptions="Center" Margin="20" TextColor="Gray"/>
             </CollectionView.EmptyView>
 
             <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="viewmodel:PendingTurnItem">
+                <DataTemplate x:DataType="viewmodel:WalkwayApprovalGroupItem">
                     <Border StrokeThickness="0" BackgroundColor="White" Padding="15" Margin="0,0,0,10">
                         <Border.StrokeShape>
                             <RoundRectangle CornerRadius="12"/>
@@ -33,15 +36,47 @@
                             <Shadow Brush="Black" Offset="0,2" Opacity="0.1" Radius="5"/>
                         </Border.Shadow>
 
-                        <VerticalStackLayout Spacing="8">
-                            <Label Text="{Binding RequesterFullName}" FontSize="16" FontAttributes="Bold" TextColor="Black"/>
-                            <Label Text="{Binding ScheduleDisplay}" FontSize="13" TextColor="#666"/>
+                        <VerticalStackLayout Spacing="10">
+                            <Label FontSize="16" FontAttributes="Bold" TextColor="Black">
+                                <Label.FormattedText>
+                                    <FormattedString>
+                                        <Span Text="Andador: "/>
+                                        <Span Text="{Binding WalkwayCode}"/>
+                                    </FormattedString>
+                                </Label.FormattedText>
+                            </Label>
 
-                            <Button Text="Aprobar turno"
-                                    Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.ApproveCommand}"
-                                    CommandParameter="{Binding .}"
-                                    Style="{StaticResource PrimaryButtonStyle}"
-                                    HeightRequest="40"/>
+                            <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Turns}">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate x:DataType="viewmodel:PendingTurnItem">
+                                        <Border StrokeThickness="0" BackgroundColor="#F5F5F5" Padding="12" Margin="0,4,0,0">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="8"/>
+                                            </Border.StrokeShape>
+
+                                            <VerticalStackLayout Spacing="6">
+                                                <Label FontSize="15" FontAttributes="Bold" TextColor="Black">
+                                                    <Label.FormattedText>
+                                                        <FormattedString>
+                                                            <Span Text="Casa "/>
+                                                            <Span Text="{Binding HouseNumberDisplay}"/>
+                                                            <Span Text=" -- "/>
+                                                            <Span Text="{Binding RequesterFullName}"/>
+                                                        </FormattedString>
+                                                    </Label.FormattedText>
+                                                </Label>
+                                                <Label Text="{Binding ScheduleDisplay}" FontSize="13" TextColor="#666"/>
+
+                                                <Button Text="Aprobar turno"
+                                                        Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.ApproveCommand}"
+                                                        CommandParameter="{Binding .}"
+                                                        Style="{StaticResource PrimaryButtonStyle}"
+                                                        HeightRequest="40"/>
+                                            </VerticalStackLayout>
+                                        </Border>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
                         </VerticalStackLayout>
                     </Border>
                 </DataTemplate>

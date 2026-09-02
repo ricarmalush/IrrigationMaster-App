@@ -119,7 +119,10 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[API Error - ChangePassword]: {ex.Message}");
+            // DIAGNÓSTICO: se añade el tipo de excepción (no solo el mensaje) para poder distinguir
+            // p. ej. una JsonException de parseo de cualquier otra causa -- ver ReadUserActionResultAsync
+            // para el log del body crudo que llega justo antes de este catch.
+            System.Diagnostics.Debug.WriteLine($"[API Error - ChangePassword] {ex.GetType().Name}: {ex.Message}");
             return new UserActionResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
         }
     }
@@ -749,7 +752,7 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         }
     }
 
-    public async Task<List<PendingApprovalIrrigationTurnDto>?> GetPendingApprovalTurnsAsync()
+    public async Task<List<PendingApprovalTurnsByWalkwayDto>?> GetPendingApprovalTurnsAsync()
     {
         try
         {
@@ -1004,7 +1007,24 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
             response.StatusCode == System.Net.HttpStatusCode.BadRequest ||
             response.StatusCode == System.Net.HttpStatusCode.Forbidden)
         {
-            var result = await response.Content.ReadFromJsonAsync<UserActionResult>();
+            // DIAGNÓSTICO TEMPORAL: log del body crudo (status + texto tal cual, antes de intentar
+            // deserializar) para poder distinguir (a) una excepción real de parseo JSON de (b) un
+            // UserActionResult que deserializa bien pero con Message/Errors vacíos -- ver bug
+            // "Fallo de conexión con el servidor" al cambiar la contraseña con un valor inválido.
+            var rawBody = await response.Content.ReadAsStringAsync();
+            System.Diagnostics.Debug.WriteLine($"[API RawBody - UserActionResult] Status={(int)response.StatusCode} Body={rawBody}");
+
+            UserActionResult? result;
+            try
+            {
+                result = System.Text.Json.JsonSerializer.Deserialize<UserActionResult>(rawBody);
+            }
+            catch (System.Text.Json.JsonException jsonEx)
+            {
+                System.Diagnostics.Debug.WriteLine($"[API ParseError - UserActionResult] {jsonEx.GetType().Name}: {jsonEx.Message}");
+                throw;
+            }
+
             return result ?? new UserActionResult { IsSuccess = false, Message = ServiceMessages.UnexpectedError };
         }
 

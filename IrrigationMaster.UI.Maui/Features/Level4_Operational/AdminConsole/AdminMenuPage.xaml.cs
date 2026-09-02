@@ -24,9 +24,14 @@ public partial class AdminMenuPage : ContentPage
     private const string PresidenteRoleCode = "PRESIDENTE";
     private const string VicepresidenteRoleCode = "VICEPRESIDENTE";
     private const string CoordinadorRiegoRoleCode = "COORDINADOR_RIEGO";
+    private const string VecinoRoleCode = "VECINO";
 
     private readonly ICurrentSession _currentSession;
     private readonly IStructureService _structureService;
+
+    // Resuelto en OnAppearing, leído por OnIrrigationStatusClicked -- decide a qué página navega
+    // el botón "Estado de Riego" (ver ComputeMenuVisibility.IrrigationStatusGoesToMyWalkway).
+    private bool _irrigationStatusGoesToMyWalkway;
 
     public AdminMenuPage(ICurrentSession currentSession, IStructureService structureService)
     {
@@ -46,6 +51,8 @@ public partial class AdminMenuPage : ContentPage
         CommunityBroadcastButton.IsVisible = visibility.ShowCommunityBroadcast;
         ApproveTurnsButton.IsVisible = visibility.ShowApproveTurns;
         IrrigationProgramsButton.IsVisible = visibility.ShowIrrigationPrograms;
+        MyIrrigationButton.IsVisible = visibility.ShowMyIrrigation;
+        _irrigationStatusGoesToMyWalkway = visibility.IrrigationStatusGoesToMyWalkway;
 
         // Estas dos etiquetas de sección agrupan un único botón cada una: deben ocultarse junto
         // con SU botón (no con un flag compartido) para no quedar huérfanas sin nada debajo.
@@ -58,12 +65,13 @@ public partial class AdminMenuPage : ContentPage
     // Estático y testable a propósito (mismo motivo que BuildHeaderText): así el matriz de
     // visibilidad por rol se puede cubrir con tests reales sin necesitar un ContentPage con
     // Handler de MAUI corriendo.
-    internal static (bool ShowUserManagement, bool ShowCommunityBroadcast, bool ShowApproveTurns, bool ShowIrrigationPrograms) ComputeMenuVisibility(string? role)
+    internal static (bool ShowUserManagement, bool ShowCommunityBroadcast, bool ShowApproveTurns, bool ShowIrrigationPrograms, bool ShowMyIrrigation, bool IrrigationStatusGoesToMyWalkway) ComputeMenuVisibility(string? role)
     {
         bool isSuperAdmin = string.Equals(role, SuperAdminRoleCode, StringComparison.OrdinalIgnoreCase);
         bool isPresidente = string.Equals(role, PresidenteRoleCode, StringComparison.OrdinalIgnoreCase);
         bool isVicepresidente = string.Equals(role, VicepresidenteRoleCode, StringComparison.OrdinalIgnoreCase);
         bool isCoordinadorRiego = string.Equals(role, CoordinadorRiegoRoleCode, StringComparison.OrdinalIgnoreCase);
+        bool isVecino = string.Equals(role, VecinoRoleCode, StringComparison.OrdinalIgnoreCase);
 
         return (
             // Gestión de Usuarios y Roles / Aprobar Turnos: sin Coordinador de Riego -- solo la
@@ -74,7 +82,13 @@ public partial class AdminMenuPage : ContentPage
             ShowApproveTurns: isSuperAdmin || isPresidente || isVicepresidente,
             // Calendario de Riego: antes exclusivo de SUPERADMIN: ahora también Coordinador de
             // Riego, el rol pensado precisamente para esto (permiso MANAGE_IRRIGATION_PROGRAMS).
-            ShowIrrigationPrograms: isSuperAdmin || isCoordinadorRiego
+            ShowIrrigationPrograms: isSuperAdmin || isCoordinadorRiego,
+            // Mi Riego: oculto para Vecino, para quien "Estado de Riego" ya apunta al mismo destino
+            // (ver IrrigationStatusGoesToMyWalkway y OnIrrigationStatusClicked) -- queda redundante.
+            ShowMyIrrigation: !isVecino,
+            // Mismo texto de botón para todos ("Estado de Riego") -- solo cambia el DESTINO: Vecino
+            // navega directamente a MyIrrigationPage (su propio andador) en vez de IrrigationStatusPage.
+            IrrigationStatusGoesToMyWalkway: isVecino
         );
     }
 
@@ -129,10 +143,19 @@ public partial class AdminMenuPage : ContentPage
     }
 
     /// <summary>
-    /// SECCIÓN: RIEGO -- sin gating de rol, visible para los 3 (SUPERADMIN/Presidente/Vecino).
+    /// SECCIÓN: RIEGO -- sin gating de rol, visible para los 3 (SUPERADMIN/Presidente/Vecino). Para
+    /// Vecino, navega directamente a MyIrrigationPage (su propio andador) en vez de
+    /// IrrigationStatusPage (org-wide) -- ver ComputeMenuVisibility.IrrigationStatusGoesToMyWalkway.
+    /// "Mi Riego" queda oculto para Vecino por redundante con este mismo destino.
     /// </summary>
     private async void OnIrrigationStatusClicked(object sender, EventArgs e)
     {
+        if (_irrigationStatusGoesToMyWalkway)
+        {
+            await NavigateToMyIrrigationAsync();
+            return;
+        }
+
         try
         {
             var irrigationStatusPage = Handler?.MauiContext?.Services.GetService<IrrigationStatusPage>();
@@ -154,10 +177,13 @@ public partial class AdminMenuPage : ContentPage
     }
 
     /// <summary>
-    /// SECCIÓN: RIEGO -- Mi Riego, sin gating de rol, visible para los 3 (SUPERADMIN/Presidente/
-    /// Vecino) -- igual que OnIrrigationStatusClicked.
+    /// SECCIÓN: RIEGO -- Mi Riego, visible para Presidente/Vicepresidente/Coordinador de Riego/
+    /// SUPERADMIN (oculto para Vecino, que ya llega aquí mismo desde "Estado de Riego" -- ver
+    /// OnIrrigationStatusClicked).
     /// </summary>
-    private async void OnMyIrrigationClicked(object sender, EventArgs e)
+    private async void OnMyIrrigationClicked(object sender, EventArgs e) => await NavigateToMyIrrigationAsync();
+
+    private async Task NavigateToMyIrrigationAsync()
     {
         try
         {
