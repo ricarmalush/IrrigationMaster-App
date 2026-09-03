@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodel="clr-namespace:IrrigationMaster.UI.Maui.Features.Level1_Core.Welcome"
+             x:Class="IrrigationMaster.UI.Maui.Features.Level1_Core.Welcome.WelcomePage"
+             BackgroundColor="#FFFFFF"
+             Shell.NavBarIsVisible="False"
+             Shell.FlyoutBehavior="Disabled"
+             x:DataType="viewmodel:WelcomeViewModel">
+
+    <!-- Rejilla 3x3 (mismo patrón documentado en MainPage.xaml): filas/columnas "*" a los lados
+         absorben el espacio sobrante de forma simétrica, para un centrado fiable también en
+         Windows/WinUI (un VerticalOptions/HorizontalOptions="Center" suelto no basta ahí). -->
+    <Grid HorizontalOptions="Fill" VerticalOptions="Fill"
+          RowDefinitions="*,Auto,*" ColumnDefinitions="*,Auto,*">
+
+        <VerticalStackLayout Grid.Row="1" Grid.Column="1"
+                             Spacing="6"
+                             HorizontalOptions="Center">
+
+            <!-- El splash nativo (MauiSplashScreen) ya no dibuja ningún logo (ver blank_splash.svg
+                 en el .csproj): esta es la primera vez que el usuario lo ve, así que sí anima
+                 aquí sin riesgo de que se sienta duplicado. -->
+            <Image x:Name="LogoImage"
+                   Source="logo_riego_comunitario.svg"
+                   HeightRequest="140"
+                   WidthRequest="140"
+                   HorizontalOptions="Center"
+                   Opacity="0"
+                   Scale="0.85" />
+
+            <Label x:Name="AppNameLabel"
+                   Text="IrrigationMaster"
+                   FontSize="28"
+                   FontAttributes="Bold"
+                   TextColor="{StaticResource AppPrimaryColor}"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center"
+                   Opacity="0"
+                   Margin="0,18,0,0" />
+
+            <Label x:Name="TaglineLabel"
+                   Text="Riego inteligente, comunidad conectada"
+                   FontSize="14"
+                   TextColor="Gray"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center"
+                   Opacity="0"
+                   Margin="0,4,0,0" />
+
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

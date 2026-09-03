@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Splash nativo en blanco (sin logo)</title>
+  <desc>A propósito sin contenido visible: el logo solo debe verse en WelcomePage, no repetido antes en el splash nativo del SO.</desc>
+  <rect width="512" height="512" fill="#FFFFFF" />
+</svg>

@@ -2,6 +2,7 @@
 using IrrigationMaster.Mobile.Infrastructure;
 using IrrigationMaster.UI.Maui.Features.Level1_Core.Login;
 using IrrigationMaster.UI.Maui.Features.Level1_Core.Register;
+using IrrigationMaster.UI.Maui.Features.Level1_Core.Welcome;
 using IrrigationMaster.UI.Maui.Features.Level3_Functional.IrrigationPrograms;
 using IrrigationMaster.UI.Maui.Features.Level3_Functional.Users;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.AdminConsole;
@@ -62,6 +63,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<INavigationService, ShellNavigationService>();
 
         // ─── NIVEL 1: CORE (Autenticación) ───
+        builder.Services.AddTransient<WelcomePage>(); // Bienvenida animada: página inicial real de la app
+        builder.Services.AddTransient<WelcomeViewModel>();
         builder.Services.AddTransient<MainPage>(); // Asumo que esta es tu página de Login principal
         builder.Services.AddTransient<LoginViewModel>();
         builder.Services.AddTransient<RegisterPage>();

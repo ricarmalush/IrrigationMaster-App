@@ -15,7 +15,7 @@
 
 		<LangVersion>preview</LangVersion>
 
-		<ApplicationTitle>IrrigationMaster.UI.Maui</ApplicationTitle>
+		<ApplicationTitle>IrrigationMaster</ApplicationTitle>
 
 		<ApplicationId>com.companyname.irrigationmaster.ui.maui</ApplicationId>
 
@@ -34,9 +34,29 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
+		<!-- Icono real de la App (gota) en vez del bot morado de plantilla. Copia propia en
+		     Resources\AppIcon (mismo contenido que Resources\Splash\logo_riego_comunitario.svg):
+		     el nombre de archivo "appicon" hay que conservarlo porque AndroidManifest.xml/Info.plist/
+		     tizen-manifest.xml referencian el icono generado por ese nombre fijo, y además el
+		     Resizetizer no admite que dos entradas distintas (MauiIcon/MauiImage) compartan el mismo
+		     archivo fuente: deriva el nombre del recurso de salida del nombre de archivo y choca.
+		     ForegroundScale="0.65": Android aplica su PROPIO zoom a la capa "foreground" de un icono
+		     adaptativo (más allá del margen que ya trae el PNG plano), así que sin encoger aquí el
+		     logo sale recortado/demasiado grande en el launcher real, aunque en el PNG generado se
+		     vea bien centrado. 0.65 es el valor de referencia habitual para dejarlo dentro de la
+		     zona segura tras ese zoom del sistema. -->
+		<MauiIcon Include="Resources\AppIcon\appicon.svg" Color="#FFFFFF" ForegroundScale="0.65" />
 
-		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
+		<!-- Splash nativo SIN logo a propósito: es el fotograma que el SO pinta en frío, antes de
+		     que el código (y por tanto WelcomePage) tome el control: no se puede eliminar del
+		     todo, pero si no dibuja nada reconocible, el usuario percibe WelcomePage como la única
+		     pantalla real, en vez de "el logo aparece, desaparece y vuelve a aparecer". -->
+		<MauiSplashScreen Include="Resources\Splash\blank_splash.svg" Color="#FFFFFF" />
+
+		<!-- Mismo SVG del splash, pero registrado también como MauiImage para poder usarlo con un
+		     <Image Source="logo_riego_comunitario.svg"> normal (p. ej. en WelcomePage): el pipeline
+		     de MauiSplashScreen es un mecanismo nativo aparte, no expone el asset para uso general. -->
+		<MauiImage Include="Resources\Splash\logo_riego_comunitario.svg" />
 
 		<MauiImage Include="Resources\Images\*" />
 		<MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
