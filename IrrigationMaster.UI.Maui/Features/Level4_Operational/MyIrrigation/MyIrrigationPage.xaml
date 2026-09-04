@@ -38,6 +38,13 @@
                         </Label.FormattedText>
                     </Label>
 
+                    <!-- ACCIÓN: Solicitar mi turno (solo si hoy no tienes ya ningún turno) -->
+                    <Button Text="Solicitar mi turno"
+                            Command="{Binding RequestTurnCommand}"
+                            IsVisible="{Binding CanRequestTurn}"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            HeightRequest="44"/>
+
                     <!-- SOLICITUDES PARA MAÑANA -->
                     <Label Text="SOLICITUDES PARA MAÑANA" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource AppPrimaryColor}" CharacterSpacing="1.5"/>
                     <Border StrokeThickness="0" BackgroundColor="White" Padding="15">

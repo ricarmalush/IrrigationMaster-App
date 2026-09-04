@@ -1,4 +1,7 @@
 using IrrigationMaster.Mobile.Application.Features.Models.Irrigation;
+using IrrigationMaster.Mobile.Application.Features.Models.Structure;
+using IrrigationMaster.Mobile.Application.Features.Models.Users;
+using IrrigationMaster.UI.Maui.Common;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.MyIrrigation;
 using IrrigationMaster.UI.Maui.Tests.TestDoubles;
 
@@ -7,14 +10,21 @@ namespace IrrigationMaster.UI.Maui.Tests;
 public class MyIrrigationViewModelTests
 {
     private static readonly Guid WalkwayId = Guid.NewGuid();
+    private static readonly Guid HydraulicSectorId = Guid.NewGuid();
     private static readonly Guid TurnId1 = Guid.NewGuid();
     private static readonly Guid TurnId2 = Guid.NewGuid();
+    private static readonly Guid MyUserId = Guid.NewGuid();
 
-    private static (MyIrrigationViewModel ViewModel, FakeIrrigationService IrrigationService) CreateSut()
+    private static (MyIrrigationViewModel ViewModel, FakeIrrigationService IrrigationService, FakeStructureService StructureService, FakeCurrentSession Session, RecordingAlertService AlertService) CreateSut(Guid? myUserId = null)
     {
         var irrigationService = new FakeIrrigationService();
-        var viewModel = new MyIrrigationViewModel(irrigationService);
-        return (viewModel, irrigationService);
+        var structureService = new FakeStructureService();
+        structureService.WalkwaysById[WalkwayId] = new WalkwayDetailDto { Id = WalkwayId, Code = "A-01", HydraulicSectorId = HydraulicSectorId };
+        var session = new FakeCurrentSession { UserIdToReturn = myUserId ?? MyUserId };
+        var alertService = new RecordingAlertService();
+
+        var viewModel = new MyIrrigationViewModel(irrigationService, structureService, session, alertService);
+        return (viewModel, irrigationService, structureService, session, alertService);
     }
 
     // ─── SIN ANDADOR ASIGNADO (WalkwayId null) -- estado válido, no un error ───
@@ -22,7 +32,7 @@ public class MyIrrigationViewModelTests
     [Fact]
     public async Task LoadAsync_WhenWalkwayIdIsNull_SetsHasWalkwayFalse_AndLeavesListsEmpty()
     {
-        var (vm, irrigationService) = CreateSut();
+        var (vm, irrigationService, structureService, _, _) = CreateSut();
         irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto
         {
             WalkwayId = null,
@@ -37,6 +47,8 @@ public class MyIrrigationViewModelTests
         Assert.True(vm.NoWalkwayAssigned);
         Assert.Empty(vm.RequestsTomorrow);
         Assert.Empty(vm.LiveToday);
+        Assert.False(vm.CanRequestTurn);
+        Assert.Null(structureService.LastGetWalkwayCall);
     }
 
     [Fact]
@@ -44,7 +56,7 @@ public class MyIrrigationViewModelTests
     {
         // ApiService devuelve null en fallo de red/servidor -- mismo criterio defensivo que el
         // resto de pantallas de esta familia (Estado de Riego incluida).
-        var (vm, _) = CreateSut();
+        var (vm, _, _, _, _) = CreateSut();
 
         await vm.LoadAsync();
 
@@ -57,7 +69,7 @@ public class MyIrrigationViewModelTests
     [Fact]
     public async Task LoadAsync_WhenWalkwayIdIsPresent_SetsHasWalkwayTrue_AndPopulatesWalkwayCode()
     {
-        var (vm, irrigationService) = CreateSut();
+        var (vm, irrigationService, _, _, _) = CreateSut();
         irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto
         {
             WalkwayId = WalkwayId,
@@ -78,7 +90,7 @@ public class MyIrrigationViewModelTests
     {
         // El backend ya devuelve RequestsTomorrow ordenado por ScheduledStart -- el ViewModel no
         // debe reordenar, solo mapear tal cual.
-        var (vm, irrigationService) = CreateSut();
+        var (vm, irrigationService, _, _, _) = CreateSut();
         var early = new DateTime(2026, 3, 10, 7, 0, 0, DateTimeKind.Utc);
         var late = new DateTime(2026, 3, 10, 18, 30, 0, DateTimeKind.Utc);
         irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto
@@ -105,7 +117,7 @@ public class MyIrrigationViewModelTests
     [Fact]
     public async Task LoadAsync_PopulatesLiveToday_WithTranslatedStatus()
     {
-        var (vm, irrigationService) = CreateSut();
+        var (vm, irrigationService, _, _, _) = CreateSut();
         irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto
         {
             WalkwayId = WalkwayId,
@@ -134,7 +146,7 @@ public class MyIrrigationViewModelTests
     public async Task LoadAsync_ClearsPreviousResults_BeforeRepopulating()
     {
         // Una segunda carga (p. ej. al volver a OnAppearing) no debe acumular filas de la anterior.
-        var (vm, irrigationService) = CreateSut();
+        var (vm, irrigationService, _, _, _) = CreateSut();
         irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto
         {
             WalkwayId = WalkwayId,
@@ -160,12 +172,112 @@ public class MyIrrigationViewModelTests
     [Fact]
     public async Task LoadAsync_TogglesIsBusy_DuringLoad()
     {
-        var (vm, _) = CreateSut();
+        var (vm, _, _, _, _) = CreateSut();
 
         var task = vm.LoadAsync();
         await task;
 
         Assert.False(vm.IsBusy);
         Assert.True(vm.IsNotBusy);
+    }
+
+    // ─── "Solicitar mi turno": vive aquí también desde que "Estado de Riego" para Vecino pasó a
+    // apuntar a esta pantalla -- mismo criterio que CanRequestTurn en WalkwayStatusItem, la vista
+    // hermana donde vivía originalmente esta acción ───
+
+    [Fact]
+    public async Task LoadAsync_ResolvesHydraulicSectorId_FromTheWalkway()
+    {
+        var (vm, irrigationService, structureService, _, _) = CreateSut();
+        irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto
+        {
+            WalkwayId = WalkwayId,
+            WalkwayCode = "A-01",
+            RequestsTomorrow = [],
+            LiveToday = []
+        };
+
+        await vm.LoadAsync();
+
+        Assert.Equal(WalkwayId, structureService.LastGetWalkwayCall);
+        Assert.True(vm.CanRequestTurn);
+    }
+
+    [Fact]
+    public async Task CanRequestTurn_IsFalse_WhenCallerAlreadyHasATurnToday_RegardlessOfStatus()
+    {
+        var (vm, irrigationService, _, _, _) = CreateSut();
+        irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto
+        {
+            WalkwayId = WalkwayId,
+            WalkwayCode = "A-01",
+            RequestsTomorrow = [],
+            LiveToday = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId1, FullName = "Yo", Status = "Completed" }]
+        };
+
+        await vm.LoadAsync();
+
+        Assert.False(vm.CanRequestTurn);
+    }
+
+    [Fact]
+    public async Task CanRequestTurn_IsTrue_WhenTodaysTurnsBelongToOtherNeighbors()
+    {
+        var (vm, irrigationService, _, _, _) = CreateSut();
+        irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto
+        {
+            WalkwayId = WalkwayId,
+            WalkwayCode = "A-01",
+            RequestsTomorrow = [],
+            LiveToday = [new NeighborIrrigationStatusDto { UserId = Guid.NewGuid(), TurnId = TurnId1, FullName = "Otro Vecino", Status = "Watering" }]
+        };
+
+        await vm.LoadAsync();
+
+        Assert.True(vm.CanRequestTurn);
+    }
+
+    [Fact]
+    public async Task RequestTurnAsync_WhenCanRequestTurnIsFalse_DoesNothing()
+    {
+        var (vm, irrigationService, _, _, _) = CreateSut();
+        irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto { WalkwayId = null, WalkwayCode = null, RequestsTomorrow = [], LiveToday = [] };
+        await vm.LoadAsync();
+
+        await vm.RequestTurnAsync();
+
+        Assert.Null(irrigationService.LastRequestTurnCall);
+    }
+
+    [Fact]
+    public async Task RequestTurnAsync_OnSuccess_RequestsA2hTurn_ShowsSuccessAlert_AndReloads()
+    {
+        var (vm, irrigationService, _, _, alertService) = CreateSut();
+        irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto { WalkwayId = WalkwayId, WalkwayCode = "A-01", RequestsTomorrow = [], LiveToday = [] };
+        await vm.LoadAsync();
+        irrigationService.RequestTurnResult = new UserActionResult { IsSuccess = true };
+
+        await vm.RequestTurnAsync();
+
+        Assert.NotNull(irrigationService.LastRequestTurnCall);
+        var call = irrigationService.LastRequestTurnCall!.Value;
+        Assert.Equal(HydraulicSectorId, call.HydraulicSectorId);
+        Assert.Equal(MyUserId, call.RequesterId);
+        Assert.Equal(MyIrrigationViewModel.DefaultTurnDurationHours, (call.EndTime - call.StartTime).TotalHours);
+        Assert.Equal(AppStrings.SuccessTitle, alertService.Calls[0].Title);
+    }
+
+    [Fact]
+    public async Task RequestTurnAsync_OnBackendFailure_ShowsErrorAlert_WithBackendMessage()
+    {
+        var (vm, irrigationService, _, _, alertService) = CreateSut();
+        irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto { WalkwayId = WalkwayId, WalkwayCode = "A-01", RequestsTomorrow = [], LiveToday = [] };
+        await vm.LoadAsync();
+        irrigationService.RequestTurnResult = new UserActionResult { IsSuccess = false, Message = "La fecha de inicio debe ser futura." };
+
+        await vm.RequestTurnAsync();
+
+        Assert.Equal(AppStrings.ErrorTitle, alertService.Calls[0].Title);
+        Assert.Equal("La fecha de inicio debe ser futura.", alertService.Calls[0].Message);
     }
 }
