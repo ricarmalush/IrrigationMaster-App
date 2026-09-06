@@ -795,8 +795,13 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         }
     }
 
-    public async Task<bool> IsIrrigationDayAsync(Guid hydraulicSectorId)
+    public async Task<IsIrrigationDayResult> IsIrrigationDayAsync(Guid hydraulicSectorId)
     {
+        // Fallback IsIrrigationDay=true ("sin actividad todavía") / IsHoliday=false: ante un fallo
+        // de red, de parseo, o una respuesta HTTP no exitosa, es preferible no afirmar algo que no
+        // sabemos que sea cierto -- ni que no hay riego, ni que hoy es festivo.
+        var fallback = new IsIrrigationDayResult { IsIrrigationDay = true, IsHoliday = false };
+
         try
         {
             await AttachAuthHeadersAsync();
@@ -806,18 +811,21 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
             if (response.IsSuccessStatusCode)
             {
                 var wrapped = await response.Content.ReadFromJsonAsync<IsIrrigationDayResponse>();
-                // Fallback true ("sin actividad todavía") en vez de false ("no hay riego programado
-                // hoy"): ante un fallo de red o de parseo, es preferible no afirmar algo que no
-                // sabemos que sea cierto.
-                return wrapped?.Data ?? true;
+                if (wrapped?.Data is null) return fallback;
+
+                return new IsIrrigationDayResult
+                {
+                    IsIrrigationDay = wrapped.Data.IsIrrigationDay,
+                    IsHoliday = wrapped.Data.IsHoliday
+                };
             }
 
-            return true;
+            return fallback;
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[API Error - IsIrrigationDay]: {ex.Message}");
-            return true;
+            return fallback;
         }
     }
 

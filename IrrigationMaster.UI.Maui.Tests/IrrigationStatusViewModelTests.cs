@@ -267,7 +267,7 @@ public class IrrigationStatusViewModelTests
         };
         var (vm, irrigationService, structureService, _, _) = CreateSut(statusList);
         structureService.WalkwaysById[WalkwayAId] = new WalkwayDetailDto { Id = WalkwayAId, Code = "A-01", HydraulicSectorId = SectorId };
-        irrigationService.IsIrrigationDayBySector[SectorId] = true;
+        irrigationService.IsIrrigationDayBySector[SectorId] = new IsIrrigationDayResult { IsIrrigationDay = true, IsHoliday = false };
 
         await vm.LoadAsync();
 
@@ -286,12 +286,48 @@ public class IrrigationStatusViewModelTests
         };
         var (vm, irrigationService, structureService, _, _) = CreateSut(statusList);
         structureService.WalkwaysById[WalkwayAId] = new WalkwayDetailDto { Id = WalkwayAId, Code = "A-01", HydraulicSectorId = SectorId };
-        irrigationService.IsIrrigationDayBySector[SectorId] = false;
+        irrigationService.IsIrrigationDayBySector[SectorId] = new IsIrrigationDayResult { IsIrrigationDay = false, IsHoliday = false };
 
         await vm.LoadAsync();
 
         var walkway = vm.Walkways.Single();
         Assert.Equal(IrrigationStatusViewModel.NoIrrigationScheduledMessage, walkway.EmptyStateMessage);
+    }
+
+    [Fact]
+    public async Task LoadAsync_EmptyWalkway_WhenIsIrrigationDayFalse_AndTodayIsHoliday_StillShowsNoIrrigationScheduledMessage()
+    {
+        // isHoliday nunca debe filtrarse a este mensaje -- solo IsIrrigationDay decide si hay riego
+        // o no. Confirmado con el Presidente: un festivo no bloquea ni condiciona nada.
+        var statusList = new List<WalkwayIrrigationStatusDto>
+        {
+            new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [] }
+        };
+        var (vm, irrigationService, structureService, _, _) = CreateSut(statusList);
+        structureService.WalkwaysById[WalkwayAId] = new WalkwayDetailDto { Id = WalkwayAId, Code = "A-01", HydraulicSectorId = SectorId };
+        irrigationService.IsIrrigationDayBySector[SectorId] = new IsIrrigationDayResult { IsIrrigationDay = false, IsHoliday = true };
+
+        await vm.LoadAsync();
+
+        var walkway = vm.Walkways.Single();
+        Assert.Equal(IrrigationStatusViewModel.NoIrrigationScheduledMessage, walkway.EmptyStateMessage);
+    }
+
+    [Fact]
+    public async Task LoadAsync_EmptyWalkway_WhenIsIrrigationDayTrue_AndTodayIsHoliday_ShowsNoActivityYetHolidayMessage()
+    {
+        var statusList = new List<WalkwayIrrigationStatusDto>
+        {
+            new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [] }
+        };
+        var (vm, irrigationService, structureService, _, _) = CreateSut(statusList);
+        structureService.WalkwaysById[WalkwayAId] = new WalkwayDetailDto { Id = WalkwayAId, Code = "A-01", HydraulicSectorId = SectorId };
+        irrigationService.IsIrrigationDayBySector[SectorId] = new IsIrrigationDayResult { IsIrrigationDay = true, IsHoliday = true };
+
+        await vm.LoadAsync();
+
+        var walkway = vm.Walkways.Single();
+        Assert.Equal(IrrigationStatusViewModel.NoActivityYetHolidayMessage, walkway.EmptyStateMessage);
     }
 
     [Fact]

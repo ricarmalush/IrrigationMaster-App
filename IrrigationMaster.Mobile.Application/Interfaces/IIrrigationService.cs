@@ -34,10 +34,12 @@ public interface IIrrigationService
     // prioridad (HouseNumber descendente, ThenBy hora de solicitud).
     Task<List<PendingApprovalTurnsByWalkwayDto>?> GetPendingApprovalTurnsAsync();
 
-    // Plantilla teórica (IrrigationProgram + HolidayCalendar), no confirma que exista un turno
-    // real -- distingue "sin actividad todavía" (true) de "no hay riego programado hoy" (false)
-    // para un andador sin ningún vecino en la respuesta de estado.
-    Task<bool> IsIrrigationDayAsync(Guid hydraulicSectorId);
+    // Plantilla teórica (solo IrrigationProgram: día de semana + temporada) -- no confirma que
+    // exista un turno real. IsIrrigationDay e IsHoliday son independientes: un festivo NUNCA
+    // condiciona IsIrrigationDay ni bloquea la creación de turnos, es solo un aviso informativo
+    // aparte que el consumidor compone junto al mensaje real (ver
+    // IrrigationStatusViewModel.ResolveEmptyStateMessageAsync).
+    Task<IsIrrigationDayResult> IsIrrigationDayAsync(Guid hydraulicSectorId);
 
     // Todos los IrrigationProgram de la organización del llamador (activos e inactivos -- el
     // filtrado por IsActive lo hace el consumidor). No hay filtro por HydraulicSectorId en el

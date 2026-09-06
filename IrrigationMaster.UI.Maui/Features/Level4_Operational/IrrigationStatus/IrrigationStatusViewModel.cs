@@ -85,6 +85,10 @@ public partial class IrrigationStatusViewModel : ObservableObject
 
     internal const string NoIrrigationScheduledMessage = "No hay riego programado hoy";
     internal const string NoActivityYetMessage = "Sin actividad todavía";
+    // Festivo: aviso puramente informativo -- nunca sustituye a NoIrrigationScheduledMessage (eso
+    // dependería de IsIrrigationDay=false, y un festivo ya no lo condiciona). Solo se añade cuando
+    // SÍ hay Programa para hoy pero, además, la fecha es festiva.
+    internal const string NoActivityYetHolidayMessage = "Sin actividad todavía — hoy es festivo";
 
     // Duración ad-hoc de un turno "Solicitar mi turno": no hay ningún horario preestablecido que
     // elegir (a diferencia de un IrrigationProgram), así que se pide un bloque fijo a partir de
@@ -196,8 +200,9 @@ public partial class IrrigationStatusViewModel : ObservableObject
             return NoActivityYetMessage;
         }
 
-        var isIrrigationDay = await _irrigationService.IsIrrigationDayAsync(walkwayDetail.HydraulicSectorId);
-        return isIrrigationDay ? NoActivityYetMessage : NoIrrigationScheduledMessage;
+        var result = await _irrigationService.IsIrrigationDayAsync(walkwayDetail.HydraulicSectorId);
+        if (!result.IsIrrigationDay) return NoIrrigationScheduledMessage;
+        return result.IsHoliday ? NoActivityYetHolidayMessage : NoActivityYetMessage;
     }
 
     internal static string TranslateStatus(string rawStatus) => rawStatus switch

@@ -20,9 +20,10 @@ public class FakeIrrigationService : IIrrigationService
     public CreateIrrigationProgramRequest? LastCreateIrrigationProgramCall { get; private set; }
     public (Guid Id, UpdateIrrigationProgramRequest Request)? LastUpdateIrrigationProgramCall { get; private set; }
 
-    // Clave: HydraulicSectorId consultado -> true/false a devolver. Default true ("sin actividad
-    // todavía") si el test no configura una entrada, mismo fallback que ApiService.
-    public Dictionary<Guid, bool> IsIrrigationDayBySector { get; set; } = [];
+    // Clave: HydraulicSectorId consultado -> resultado a devolver. Default
+    // { IsIrrigationDay = true, IsHoliday = false } ("sin actividad todavía") si el test no
+    // configura una entrada, mismo fallback que ApiService.
+    public Dictionary<Guid, IsIrrigationDayResult> IsIrrigationDayBySector { get; set; } = [];
 
     public Guid? LastStartTurnCall { get; private set; }
     public Guid? LastCompleteTurnCall { get; private set; }
@@ -74,9 +75,11 @@ public class FakeIrrigationService : IIrrigationService
         return Task.FromResult(UpdateIrrigationProgramResult);
     }
 
-    public Task<bool> IsIrrigationDayAsync(Guid hydraulicSectorId)
+    public Task<IsIrrigationDayResult> IsIrrigationDayAsync(Guid hydraulicSectorId)
     {
         LastIsIrrigationDayCall = hydraulicSectorId;
-        return Task.FromResult(IsIrrigationDayBySector.GetValueOrDefault(hydraulicSectorId, true));
+        var result = IsIrrigationDayBySector.GetValueOrDefault(hydraulicSectorId)
+            ?? new IsIrrigationDayResult { IsIrrigationDay = true, IsHoliday = false };
+        return Task.FromResult(result);
     }
 }
