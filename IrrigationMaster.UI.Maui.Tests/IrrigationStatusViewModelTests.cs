@@ -174,11 +174,13 @@ public class IrrigationStatusViewModelTests
     // ─── VISIBILIDAD CONDICIONAL DEL BOTÓN DE ACCIÓN ───
 
     [Fact]
-    public async Task LoadAsync_MyOwnRow_Waiting_ShowsStartButton_NotCompleteButton()
+    public async Task LoadAsync_MyOwnRow_Waiting_ShowsStartAndCancelButtons_NotCompleteButton()
     {
+        // Ya no exige aprobación previa -- confirmado con el Presidente, ese paso desaparece del
+        // ciclo por completo: Requested (Waiting) admite Empezar o Cancelar de inmediato.
         var statusList = new List<WalkwayIrrigationStatusDto>
         {
-            new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId, FullName = "Yo", Status = "Waiting", IsApproved = true }] }
+            new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId, FullName = "Yo", Status = "Waiting" }] }
         };
         var (vm, _, _, _, _) = CreateSut(statusList);
 
@@ -186,11 +188,12 @@ public class IrrigationStatusViewModelTests
 
         var mine = vm.Walkways.Single().Neighbors.Single();
         Assert.True(mine.ShowStartButton);
+        Assert.True(mine.ShowCancelButton);
         Assert.False(mine.ShowCompleteButton);
     }
 
     [Fact]
-    public async Task LoadAsync_MyOwnRow_Watering_ShowsCompleteButton_NotStartButton()
+    public async Task LoadAsync_MyOwnRow_Watering_ShowsCompleteButton_NotStartOrCancelButtons()
     {
         var statusList = new List<WalkwayIrrigationStatusDto>
         {
@@ -202,6 +205,7 @@ public class IrrigationStatusViewModelTests
 
         var mine = vm.Walkways.Single().Neighbors.Single();
         Assert.False(mine.ShowStartButton);
+        Assert.False(mine.ShowCancelButton);
         Assert.True(mine.ShowCompleteButton);
     }
 
@@ -209,7 +213,7 @@ public class IrrigationStatusViewModelTests
     [InlineData("Waiting")]
     [InlineData("Watering")]
     [InlineData("Completed")]
-    public async Task LoadAsync_OtherNeighborsRow_NeverShowsEitherButton_RegardlessOfStatus(string status)
+    public async Task LoadAsync_OtherNeighborsRow_NeverShowsAnyButton_RegardlessOfStatus(string status)
     {
         var statusList = new List<WalkwayIrrigationStatusDto>
         {
@@ -221,27 +225,12 @@ public class IrrigationStatusViewModelTests
 
         var other = vm.Walkways.Single().Neighbors.Single();
         Assert.False(other.ShowStartButton);
+        Assert.False(other.ShowCancelButton);
         Assert.False(other.ShowCompleteButton);
     }
 
     [Fact]
-    public async Task LoadAsync_MyOwnRow_Waiting_NotApproved_ShowsWaitingApprovalLabel_NotStartButton()
-    {
-        var statusList = new List<WalkwayIrrigationStatusDto>
-        {
-            new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId, FullName = "Yo", Status = "Waiting", IsApproved = false }] }
-        };
-        var (vm, _, _, _, _) = CreateSut(statusList);
-
-        await vm.LoadAsync();
-
-        var mine = vm.Walkways.Single().Neighbors.Single();
-        Assert.False(mine.ShowStartButton);
-        Assert.True(mine.ShowWaitingApprovalLabel);
-    }
-
-    [Fact]
-    public async Task LoadAsync_MyOwnRow_Completed_ShowsNeitherButton()
+    public async Task LoadAsync_MyOwnRow_Completed_ShowsNoButtons()
     {
         var statusList = new List<WalkwayIrrigationStatusDto>
         {
@@ -253,6 +242,7 @@ public class IrrigationStatusViewModelTests
 
         var mine = vm.Walkways.Single().Neighbors.Single();
         Assert.False(mine.ShowStartButton);
+        Assert.False(mine.ShowCancelButton);
         Assert.False(mine.ShowCompleteButton);
     }
 
@@ -514,7 +504,7 @@ public class IrrigationStatusViewModelTests
     {
         var statusList = new List<WalkwayIrrigationStatusDto>
         {
-            new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId, FullName = "Yo", Status = "Waiting", IsApproved = true }] }
+            new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId, FullName = "Yo", Status = "Waiting" }] }
         };
         var (vm, _, structureService, _, userManagementService) = CreateSut(statusList);
         structureService.WalkwaysById[WalkwayAId] = new WalkwayDetailDto { Id = WalkwayAId, Code = "A-01", HydraulicSectorId = SectorId };
@@ -634,6 +624,43 @@ public class IrrigationStatusViewModelTests
         var alert = Assert.Single(alerts.Calls);
         Assert.Equal(AppStrings.ErrorTitle, alert.Title);
         Assert.Equal("El turno no está en estado Pendiente.", alert.Message);
+    }
+
+    [Fact]
+    public async Task CancelTurnAsync_OnSuccess_ShowsSuccessAlert_AndReloads()
+    {
+        var statusList = new List<WalkwayIrrigationStatusDto>
+        {
+            new() { WalkwayId = WalkwayAId, WalkwayCode = "A-01", Neighbors = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId, FullName = "Yo", Status = "Waiting" }] }
+        };
+        var (vm, irrigationService, _, alerts, _) = CreateSut(statusList);
+        await vm.LoadAsync();
+        var neighbor = vm.Walkways.Single().Neighbors.Single();
+
+        await vm.CancelTurnAsync(neighbor);
+
+        Assert.Equal(TurnId, irrigationService.LastCancelTurnCall);
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.SuccessTitle, alert.Title);
+        Assert.Equal(AppStrings.TurnCancelledSuccess, alert.Message);
+    }
+
+    [Fact]
+    public async Task CancelTurnAsync_WhenBackendRejects_ShowsExactBackendMessage_WithoutReloading()
+    {
+        var (vm, irrigationService, _, alerts, _) = CreateSut();
+        irrigationService.CancelTurnResult = new UserActionResult
+        {
+            IsSuccess = false,
+            Message = "Solo se puede cancelar un turno que todavía no ha empezado a regar."
+        };
+        var neighbor = new NeighborStatusItem { UserId = MyUserId, TurnId = TurnId, FullName = "Yo", RawStatus = "Waiting", IsMine = true };
+
+        await vm.CancelTurnAsync(neighbor);
+
+        var alert = Assert.Single(alerts.Calls);
+        Assert.Equal(AppStrings.ErrorTitle, alert.Title);
+        Assert.Equal("Solo se puede cancelar un turno que todavía no ha empezado a regar.", alert.Message);
     }
 
     [Fact]

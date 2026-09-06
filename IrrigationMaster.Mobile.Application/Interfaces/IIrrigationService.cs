@@ -5,8 +5,8 @@ namespace IrrigationMaster.Mobile.Application.Interfaces;
 
 // Estado de riego por andador (pantalla "Estado de Riego"), visible para cualquier autenticado de
 // la organización sin permiso adicional -- el backend no exige ninguno para GetOrganizationStatus.
-// El backend sí bloquea a nivel de negocio que un vecino normal actúe (Start/Complete) sobre el
-// turno de otro; esta capa no duplica esa lógica, solo transporta la petición.
+// El backend sí bloquea a nivel de negocio que un vecino normal actúe (Start/Cancel/Complete) sobre
+// el turno de otro; esta capa no duplica esa lógica, solo transporta la petición.
 public interface IIrrigationService
 {
     // Sin parámetro Date: siempre consulta "hoy" (el backend lo asume por defecto cuando se omite).
@@ -19,20 +19,16 @@ public interface IIrrigationService
     Task<MyWalkwayIrrigationStatusDto?> GetMyWalkwayStatusAsync();
 
     Task<UserActionResult> StartTurnAsync(Guid turnId);
+
+    // Solo tiene efecto mientras el turno sigue en Requested -- el backend lo rechaza
+    // explícitamente en cualquier otro estado. Motivo siempre fijo, sin texto libre desde la App.
+    Task<UserActionResult> CancelTurnAsync(Guid turnId);
+
     Task<UserActionResult> CompleteTurnAsync(Guid turnId);
 
-    // Crea un IrrigationTurn en estado Requested para el propio solicitante -- nace sin aprobar
-    // (Start() lo rechaza hasta que alguien con TURN_APPROVE/SUPERADMIN llame a ApproveTurnAsync).
+    // Crea un IrrigationTurn en estado Requested para el propio solicitante -- accionable de
+    // inmediato (Empezar/Cancelar), sin ningún paso de aprobación intermedio.
     Task<UserActionResult> RequestTurnAsync(Guid hydraulicSectorId, Guid requesterId, DateTime startTime, DateTime endTime);
-
-    // Requiere TURN_APPROVE o rol SUPERADMIN en el backend -- esta capa no duplica esa
-    // comprobación, solo transporta la petición.
-    Task<UserActionResult> ApproveTurnAsync(Guid turnId);
-
-    // Turnos en Requested de la organización del llamante, para la pantalla de aprobación -- ya
-    // agrupados por andador (solo los que tienen al menos uno) y ordenados dentro de cada grupo por
-    // prioridad (HouseNumber descendente, ThenBy hora de solicitud).
-    Task<List<PendingApprovalTurnsByWalkwayDto>?> GetPendingApprovalTurnsAsync();
 
     // Plantilla teórica (solo IrrigationProgram: día de semana + temporada) -- no confirma que
     // exista un turno real. IsIrrigationDay e IsHoliday son independientes: un festivo NUNCA

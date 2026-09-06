@@ -10,10 +10,9 @@ public class FakeIrrigationService : IIrrigationService
     public MyWalkwayIrrigationStatusDto? MyWalkwayStatusToReturn { get; set; }
     public List<IrrigationProgramDto>? ProgramsToReturn { get; set; } = [];
     public UserActionResult StartTurnResult { get; set; } = new() { IsSuccess = true };
+    public UserActionResult CancelTurnResult { get; set; } = new() { IsSuccess = true };
     public UserActionResult CompleteTurnResult { get; set; } = new() { IsSuccess = true };
     public UserActionResult RequestTurnResult { get; set; } = new() { IsSuccess = true };
-    public UserActionResult ApproveTurnResult { get; set; } = new() { IsSuccess = true };
-    public List<PendingApprovalTurnsByWalkwayDto>? PendingApprovalTurnsToReturn { get; set; } = [];
     public UserActionResult CreateIrrigationProgramResult { get; set; } = new() { IsSuccess = true };
     public UserActionResult UpdateIrrigationProgramResult { get; set; } = new() { IsSuccess = true };
 
@@ -26,9 +25,9 @@ public class FakeIrrigationService : IIrrigationService
     public Dictionary<Guid, IsIrrigationDayResult> IsIrrigationDayBySector { get; set; } = [];
 
     public Guid? LastStartTurnCall { get; private set; }
+    public Guid? LastCancelTurnCall { get; private set; }
     public Guid? LastCompleteTurnCall { get; private set; }
     public Guid? LastIsIrrigationDayCall { get; private set; }
-    public Guid? LastApproveTurnCall { get; private set; }
     public (Guid HydraulicSectorId, Guid RequesterId, DateTime StartTime, DateTime EndTime)? LastRequestTurnCall { get; private set; }
 
     public Task<List<WalkwayIrrigationStatusDto>?> GetIrrigationStatusAsync() => Task.FromResult(StatusToReturn);
@@ -43,6 +42,12 @@ public class FakeIrrigationService : IIrrigationService
         return Task.FromResult(StartTurnResult);
     }
 
+    public Task<UserActionResult> CancelTurnAsync(Guid turnId)
+    {
+        LastCancelTurnCall = turnId;
+        return Task.FromResult(CancelTurnResult);
+    }
+
     public Task<UserActionResult> CompleteTurnAsync(Guid turnId)
     {
         LastCompleteTurnCall = turnId;
@@ -54,14 +59,6 @@ public class FakeIrrigationService : IIrrigationService
         LastRequestTurnCall = (hydraulicSectorId, requesterId, startTime, endTime);
         return Task.FromResult(RequestTurnResult);
     }
-
-    public Task<UserActionResult> ApproveTurnAsync(Guid turnId)
-    {
-        LastApproveTurnCall = turnId;
-        return Task.FromResult(ApproveTurnResult);
-    }
-
-    public Task<List<PendingApprovalTurnsByWalkwayDto>?> GetPendingApprovalTurnsAsync() => Task.FromResult(PendingApprovalTurnsToReturn);
 
     public Task<UserActionResult> CreateIrrigationProgramAsync(CreateIrrigationProgramRequest request)
     {

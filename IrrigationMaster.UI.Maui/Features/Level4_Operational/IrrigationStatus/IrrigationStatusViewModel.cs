@@ -24,13 +24,11 @@ public class NeighborStatusItem
     // bloquea a nivel de negocio que alguien actúe sobre el turno de otro vecino.
     public bool IsMine { get; init; }
 
-    // false mientras el turno sigue en Requested -- Start() lo rechaza hasta que alguien con
-    // TURN_APPROVE/SUPERADMIN lo apruebe (ver ApproveTurnsViewModel).
-    public bool IsApproved { get; init; }
-
-    public bool ShowStartButton => IsMine && RawStatus == IrrigationStatusViewModel.WaitingStatus && IsApproved;
+    // Ya no exige aprobación previa -- confirmado con el Presidente, ese paso desaparece del ciclo
+    // por completo: Requested (Waiting) es accionable de inmediato (Empezar o Cancelar).
+    public bool ShowStartButton => IsMine && RawStatus == IrrigationStatusViewModel.WaitingStatus;
+    public bool ShowCancelButton => IsMine && RawStatus == IrrigationStatusViewModel.WaitingStatus;
     public bool ShowCompleteButton => IsMine && RawStatus == IrrigationStatusViewModel.WateringStatus;
-    public bool ShowWaitingApprovalLabel => IsMine && RawStatus == IrrigationStatusViewModel.WaitingStatus && !IsApproved;
 }
 
 public class WalkwayStatusItem
@@ -77,8 +75,8 @@ public partial class IrrigationStatusViewModel : ObservableObject
     private readonly IAlertService _alertService;
     private readonly ICurrentSession _currentSession;
 
-    // Vocabulario exacto que devuelve el backend (NeighborIrrigationStatuses) -- Requested/Pending
-    // ya vienen colapsados en "Waiting" antes de llegar aquí.
+    // Vocabulario exacto que devuelve el backend (NeighborIrrigationStatuses) -- Requested llega
+    // como "Waiting", accionable de inmediato (Empezar/Cancelar), sin paso de aprobación previo.
     internal const string WateringStatus = "Watering";
     internal const string WaitingStatus = "Waiting";
     internal const string CompletedStatus = "Completed";
@@ -148,8 +146,7 @@ public partial class IrrigationStatusViewModel : ObservableObject
                         FullName = n.FullName,
                         RawStatus = n.Status,
                         StatusDisplay = TranslateStatus(n.Status),
-                        IsMine = myUserId.HasValue && myUserId.Value == n.UserId,
-                        IsApproved = n.IsApproved
+                        IsMine = myUserId.HasValue && myUserId.Value == n.UserId
                     }).ToList()
                 };
 
@@ -267,6 +264,15 @@ public partial class IrrigationStatusViewModel : ObservableObject
 
         var result = await _irrigationService.StartTurnAsync(neighbor.TurnId);
         await HandleActionResultAsync(result, AppStrings.TurnStartedSuccess);
+    }
+
+    [RelayCommand]
+    internal async Task CancelTurnAsync(NeighborStatusItem? neighbor)
+    {
+        if (neighbor is null) return;
+
+        var result = await _irrigationService.CancelTurnAsync(neighbor.TurnId);
+        await HandleActionResultAsync(result, AppStrings.TurnCancelledSuccess);
     }
 
     [RelayCommand]

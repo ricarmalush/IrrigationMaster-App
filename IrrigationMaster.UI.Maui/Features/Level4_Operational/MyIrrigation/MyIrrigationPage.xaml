@@ -93,20 +93,54 @@
                             </BindableLayout.EmptyView>
                             <BindableLayout.ItemTemplate>
                                 <DataTemplate x:DataType="viewmodel:LiveTurnItem">
-                                    <Label FontSize="14" TextColor="{StaticResource AppPrimaryColor}">
-                                        <Label.FormattedText>
-                                            <FormattedString>
-                                                <Span Text="{Binding FullName}" FontAttributes="Bold"/>
-                                                <Span Text=" -- "/>
-                                                <Span Text="{Binding StatusDisplay}"/>
-                                            </FormattedString>
-                                        </Label.FormattedText>
-                                        <Label.Triggers>
-                                            <DataTrigger TargetType="Label" Binding="{Binding IsCompleted}" Value="True">
-                                                <Setter Property="TextColor" Value="Gray"/>
-                                            </DataTrigger>
-                                        </Label.Triggers>
-                                    </Label>
+                                    <VerticalStackLayout Spacing="4" Margin="0,4,0,0">
+                                        <Label FontSize="14" TextColor="{StaticResource AppPrimaryColor}">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding FullName}" FontAttributes="Bold"/>
+                                                    <Span Text=" -- "/>
+                                                    <Span Text="{Binding StatusDisplay}"/>
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                            <Label.Triggers>
+                                                <DataTrigger TargetType="Label" Binding="{Binding IsCompleted}" Value="True">
+                                                    <Setter Property="TextColor" Value="Gray"/>
+                                                </DataTrigger>
+                                            </Label.Triggers>
+                                        </Label>
+
+                                        <!-- ACCIÓN: Empezar mi turno (solo sobre mi propia fila, Pendiente,
+                                             accionable de inmediato, sin ningún paso de aprobación previo) -->
+                                        <Button Text="Empezar mi turno"
+                                                Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.StartTurnCommand}"
+                                                CommandParameter="{Binding .}"
+                                                IsVisible="{Binding ShowStartButton}"
+                                                Style="{StaticResource PrimaryButtonStyle}"
+                                                HeightRequest="40"/>
+
+                                        <!-- ACCIÓN: Cancelar (solo sobre mi propia fila, Pendiente, antes de
+                                             empezar a regar) -->
+                                        <Button Text="Cancelar"
+                                                Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.CancelTurnCommand}"
+                                                CommandParameter="{Binding .}"
+                                                IsVisible="{Binding ShowCancelButton}"
+                                                BackgroundColor="Transparent"
+                                                TextColor="#D32F2F"
+                                                BorderColor="#D32F2F"
+                                                BorderWidth="1.5"
+                                                HeightRequest="40"/>
+
+                                        <!-- ACCIÓN: Terminar mi turno (solo sobre mi propia fila, Regando) -->
+                                        <Button Text="Terminar mi turno"
+                                                Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.CompleteTurnCommand}"
+                                                CommandParameter="{Binding .}"
+                                                IsVisible="{Binding ShowCompleteButton}"
+                                                BackgroundColor="Transparent"
+                                                TextColor="{StaticResource AppPrimaryColor}"
+                                                BorderColor="{StaticResource AppPrimaryColor}"
+                                                BorderWidth="1.5"
+                                                HeightRequest="40"/>
+                                    </VerticalStackLayout>
                                 </DataTemplate>
                             </BindableLayout.ItemTemplate>
                         </VerticalStackLayout>

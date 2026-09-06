@@ -891,7 +891,7 @@ public class ApiServiceTests
                 "walkwayCode": "A-01",
                 "requestsTomorrow": [],
                 "liveToday": [
-                    { "userId": "{{userId}}", "turnId": "{{turnId}}", "fullName": "Luis Pérez", "status": "Watering", "scheduledStart": "2026-03-09T07:00:00Z", "scheduledEnd": "2026-03-09T09:00:00Z", "isApproved": true }
+                    { "userId": "{{userId}}", "turnId": "{{turnId}}", "fullName": "Luis Pérez", "status": "Watering", "scheduledStart": "2026-03-09T07:00:00Z", "scheduledEnd": "2026-03-09T09:00:00Z", "houseNumber": 12 }
                 ]
             }
         }

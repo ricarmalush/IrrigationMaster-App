@@ -81,19 +81,25 @@
                                                 </Label.FormattedText>
                                             </Label>
 
-                                            <!-- Turno solicitado pero aún sin aprobar (solo sobre mi propia fila) -->
-                                            <Label Text="Esperando aprobación"
-                                                   IsVisible="{Binding ShowWaitingApprovalLabel}"
-                                                   FontSize="13"
-                                                   FontAttributes="Italic"
-                                                   TextColor="#999"/>
-
-                                            <!-- ACCIÓN: Empezar mi turno (solo sobre mi propia fila, Pendiente) -->
+                                            <!-- ACCIÓN: Empezar mi turno (solo sobre mi propia fila, Pendiente,
+                                                 accionable de inmediato, sin ningún paso de aprobación previo) -->
                                             <Button Text="Empezar mi turno"
                                                     Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.StartTurnCommand}"
                                                     CommandParameter="{Binding .}"
                                                     IsVisible="{Binding ShowStartButton}"
                                                     Style="{StaticResource PrimaryButtonStyle}"
+                                                    HeightRequest="40"/>
+
+                                            <!-- ACCIÓN: Cancelar (solo sobre mi propia fila, Pendiente, antes de
+                                                 empezar a regar) -->
+                                            <Button Text="Cancelar"
+                                                    Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.CancelTurnCommand}"
+                                                    CommandParameter="{Binding .}"
+                                                    IsVisible="{Binding ShowCancelButton}"
+                                                    BackgroundColor="Transparent"
+                                                    TextColor="#D32F2F"
+                                                    BorderColor="#D32F2F"
+                                                    BorderWidth="1.5"
                                                     HeightRequest="40"/>
 
                                             <!-- ACCIÓN: Terminar mi turno (solo sobre mi propia fila, Regando) -->

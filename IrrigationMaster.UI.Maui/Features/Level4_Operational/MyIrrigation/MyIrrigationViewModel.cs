@@ -19,9 +19,10 @@ public class RequestedTurnItem
     public string ScheduledStartDisplay => ScheduledStart.ToString("HH:mm");
 }
 
-// Fila de "Riego en tiempo real". IsCompleted alimenta el DataTrigger de color en el XAML (verde
-// mientras riega, gris cuando ya terminó) -- sin exponer Color aquí, para que esta clase (y el
-// ViewModel que la construye) se puedan seguir testeando sin runtime MAUI.
+// Fila de "Riego en tiempo real" -- propia y de otros vecinos del mismo andador en
+// Requested/InProgress/Completed de hoy. IsCompleted alimenta el DataTrigger de color en el XAML
+// (verde mientras riega, gris cuando ya terminó) -- sin exponer Color aquí, para que esta clase (y
+// el ViewModel que la construye) se puedan seguir testeando sin runtime MAUI.
 public class LiveTurnItem
 {
     public Guid UserId { get; init; }
@@ -30,7 +31,18 @@ public class LiveTurnItem
     public string RawStatus { get; init; } = string.Empty;
     public string StatusDisplay { get; init; } = string.Empty;
 
+    // "¿Es esta la fila del usuario logueado?" -- espejo de NeighborStatusItem.IsMine en la vista
+    // hermana "Estado de Riego". El backend ya bloquea a nivel de negocio que alguien actúe sobre
+    // el turno de otro vecino; esta comparación es solo conveniencia de UI.
+    public bool IsMine { get; init; }
+
     public bool IsCompleted => RawStatus == IrrigationStatusViewModel.CompletedStatus;
+
+    // Ya no exige aprobación previa -- confirmado con el Presidente, ese paso desaparece del ciclo
+    // por completo: Requested (Waiting) es accionable de inmediato (Empezar o Cancelar).
+    public bool ShowStartButton => IsMine && RawStatus == IrrigationStatusViewModel.WaitingStatus;
+    public bool ShowCancelButton => IsMine && RawStatus == IrrigationStatusViewModel.WaitingStatus;
+    public bool ShowCompleteButton => IsMine && RawStatus == IrrigationStatusViewModel.WateringStatus;
 }
 
 /// <summary>
@@ -40,9 +52,14 @@ public class LiveTurnItem
 /// licencia -- visible para cualquier autenticado de la organización, sin restricción de rol.
 ///
 /// "Solicitar mi turno" vive aquí también (antes solo en la vista hermana): para Vecino, esta
-/// pantalla ES su "Estado de Riego" desde que AdminMenuPage la redirige aquí, así que necesita la
-/// misma acción que tenía allí. Empezar/terminar turno siguen sin estar aquí -- esos actúan sobre
-/// turnos ya en curso, que la vista hermana ya cubre para todos los roles con acceso a ella.
+/// pantalla ES su "Estado de Riego" desde que AdminMenuPage la redirige aquí, y es la ÚNICA a la
+/// que tiene acceso. Empezar/Cancelar/Terminar turno viven AQUÍ TAMBIÉN desde que el ciclo dejó de
+/// tener aprobación: antes se asumía que la vista hermana ya cubría estas acciones "para todos los
+/// roles con acceso a ella", pero un Vecino nunca tuvo acceso a esa vista -- sin esto, no tenía
+/// ninguna forma de empezar ni terminar su propio turno. LiveToday incluye ahora también los
+/// turnos Requested de hoy (propios y de otros vecinos del mismo andador), ordenados por
+/// HouseNumber descendente (puramente informativo, nunca bloqueante -- ver
+/// NeighborIrrigationStatusDto en el backend).
 /// </summary>
 public partial class MyIrrigationViewModel : ObservableObject
 {
@@ -102,6 +119,7 @@ public partial class MyIrrigationViewModel : ObservableObject
         try
         {
             var status = await _irrigationService.GetMyWalkwayStatusAsync();
+            var myUserId = _currentSession.CachedUserId;
 
             HasWalkway = status?.WalkwayId is not null;
             WalkwayCode = status?.WalkwayCode ?? string.Empty;
@@ -122,6 +140,8 @@ public partial class MyIrrigationViewModel : ObservableObject
                 });
             }
 
+            // Ya viene ordenada por HouseNumber descendente desde el backend (informativo) -- no
+            // hace falta reordenar.
             LiveToday.Clear();
             foreach (var turn in status?.LiveToday ?? [])
             {
@@ -131,7 +151,8 @@ public partial class MyIrrigationViewModel : ObservableObject
                     TurnId = turn.TurnId,
                     FullName = turn.FullName,
                     RawStatus = turn.Status,
-                    StatusDisplay = IrrigationStatusViewModel.TranslateStatus(turn.Status)
+                    StatusDisplay = IrrigationStatusViewModel.TranslateStatus(turn.Status),
+                    IsMine = myUserId.HasValue && myUserId.Value == turn.UserId
                 });
             }
         }
@@ -156,9 +177,41 @@ public partial class MyIrrigationViewModel : ObservableObject
         var end = start.AddHours(DefaultTurnDurationHours);
 
         var result = await _irrigationService.RequestTurnAsync(_hydraulicSectorId.Value, myUserId.Value, start, end);
+        await HandleActionResultAsync(result, AppStrings.TurnRequestedSuccess);
+    }
+
+    [RelayCommand]
+    internal async Task StartTurnAsync(LiveTurnItem? turn)
+    {
+        if (turn is null || !turn.ShowStartButton) return;
+
+        var result = await _irrigationService.StartTurnAsync(turn.TurnId);
+        await HandleActionResultAsync(result, AppStrings.TurnStartedSuccess);
+    }
+
+    [RelayCommand]
+    internal async Task CancelTurnAsync(LiveTurnItem? turn)
+    {
+        if (turn is null || !turn.ShowCancelButton) return;
+
+        var result = await _irrigationService.CancelTurnAsync(turn.TurnId);
+        await HandleActionResultAsync(result, AppStrings.TurnCancelledSuccess);
+    }
+
+    [RelayCommand]
+    internal async Task CompleteTurnAsync(LiveTurnItem? turn)
+    {
+        if (turn is null || !turn.ShowCompleteButton) return;
+
+        var result = await _irrigationService.CompleteTurnAsync(turn.TurnId);
+        await HandleActionResultAsync(result, AppStrings.TurnCompletedSuccess);
+    }
+
+    private async Task HandleActionResultAsync(UserActionResult result, string successMessage)
+    {
         if (result.IsSuccess)
         {
-            await _alertService.ShowAsync(AppStrings.SuccessTitle, AppStrings.TurnRequestedSuccess);
+            await _alertService.ShowAsync(AppStrings.SuccessTitle, successMessage);
             await LoadAsync();
         }
         else

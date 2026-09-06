@@ -32,31 +32,28 @@ public class AdminMenuPageTests
 
         Assert.True(visibility.ShowUserManagement);
         Assert.True(visibility.ShowCommunityBroadcast);
-        Assert.True(visibility.ShowApproveTurns);
         Assert.True(visibility.ShowIrrigationPrograms);
     }
 
     [Theory]
     [InlineData("PRESIDENTE")]
     [InlineData("VICEPRESIDENTE")]
-    public void ComputeMenuVisibility_OrganizationAuthority_SeesUserManagementAndApproveTurns_ButNotIrrigationPrograms(string role)
+    public void ComputeMenuVisibility_OrganizationAuthority_SeesUserManagement_ButNotIrrigationPrograms(string role)
     {
         var visibility = AdminMenuPage.ComputeMenuVisibility(role);
 
         Assert.True(visibility.ShowUserManagement);
         Assert.True(visibility.ShowCommunityBroadcast);
-        Assert.True(visibility.ShowApproveTurns);
         Assert.False(visibility.ShowIrrigationPrograms);
     }
 
     [Fact]
-    public void ComputeMenuVisibility_CoordinadorRiego_SeesBroadcastAndIrrigationPrograms_ButNotUserManagementOrApproveTurns()
+    public void ComputeMenuVisibility_CoordinadorRiego_SeesBroadcastAndIrrigationPrograms_ButNotUserManagement()
     {
         var visibility = AdminMenuPage.ComputeMenuVisibility("COORDINADOR_RIEGO");
 
         Assert.False(visibility.ShowUserManagement);
         Assert.True(visibility.ShowCommunityBroadcast);
-        Assert.False(visibility.ShowApproveTurns);
         Assert.True(visibility.ShowIrrigationPrograms);
     }
 
@@ -71,7 +68,6 @@ public class AdminMenuPageTests
 
         Assert.False(visibility.ShowUserManagement);
         Assert.False(visibility.ShowCommunityBroadcast);
-        Assert.False(visibility.ShowApproveTurns);
         Assert.False(visibility.ShowIrrigationPrograms);
     }
 

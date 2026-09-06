@@ -100,7 +100,7 @@ public class MyIrrigationViewModelTests
             RequestsTomorrow =
             [
                 new WalkwayRequestedTurnDto { TurnId = TurnId1, FullName = "Ana García", Status = "Requested", ScheduledStart = early },
-                new WalkwayRequestedTurnDto { TurnId = TurnId2, FullName = "Luis Pérez", Status = "Pending", ScheduledStart = late }
+                new WalkwayRequestedTurnDto { TurnId = TurnId2, FullName = "Luis Pérez", Status = "Requested", ScheduledStart = late }
             ],
             LiveToday = []
         };
@@ -279,5 +279,199 @@ public class MyIrrigationViewModelTests
 
         Assert.Equal(AppStrings.ErrorTitle, alertService.Calls[0].Title);
         Assert.Equal("La fecha de inicio debe ser futura.", alertService.Calls[0].Message);
+    }
+
+    // ─── "Empezar/Cancelar/Terminar mi turno": nuevo en esta pantalla -- antes solo existían en la
+    // vista hermana "Estado de Riego", a la que el Vecino no tiene acceso. LiveToday incluye ahora
+    // también los Requested de hoy (propios y de otros vecinos del mismo andador) ───
+
+    [Fact]
+    public async Task LoadAsync_MarksIsMine_ForTheCallersOwnTurn_ButNotForOtherNeighbors()
+    {
+        var (vm, irrigationService, _, _, _) = CreateSut();
+        irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto
+        {
+            WalkwayId = WalkwayId,
+            WalkwayCode = "A-01",
+            RequestsTomorrow = [],
+            LiveToday =
+            [
+                new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId1, FullName = "Yo", Status = "Waiting" },
+                new NeighborIrrigationStatusDto { UserId = Guid.NewGuid(), TurnId = TurnId2, FullName = "Otro Vecino", Status = "Waiting" }
+            ]
+        };
+
+        await vm.LoadAsync();
+
+        Assert.True(vm.LiveToday.Single(t => t.TurnId == TurnId1).IsMine);
+        Assert.False(vm.LiveToday.Single(t => t.TurnId == TurnId2).IsMine);
+    }
+
+    [Fact]
+    public async Task LoadAsync_MyOwnRow_Waiting_ShowsStartAndCancelButtons_NotCompleteButton()
+    {
+        // Ya no exige aprobación previa -- confirmado con el Presidente, ese paso desaparece del
+        // ciclo por completo: Requested (Waiting) admite Empezar o Cancelar de inmediato.
+        var (vm, irrigationService, _, _, _) = CreateSut();
+        irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto
+        {
+            WalkwayId = WalkwayId,
+            WalkwayCode = "A-01",
+            RequestsTomorrow = [],
+            LiveToday = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId1, FullName = "Yo", Status = "Waiting" }]
+        };
+
+        await vm.LoadAsync();
+
+        var mine = vm.LiveToday.Single();
+        Assert.True(mine.ShowStartButton);
+        Assert.True(mine.ShowCancelButton);
+        Assert.False(mine.ShowCompleteButton);
+    }
+
+    [Fact]
+    public async Task LoadAsync_MyOwnRow_Watering_ShowsCompleteButton_NotStartOrCancelButtons()
+    {
+        var (vm, irrigationService, _, _, _) = CreateSut();
+        irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto
+        {
+            WalkwayId = WalkwayId,
+            WalkwayCode = "A-01",
+            RequestsTomorrow = [],
+            LiveToday = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId1, FullName = "Yo", Status = "Watering" }]
+        };
+
+        await vm.LoadAsync();
+
+        var mine = vm.LiveToday.Single();
+        Assert.False(mine.ShowStartButton);
+        Assert.False(mine.ShowCancelButton);
+        Assert.True(mine.ShowCompleteButton);
+    }
+
+    [Theory]
+    [InlineData("Waiting")]
+    [InlineData("Watering")]
+    [InlineData("Completed")]
+    public async Task LoadAsync_OtherNeighborsRow_NeverShowsAnyButton_RegardlessOfStatus(string status)
+    {
+        var (vm, irrigationService, _, _, _) = CreateSut();
+        irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto
+        {
+            WalkwayId = WalkwayId,
+            WalkwayCode = "A-01",
+            RequestsTomorrow = [],
+            LiveToday = [new NeighborIrrigationStatusDto { UserId = Guid.NewGuid(), TurnId = TurnId1, FullName = "Otro Vecino", Status = status }]
+        };
+
+        await vm.LoadAsync();
+
+        var other = vm.LiveToday.Single();
+        Assert.False(other.ShowStartButton);
+        Assert.False(other.ShowCancelButton);
+        Assert.False(other.ShowCompleteButton);
+    }
+
+    [Fact]
+    public async Task StartTurnAsync_OnSuccess_ShowsSuccessAlert_AndReloads()
+    {
+        var (vm, irrigationService, _, _, alertService) = CreateSut();
+        irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto
+        {
+            WalkwayId = WalkwayId,
+            WalkwayCode = "A-01",
+            RequestsTomorrow = [],
+            LiveToday = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId1, FullName = "Yo", Status = "Waiting" }]
+        };
+        await vm.LoadAsync();
+        var turn = vm.LiveToday.Single();
+
+        await vm.StartTurnAsync(turn);
+
+        Assert.Equal(TurnId1, irrigationService.LastStartTurnCall);
+        Assert.Equal(AppStrings.SuccessTitle, alertService.Calls[0].Title);
+        Assert.Equal(AppStrings.TurnStartedSuccess, alertService.Calls[0].Message);
+    }
+
+    [Fact]
+    public async Task StartTurnAsync_WhenTurnIsNotWaiting_DoesNothing()
+    {
+        var (vm, irrigationService, _, _, _) = CreateSut();
+        irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto
+        {
+            WalkwayId = WalkwayId,
+            WalkwayCode = "A-01",
+            RequestsTomorrow = [],
+            LiveToday = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId1, FullName = "Yo", Status = "Watering" }]
+        };
+        await vm.LoadAsync();
+        var turn = vm.LiveToday.Single();
+
+        await vm.StartTurnAsync(turn);
+
+        Assert.Null(irrigationService.LastStartTurnCall);
+    }
+
+    [Fact]
+    public async Task CancelTurnAsync_OnSuccess_ShowsSuccessAlert_AndReloads()
+    {
+        var (vm, irrigationService, _, _, alertService) = CreateSut();
+        irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto
+        {
+            WalkwayId = WalkwayId,
+            WalkwayCode = "A-01",
+            RequestsTomorrow = [],
+            LiveToday = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId1, FullName = "Yo", Status = "Waiting" }]
+        };
+        await vm.LoadAsync();
+        var turn = vm.LiveToday.Single();
+
+        await vm.CancelTurnAsync(turn);
+
+        Assert.Equal(TurnId1, irrigationService.LastCancelTurnCall);
+        Assert.Equal(AppStrings.SuccessTitle, alertService.Calls[0].Title);
+        Assert.Equal(AppStrings.TurnCancelledSuccess, alertService.Calls[0].Message);
+    }
+
+    [Fact]
+    public async Task CancelTurnAsync_WhenBackendRejects_ShowsExactBackendMessage_WithoutReloading()
+    {
+        var (vm, irrigationService, _, _, alertService) = CreateSut();
+        irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto
+        {
+            WalkwayId = WalkwayId,
+            WalkwayCode = "A-01",
+            RequestsTomorrow = [],
+            LiveToday = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId1, FullName = "Yo", Status = "Waiting" }]
+        };
+        await vm.LoadAsync();
+        var turn = vm.LiveToday.Single();
+        irrigationService.CancelTurnResult = new UserActionResult { IsSuccess = false, Message = "Solo se puede cancelar un turno que todavía no ha empezado a regar." };
+
+        await vm.CancelTurnAsync(turn);
+
+        Assert.Equal(AppStrings.ErrorTitle, alertService.Calls[0].Title);
+        Assert.Equal("Solo se puede cancelar un turno que todavía no ha empezado a regar.", alertService.Calls[0].Message);
+    }
+
+    [Fact]
+    public async Task CompleteTurnAsync_OnSuccess_ShowsSuccessAlert_AndReloads()
+    {
+        var (vm, irrigationService, _, _, alertService) = CreateSut();
+        irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto
+        {
+            WalkwayId = WalkwayId,
+            WalkwayCode = "A-01",
+            RequestsTomorrow = [],
+            LiveToday = [new NeighborIrrigationStatusDto { UserId = MyUserId, TurnId = TurnId1, FullName = "Yo", Status = "Watering" }]
+        };
+        await vm.LoadAsync();
+        var turn = vm.LiveToday.Single();
+
+        await vm.CompleteTurnAsync(turn);
+
+        Assert.Equal(TurnId1, irrigationService.LastCompleteTurnCall);
+        Assert.Equal(AppStrings.SuccessTitle, alertService.Calls[0].Title);
+        Assert.Equal(AppStrings.TurnCompletedSuccess, alertService.Calls[0].Message);
     }
 }

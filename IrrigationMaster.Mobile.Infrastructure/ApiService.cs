@@ -704,6 +704,26 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         }
     }
 
+    public async Task<UserActionResult> CancelTurnAsync(Guid turnId)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.PatchAsync($"{ApiEndpoints.IrrigationTurns}/{turnId}/cancel", null);
+            return await ReadUserActionResultAsync(response);
+        }
+        catch (HttpRequestException)
+        {
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - CancelTurn]: {ex.Message}");
+            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
+        }
+    }
+
     public async Task<UserActionResult> CompleteTurnAsync(Guid turnId)
     {
         try
@@ -749,49 +769,6 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         {
             System.Diagnostics.Debug.WriteLine($"[API Error - RequestTurn]: {ex.Message}");
             return new UserActionResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
-        }
-    }
-
-    public async Task<UserActionResult> ApproveTurnAsync(Guid turnId)
-    {
-        try
-        {
-            await AttachAuthHeadersAsync();
-
-            var response = await _httpClient.PatchAsync($"{ApiEndpoints.IrrigationTurns}/{turnId}/approve", null);
-            return await ReadUserActionResultAsync(response);
-        }
-        catch (HttpRequestException)
-        {
-            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[API Error - ApproveTurn]: {ex.Message}");
-            return new UserActionResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
-        }
-    }
-
-    public async Task<List<PendingApprovalTurnsByWalkwayDto>?> GetPendingApprovalTurnsAsync()
-    {
-        try
-        {
-            await AttachAuthHeadersAsync();
-
-            var response = await _httpClient.GetAsync(ApiEndpoints.IrrigationTurnsPendingApproval);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var wrapped = await response.Content.ReadFromJsonAsync<PendingApprovalTurnsResponse>();
-                return wrapped?.Data;
-            }
-
-            return null;
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[API Error - PendingApprovalTurns]: {ex.Message}");
-            return null;
         }
     }
 

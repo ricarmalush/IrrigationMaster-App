@@ -1,7 +1,6 @@
 ﻿using IrrigationMaster.Mobile.Application.Interfaces;
 using IrrigationMaster.UI.Maui.Common;
 using IrrigationMaster.UI.Maui.Features.Level3_Functional.Users;
-using IrrigationMaster.UI.Maui.Features.Level4_Operational.ApproveTurns;
 using IrrigationMaster.UI.Maui.Features.Level3_Functional.IrrigationPrograms;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.CommunityBroadcast;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.IrrigationStatus;
@@ -18,26 +17,33 @@ public partial class AdminMenuPage : ContentPage
     // real sigue siendo por código de rol -- mismo criterio que SystemSettingsViewModel.
     // ApplyTabVisibility -- pero ENUMERANDO qué roles concretos ven cada botón, en vez de un único
     // flag "no es Vecino" (isNotVecino): con 4 roles no-Vecino que ya no comparten exactamente las
-    // mismas acciones (Coordinador de Riego ve Avisos y Calendario, pero no Gestión de Usuarios ni
-    // Aprobar Turnos), ese flag único dejó de alcanzar.
+    // mismas acciones (Coordinador de Riego ve Avisos y Calendario, pero no Gestión de Usuarios),
+    // ese flag único dejó de alcanzar.
     private const string SuperAdminRoleCode = "SUPERADMIN";
     private const string PresidenteRoleCode = "PRESIDENTE";
     private const string VicepresidenteRoleCode = "VICEPRESIDENTE";
     private const string CoordinadorRiegoRoleCode = "COORDINADOR_RIEGO";
     private const string VecinoRoleCode = "VECINO";
 
+    // Misma ruta absoluta que usa WelcomeViewModel.LoginRoute para "sin sesión".
+    private const string LoginRoute = "//MainPage";
+
     private readonly ICurrentSession _currentSession;
     private readonly IStructureService _structureService;
+    private readonly IAlertService _alertService;
+    private readonly INavigationService _navigationService;
 
     // Resuelto en OnAppearing, leído por OnIrrigationStatusClicked -- decide a qué página navega
     // el botón "Estado de Riego" (ver ComputeMenuVisibility.IrrigationStatusGoesToMyWalkway).
     private bool _irrigationStatusGoesToMyWalkway;
 
-    public AdminMenuPage(ICurrentSession currentSession, IStructureService structureService)
+    public AdminMenuPage(ICurrentSession currentSession, IStructureService structureService, IAlertService alertService, INavigationService navigationService)
     {
         InitializeComponent();
         _currentSession = currentSession;
         _structureService = structureService;
+        _alertService = alertService;
+        _navigationService = navigationService;
     }
 
     protected override async void OnAppearing()
@@ -49,7 +55,6 @@ public partial class AdminMenuPage : ContentPage
 
         UserManagementButton.IsVisible = visibility.ShowUserManagement;
         CommunityBroadcastButton.IsVisible = visibility.ShowCommunityBroadcast;
-        ApproveTurnsButton.IsVisible = visibility.ShowApproveTurns;
         IrrigationProgramsButton.IsVisible = visibility.ShowIrrigationPrograms;
         MyIrrigationButton.IsVisible = visibility.ShowMyIrrigation;
         _irrigationStatusGoesToMyWalkway = visibility.IrrigationStatusGoesToMyWalkway;
@@ -65,7 +70,7 @@ public partial class AdminMenuPage : ContentPage
     // Estático y testable a propósito (mismo motivo que BuildHeaderText): así el matriz de
     // visibilidad por rol se puede cubrir con tests reales sin necesitar un ContentPage con
     // Handler de MAUI corriendo.
-    internal static (bool ShowUserManagement, bool ShowCommunityBroadcast, bool ShowApproveTurns, bool ShowIrrigationPrograms, bool ShowMyIrrigation, bool IrrigationStatusGoesToMyWalkway) ComputeMenuVisibility(string? role)
+    internal static (bool ShowUserManagement, bool ShowCommunityBroadcast, bool ShowIrrigationPrograms, bool ShowMyIrrigation, bool IrrigationStatusGoesToMyWalkway) ComputeMenuVisibility(string? role)
     {
         bool isSuperAdmin = string.Equals(role, SuperAdminRoleCode, StringComparison.OrdinalIgnoreCase);
         bool isPresidente = string.Equals(role, PresidenteRoleCode, StringComparison.OrdinalIgnoreCase);
@@ -74,12 +79,11 @@ public partial class AdminMenuPage : ContentPage
         bool isVecino = string.Equals(role, VecinoRoleCode, StringComparison.OrdinalIgnoreCase);
 
         return (
-            // Gestión de Usuarios y Roles / Aprobar Turnos: sin Coordinador de Riego -- solo la
-            // autoridad de organización (Presidente/Vicepresidente) y SUPERADMIN.
+            // Gestión de Usuarios y Roles: sin Coordinador de Riego -- solo la autoridad de
+            // organización (Presidente/Vicepresidente) y SUPERADMIN.
             ShowUserManagement: isSuperAdmin || isPresidente || isVicepresidente,
             // Avisar a mi comunidad: Presidente/Vicepresidente/Coordinador de Riego/SUPERADMIN.
             ShowCommunityBroadcast: isSuperAdmin || isPresidente || isVicepresidente || isCoordinadorRiego,
-            ShowApproveTurns: isSuperAdmin || isPresidente || isVicepresidente,
             // Calendario de Riego: antes exclusivo de SUPERADMIN: ahora también Coordinador de
             // Riego, el rol pensado precisamente para esto (permiso MANAGE_IRRIGATION_PROGRAMS).
             ShowIrrigationPrograms: isSuperAdmin || isCoordinadorRiego,
@@ -197,32 +201,6 @@ public partial class AdminMenuPage : ContentPage
             else
             {
                 await DisplayAlert(AppStrings.SystemErrorTitle, "No se pudo cargar Mi Riego.", "OK");
-            }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[Navigation Error]: {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// SECCIÓN: RIEGO -- Aprobar Turnos, visible solo para Presidente/Vicepresidente/SUPERADMIN
-    /// (mismo gating que OnCommunityBroadcastClicked).
-    /// </summary>
-    private async void OnApproveTurnsClicked(object sender, EventArgs e)
-    {
-        try
-        {
-            var approveTurnsPage = Handler?.MauiContext?.Services.GetService<ApproveTurnsPage>();
-
-            if (approveTurnsPage != null)
-            {
-                // PushAsync (no PushModalAsync): mismo motivo que OnUserManagementClicked.
-                await Navigation.PushAsync(approveTurnsPage);
-            }
-            else
-            {
-                await DisplayAlert(AppStrings.SystemErrorTitle, "No se pudo cargar la aprobación de turnos.", "OK");
             }
         }
         catch (Exception ex)
@@ -372,10 +350,22 @@ public partial class AdminMenuPage : ContentPage
     }
 
     /// <summary>
-    /// CIERRE DE SEGURIDAD
+    /// SECCIÓN: AJUSTES DE LA APLICACIÓN -- Cerrar Sesión. Borra el token guardado y la cabecera
+    /// Authorization del HttpClient compartido (ICurrentSession.ClearAsync), y navega a Login con
+    /// ruta absoluta -- reemplaza toda la pila, así que "atrás" no puede volver a esta pantalla
+    /// autenticada.
     /// </summary>
-    private async void OnCloseConsoleClicked(object sender, EventArgs e)
+    private async void OnLogoutClicked(object sender, EventArgs e)
     {
-        await Navigation.PopAsync();
+        var confirmed = await _alertService.ShowConfirmAsync(
+            AppStrings.AttentionTitle,
+            "¿Seguro que quieres cerrar tu sesión?",
+            "Cerrar sesión",
+            "Cancelar");
+
+        if (!confirmed) return;
+
+        await _currentSession.ClearAsync();
+        await _navigationService.GoToAsync(LoginRoute);
     }
 }
