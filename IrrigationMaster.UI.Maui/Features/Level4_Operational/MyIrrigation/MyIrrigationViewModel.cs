@@ -45,6 +45,19 @@ public class LiveTurnItem
     public bool ShowCompleteButton => IsMine && RawStatus == IrrigationStatusViewModel.WateringStatus;
 }
 
+// Fila de "Horario de hoy" -- un tramo horario de un IrrigationProgram activo del sector que cubre
+// hoy. Display incluye el nombre del Programa SOLO cuando hay más de uno hoy (decisión explícita:
+// evita confusión en sectores con turno mañana/noche, sin ruido cuando solo hay un Programa) --
+// calculado por el ViewModel en LoadAsync (conoce el total), no por esta clase en solitario.
+public class TodayScheduleItem
+{
+    public Guid ProgramId { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public TimeSpan StartTime { get; init; }
+    public TimeSpan EndTime { get; init; }
+    public string Display { get; init; } = string.Empty;
+}
+
 /// <summary>
 /// Visibilidad en tiempo real del riego del propio andador del llamador (pantalla "Mi Riego"):
 /// solicitudes para mañana y riego de hoy. Complementa -- no sustituye -- "Estado de Riego"
@@ -93,6 +106,7 @@ public partial class MyIrrigationViewModel : ObservableObject
 
     public ObservableCollection<RequestedTurnItem> RequestsTomorrow { get; } = [];
     public ObservableCollection<LiveTurnItem> LiveToday { get; } = [];
+    public ObservableCollection<TodayScheduleItem> TodaySchedule { get; } = [];
 
     // Espejo de CanRequestTurn en WalkwayStatusItem (vista hermana): solo si hoy no tienes ya
     // ningún turno (en cualquier estado) en tu andador. LiveToday ya está acotado siempre al propio
@@ -153,6 +167,26 @@ public partial class MyIrrigationViewModel : ObservableObject
                     RawStatus = turn.Status,
                     StatusDisplay = IrrigationStatusViewModel.TranslateStatus(turn.Status),
                     IsMine = myUserId.HasValue && myUserId.Value == turn.UserId
+                });
+            }
+
+            // Ya viene ordenada por StartTime desde el backend -- no hace falta reordenar. El
+            // nombre del Programa solo se añade al Display cuando hay más de uno hoy (decisión
+            // explícita, ver TodayScheduleItem).
+            var todaySchedule = status?.TodaySchedule ?? [];
+            var showProgramName = todaySchedule.Count > 1;
+            TodaySchedule.Clear();
+            foreach (var schedule in todaySchedule)
+            {
+                TodaySchedule.Add(new TodayScheduleItem
+                {
+                    ProgramId = schedule.ProgramId,
+                    Name = schedule.Name,
+                    StartTime = schedule.StartTime,
+                    EndTime = schedule.EndTime,
+                    Display = showProgramName
+                        ? $"{schedule.Name}: {FormatHour(schedule.StartTime)}-{FormatHour(schedule.EndTime)}"
+                        : $"{FormatHour(schedule.StartTime)}-{FormatHour(schedule.EndTime)}"
                 });
             }
         }
@@ -219,6 +253,9 @@ public partial class MyIrrigationViewModel : ObservableObject
             await _alertService.ShowAsync(AppStrings.ErrorTitle, BuildFailureMessage(result));
         }
     }
+
+    // TimeSpan del backend ("HH:mm:ss" tras deserializar) formateado a "HH:mm" para mostrar.
+    private static string FormatHour(TimeSpan time) => time.ToString(@"hh\:mm");
 
     private static string BuildFailureMessage(UserActionResult result)
     {

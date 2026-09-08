@@ -142,6 +142,74 @@ public class MyIrrigationViewModelTests
         Assert.True(completed.IsCompleted);
     }
 
+    // ─── HORARIO DE HOY: antes el Vecino no tenía ninguna forma de ver la hora programada de riego
+    // de su sector en esta pantalla, solo el estado de turnos ya solicitados ───
+
+    [Fact]
+    public async Task LoadAsync_PopulatesTodaySchedule_WhenOnlyOneProgramCoversToday_ShowsHourOnly_WithoutProgramName()
+    {
+        var (vm, irrigationService, _, _, _) = CreateSut();
+        var programId = Guid.NewGuid();
+        irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto
+        {
+            WalkwayId = WalkwayId,
+            WalkwayCode = "A-01",
+            RequestsTomorrow = [],
+            LiveToday = [],
+            TodaySchedule = [new TodayIrrigationScheduleDto { ProgramId = programId, Name = "Riego Matutino", StartTime = new TimeSpan(8, 0, 0), EndTime = new TimeSpan(9, 0, 0) }]
+        };
+
+        await vm.LoadAsync();
+
+        var schedule = vm.TodaySchedule.Single();
+        Assert.Equal(programId, schedule.ProgramId);
+        Assert.Equal("08:00-09:00", schedule.Display);
+    }
+
+    [Fact]
+    public async Task LoadAsync_PopulatesTodaySchedule_WhenMultipleProgramsCoverToday_IncludesProgramName()
+    {
+        // Decisión explícita: el nombre del Programa se añade SOLO cuando hay más de uno hoy --
+        // evita confusión en sectores con turno mañana/noche.
+        var (vm, irrigationService, _, _, _) = CreateSut();
+        irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto
+        {
+            WalkwayId = WalkwayId,
+            WalkwayCode = "A-01",
+            RequestsTomorrow = [],
+            LiveToday = [],
+            TodaySchedule =
+            [
+                new TodayIrrigationScheduleDto { ProgramId = Guid.NewGuid(), Name = "Riego Matutino", StartTime = new TimeSpan(8, 0, 0), EndTime = new TimeSpan(9, 0, 0) },
+                new TodayIrrigationScheduleDto { ProgramId = Guid.NewGuid(), Name = "Riego Nocturno", StartTime = new TimeSpan(20, 0, 0), EndTime = new TimeSpan(21, 0, 0) }
+            ]
+        };
+
+        await vm.LoadAsync();
+
+        Assert.Equal(2, vm.TodaySchedule.Count);
+        Assert.Equal("Riego Matutino: 08:00-09:00", vm.TodaySchedule[0].Display);
+        Assert.Equal("Riego Nocturno: 20:00-21:00", vm.TodaySchedule[1].Display);
+    }
+
+    [Fact]
+    public async Task LoadAsync_WhenNoProgramCoversToday_LeavesTodayScheduleEmpty()
+    {
+        var (vm, irrigationService, _, _, _) = CreateSut();
+        irrigationService.MyWalkwayStatusToReturn = new MyWalkwayIrrigationStatusDto
+        {
+            WalkwayId = WalkwayId,
+            WalkwayCode = "A-01",
+            RequestsTomorrow = [],
+            LiveToday = [],
+            TodaySchedule = []
+        };
+
+        await vm.LoadAsync();
+
+        Assert.Empty(vm.TodaySchedule);
+    }
+
     [Fact]
     public async Task LoadAsync_ClearsPreviousResults_BeforeRepopulating()
     {
@@ -152,7 +220,8 @@ public class MyIrrigationViewModelTests
             WalkwayId = WalkwayId,
             WalkwayCode = "A-01",
             RequestsTomorrow = [new WalkwayRequestedTurnDto { TurnId = TurnId1, FullName = "Ana García", Status = "Requested", ScheduledStart = DateTime.UtcNow }],
-            LiveToday = [new NeighborIrrigationStatusDto { UserId = Guid.NewGuid(), TurnId = TurnId2, FullName = "Luis Pérez", Status = "Watering" }]
+            LiveToday = [new NeighborIrrigationStatusDto { UserId = Guid.NewGuid(), TurnId = TurnId2, FullName = "Luis Pérez", Status = "Watering" }],
+            TodaySchedule = [new TodayIrrigationScheduleDto { ProgramId = Guid.NewGuid(), Name = "Riego Matutino", StartTime = new TimeSpan(8, 0, 0), EndTime = new TimeSpan(9, 0, 0) }]
         };
         await vm.LoadAsync();
 
@@ -161,12 +230,14 @@ public class MyIrrigationViewModelTests
             WalkwayId = WalkwayId,
             WalkwayCode = "A-01",
             RequestsTomorrow = [],
-            LiveToday = []
+            LiveToday = [],
+            TodaySchedule = []
         };
         await vm.LoadAsync();
 
         Assert.Empty(vm.RequestsTomorrow);
         Assert.Empty(vm.LiveToday);
+        Assert.Empty(vm.TodaySchedule);
     }
 
     [Fact]

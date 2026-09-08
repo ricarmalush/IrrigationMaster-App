@@ -23,4 +23,10 @@ public class MyWalkwayIrrigationStatusDto
     // (la vista hermana "Estado de Riego"), reutilizable con IrrigationStatusViewModel.TranslateStatus.
     [JsonPropertyName("liveToday")]
     public List<NeighborIrrigationStatusDto> LiveToday { get; init; } = [];
+
+    // Tramos horarios de los IrrigationProgram activos del sector que cubren hoy (puede haber 0, 1
+    // o varios) -- antes el Vecino no tenía ninguna forma de ver la hora programada de riego de su
+    // sector en esta pantalla, solo el estado de turnos ya solicitados.
+    [JsonPropertyName("todaySchedule")]
+    public List<TodayIrrigationScheduleDto> TodaySchedule { get; init; } = [];
 }
