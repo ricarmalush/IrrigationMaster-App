@@ -1,4 +1,5 @@
-﻿using IrrigationMaster.Mobile.Application.Interfaces;
+﻿using CommunityToolkit.Maui;
+using IrrigationMaster.Mobile.Application.Interfaces;
 using IrrigationMaster.Mobile.Infrastructure;
 using IrrigationMaster.UI.Maui.Features.Level1_Core.Login;
 using IrrigationMaster.UI.Maui.Features.Level1_Core.Register;
@@ -23,6 +24,7 @@ public static class MauiProgram
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
+            .UseMauiCommunityToolkit() // Requerido por CommunityToolkit.Maui.Alerts.Snackbar (banner in-app del push)
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -60,6 +62,14 @@ public static class MauiProgram
         builder.Services.AddSingleton<INotificationService>(sp => sp.GetRequiredService<ApiService>());
         builder.Services.AddSingleton<IAlertService, ShellAlertService>();
         builder.Services.AddSingleton<INavigationService, ShellNavigationService>();
+        builder.Services.AddSingleton<IUserDeviceService>(sp => sp.GetRequiredService<ApiService>());
+
+        // Push (Firebase Cloud Messaging). IPushNotificationService: sin implementación real en
+        // Windows (ver FirebasePushNotificationService.IsSupportedPlatform). PushNotificationCoordinator
+        // se resuelve explícitamente más abajo (no basta con AddSingleton: nada más lo pide por
+        // constructor, y sus suscripciones a eventos deben quedar activas desde el arranque).
+        builder.Services.AddSingleton<IPushNotificationService, FirebasePushNotificationService>();
+        builder.Services.AddSingleton<PushNotificationCoordinator>();
 
         // ─── NIVEL 1: CORE (Autenticación) ───
         builder.Services.AddTransient<WelcomePage>(); // Bienvenida animada: página inicial real de la app
@@ -94,6 +104,13 @@ public static class MauiProgram
         builder.Logging.AddDebug();
 #endif
 
-        return builder.Build();
+        var app = builder.Build();
+
+        // Fuerza la construcción del coordinador ahora, no en su primera resolución perezosa: sus
+        // suscripciones a IPushNotificationService deben estar activas desde el arranque, no solo
+        // cuando algo más lo pida por constructor (nada lo hace).
+        app.Services.GetRequiredService<PushNotificationCoordinator>();
+
+        return app;
     }
 }

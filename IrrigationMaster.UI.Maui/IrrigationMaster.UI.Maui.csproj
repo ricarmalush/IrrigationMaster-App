@@ -1,7 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net9.0-android;net9.0-ios</TargetFrameworks>
+		<!-- net9.0-ios detrás de un opt-in explícito (-p:BuildAllPlatforms=true): Plugin.Firebase.Core/
+		     CloudMessaging trajeron los primeros bindings nativos reales de Apple para iOS de este
+		     proyecto (GoogleUtilities/GoogleDataTransport/FBLPromises), y un "Compilar solución" sin
+		     -f intenta compilar TODOS los TargetFrameworks declarados: ese paso nunca puede
+		     terminar en Windows sin un Mac emparejado (agota reintentos copiando xcframeworks/bundles
+		     de privacidad). Android es la plataforma decidida ahora; iOS queda para una fase 2
+		     explícita, sin bloquear el build diario en Windows. -->
+		<TargetFrameworks>net9.0-android</TargetFrameworks>
+		<TargetFrameworks Condition="'$(BuildAllPlatforms)' == 'true'">$(TargetFrameworks);net9.0-ios</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net9.0-windows10.0.19041.0</TargetFrameworks>
 
 		<RuntimeIdentifiers Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">android-arm;android-arm64;android-x86;android-x64</RuntimeIdentifiers>
@@ -17,7 +25,10 @@
 
 		<ApplicationTitle>IrrigationMaster</ApplicationTitle>
 
-		<ApplicationId>com.companyname.irrigationmaster.ui.maui</ApplicationId>
+		<!-- Debe coincidir con android_client_info.package_name en google-services.json (Firebase),
+		     ya generado para "com.ricarma.irrigationmaster": si difieren, el SDK de Firebase
+		     rechaza la configuración en tiempo de ejecución. -->
+		<ApplicationId>com.ricarma.irrigationmaster</ApplicationId>
 
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 		<ApplicationVersion>1</ApplicationVersion>
@@ -67,9 +78,22 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.Maui" Version="11.2.0" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.1" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
+		<PackageReference Include="Plugin.Firebase.CloudMessaging" Version="4.0.1" />
+		<PackageReference Include="Plugin.Firebase.Core" Version="4.2.0" />
+	</ItemGroup>
+
+	<!-- Item reconocido por Xamarin.GooglePlayServices.Basement (dependencia transitiva de
+	     Plugin.Firebase.CloudMessaging): su target ProcessGoogleServicesJson convierte este archivo
+	     en recursos Android (values/goog_svcs_json.xml) en tiempo de build. Firebase.FirebaseOptions
+	     no tiene constructor público ni Builder en este binding: el único método público es
+	     FromResource(Context), que lee justo esos recursos generados. Solo aplica a Android: el
+	     archivo (secreto, ver .gitignore) no existe para los demás TargetFrameworks. -->
+	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+		<GoogleServicesJson Include="google-services.json" />
 	</ItemGroup>
 
 	<ItemGroup>

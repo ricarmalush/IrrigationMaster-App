@@ -917,4 +917,48 @@ public class ApiServiceTests
 
         Assert.Null(result);
     }
+
+    // ─── USERDEVICES (registro del token push) ───
+
+    [Fact]
+    public async Task RegisterDeviceAsync_PostsToUserDevicesRegisterRoute_WithAuthHeader_AndBody()
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.Created, CreatedResponseJson);
+        var sut = CreateSut(handler);
+
+        var result = await sut.RegisterDeviceAsync("token-fcm-xyz", "Pixel 9", "Android 15");
+
+        Assert.True(result.IsSuccess);
+        Assert.EndsWith("UserDevices/Register", handler.LastRequest!.RequestUri!.ToString());
+        Assert.Equal("token-123", handler.LastRequest.Headers.Authorization!.Parameter);
+        Assert.Contains("token-fcm-xyz", handler.LastRequestBody);
+        Assert.Contains("Pixel 9", handler.LastRequestBody);
+        Assert.Contains("Android 15", handler.LastRequestBody);
+    }
+
+    [Fact]
+    public async Task RegisterDeviceAsync_OnValidationError_ReturnsBackendMessage()
+    {
+        // Mismo criterio que el resto de acciones de escritura (ReadStructureResultAsync ya lee el
+        // body en 400, no cae en la rama de excepción genérica).
+        const string validationErrorJson = """{ "isSuccess": false, "message": "El token del dispositivo es obligatorio.", "errors": [] }""";
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.BadRequest, validationErrorJson);
+        var sut = CreateSut(handler);
+
+        var result = await sut.RegisterDeviceAsync("", "Pixel 9", "Android 15");
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("El token del dispositivo es obligatorio.", result.Message);
+    }
+
+    [Fact]
+    public async Task RegisterDeviceAsync_OnServerError_ReturnsGenericMessage_WithoutThrowing()
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.InternalServerError);
+        var sut = CreateSut(handler);
+
+        var result = await sut.RegisterDeviceAsync("token-fcm-xyz", "Pixel 9", "Android 15");
+
+        Assert.False(result.IsSuccess);
+    }
 }

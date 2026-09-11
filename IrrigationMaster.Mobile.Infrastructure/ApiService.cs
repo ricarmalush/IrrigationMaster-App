@@ -1,6 +1,7 @@
 ﻿using IrrigationMaster.Mobile.Application.Common.Dtos;
 using IrrigationMaster.Mobile.Application.Constants;
 using IrrigationMaster.Mobile.Application.Features.Models.Auth;
+using IrrigationMaster.Mobile.Application.Features.Models.Devices;
 using IrrigationMaster.Mobile.Application.Features.Models.Irrigation;
 using IrrigationMaster.Mobile.Application.Features.Models.Notifications;
 using IrrigationMaster.Mobile.Application.Features.Models.Structure;
@@ -11,7 +12,7 @@ using System.Net.Http.Json;
 
 namespace IrrigationMaster.Mobile.Infrastructure;
 
-public class ApiService : IAuthService, IStructureService, IRegistrationService, IUserManagementService, IIrrigationService, INotificationService
+public class ApiService : IAuthService, IStructureService, IRegistrationService, IUserManagementService, IIrrigationService, INotificationService, IUserDeviceService
 {
     private readonly HttpClient _httpClient;
 
@@ -391,6 +392,33 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[API Error - Register]: {ex.Message}");
+            return new StructureOperationResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
+        }
+    }
+
+    // A diferencia de RegisterAsync (auto-registro, anónimo), esta llamada SÍ requiere sesión: el
+    // backend resuelve el usuario dueño del dispositivo desde el JWT (ver RegisterDeviceCommandHandler).
+    public async Task<StructureOperationResult> RegisterDeviceAsync(string deviceToken, string deviceModel, string osVersion)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.PostAsJsonAsync(ApiEndpoints.UserDevicesRegister, new RegisterDeviceRequest
+            {
+                DeviceToken = deviceToken,
+                DeviceModel = deviceModel,
+                OsVersion = osVersion
+            });
+            return await ReadStructureResultAsync(response);
+        }
+        catch (HttpRequestException)
+        {
+            return new StructureOperationResult { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - RegisterDevice]: {ex.Message}");
             return new StructureOperationResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
         }
     }

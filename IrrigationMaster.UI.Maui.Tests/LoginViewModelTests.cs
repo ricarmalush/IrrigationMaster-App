@@ -8,22 +8,24 @@ namespace IrrigationMaster.UI.Maui.Tests;
 
 public class LoginViewModelTests
 {
-    private static (LoginViewModel ViewModel, FakeAuthService Auth, FakeCurrentSession Session, RecordingAlertService Alerts, RecordingNavigationService Navigation) CreateSut()
+    private static (LoginViewModel ViewModel, FakeAuthService Auth, FakeCurrentSession Session, RecordingAlertService Alerts, RecordingNavigationService Navigation, FakePushNotificationService Push, FakeUserDeviceService Devices) CreateSut()
     {
         var auth = new FakeAuthService();
         var session = new FakeCurrentSession();
         var alerts = new RecordingAlertService();
         var navigation = new RecordingNavigationService();
+        var push = new FakePushNotificationService();
+        var devices = new FakeUserDeviceService();
 
-        var viewModel = new LoginViewModel(auth, session, alerts, navigation);
+        var viewModel = new LoginViewModel(auth, session, alerts, navigation, push, devices);
 
-        return (viewModel, auth, session, alerts, navigation);
+        return (viewModel, auth, session, alerts, navigation, push, devices);
     }
 
     [Fact]
     public async Task ExecuteLoginAsync_OnSuccess_EstablishesSessionAndNavigatesToAdminMenu()
     {
-        var (vm, auth, session, alerts, navigation) = CreateSut();
+        var (vm, auth, session, alerts, navigation, _, _) = CreateSut();
         auth.ResponseToReturn = new LoginResponse { IsSuccess = true, Message = "OK", Data = "un-jwt-cualquiera" };
         vm.Email = "admin@elsaso.test";
         vm.Password = "clave-valida";
@@ -39,7 +41,7 @@ public class LoginViewModelTests
     [Fact]
     public async Task ExecuteLoginAsync_WithInvalidCredentials_ShowsBackendMessageAndDoesNotNavigate()
     {
-        var (vm, auth, session, alerts, navigation) = CreateSut();
+        var (vm, auth, session, alerts, navigation, _, _) = CreateSut();
         auth.ResponseToReturn = new LoginResponse { IsSuccess = false, Message = "Credenciales inválidas" };
         vm.Email = "admin@elsaso.test";
         vm.Password = "clave-incorrecta";
@@ -60,7 +62,7 @@ public class LoginViewModelTests
         // ApiService marca IsLicenceError=true a partir del 402 (ver ApiServiceTests) -- aquí solo
         // se cubre que el ViewModel reaccione a ese flag con un título distinto (mismo criterio que
         // isLicenceError en el Front Angular), no de dónde viene el flag.
-        var (vm, auth, session, alerts, navigation) = CreateSut();
+        var (vm, auth, session, alerts, navigation, _, _) = CreateSut();
         auth.ResponseToReturn = new LoginResponse
         {
             IsSuccess = false,
@@ -86,7 +88,7 @@ public class LoginViewModelTests
         // ApiService marca IsAccountDeactivated=true a partir del 403 (ver ApiServiceTests) --
         // aquí solo se cubre que el ViewModel reaccione a ese flag con un título distinto, no de
         // dónde viene el flag.
-        var (vm, auth, session, alerts, navigation) = CreateSut();
+        var (vm, auth, session, alerts, navigation, _, _) = CreateSut();
         auth.ResponseToReturn = new LoginResponse
         {
             IsSuccess = false,
@@ -111,7 +113,7 @@ public class LoginViewModelTests
     {
         // IAuthService/ApiService nunca lanza: un fallo de red vuelve como IsSuccess=false
         // con ServiceMessages.NetworkConnectionError (ver ApiServiceTests). Se reproduce igual aquí.
-        var (vm, auth, session, alerts, navigation) = CreateSut();
+        var (vm, auth, session, alerts, navigation, _, _) = CreateSut();
         auth.ResponseToReturn = new LoginResponse { IsSuccess = false, Message = ServiceMessages.NetworkConnectionError };
         vm.Email = "admin@elsaso.test";
         vm.Password = "clave-valida";
@@ -129,7 +131,7 @@ public class LoginViewModelTests
     [Fact]
     public async Task ExecuteLoginAsync_WithNullResponse_ShowsNetworkFallbackMessage()
     {
-        var (vm, auth, session, alerts, navigation) = CreateSut();
+        var (vm, auth, session, alerts, navigation, _, _) = CreateSut();
         auth.ResponseToReturn = null;
         vm.Email = "admin@elsaso.test";
         vm.Password = "clave-valida";
@@ -147,7 +149,7 @@ public class LoginViewModelTests
     [InlineData("   ", "   ")]
     public async Task ExecuteLoginAsync_WithMissingFields_DoesNotCallAuthService(string email, string password)
     {
-        var (vm, auth, session, alerts, navigation) = CreateSut();
+        var (vm, auth, session, alerts, navigation, _, _) = CreateSut();
         vm.Email = email;
         vm.Password = password;
 
@@ -162,10 +164,59 @@ public class LoginViewModelTests
     [Fact]
     public async Task ExecuteNavigateToRegisterAsync_NavigatesToRegisterRoute()
     {
-        var (vm, _, _, _, navigation) = CreateSut();
+        var (vm, _, _, _, navigation, _, _) = CreateSut();
 
         await vm.ExecuteNavigateToRegisterAsync();
 
         Assert.Equal(["RegisterPage"], navigation.Routes);
+    }
+
+    // ─── REGISTRO DEL DISPOSITIVO PARA PUSH (fire-and-forget desde ExecuteLoginAsync) ───
+    // Se testea RegisterDeviceForPushAsync directamente (no a través de ExecuteLoginAsync, donde
+    // se dispara sin esperar) para no depender de que la continuación termine antes del assert.
+
+    [Fact]
+    public async Task RegisterDeviceForPushAsync_WithToken_RegistersDeviceWithPlatformInfo()
+    {
+        var (vm, _, _, _, _, push, devices) = CreateSut();
+        push.TokenToReturn = "un-token-fcm";
+
+        await vm.RegisterDeviceForPushAsync();
+
+        Assert.NotNull(devices.LastCall);
+        Assert.Equal("un-token-fcm", devices.LastCall!.Value.DeviceToken);
+    }
+
+    [Fact]
+    public async Task RegisterDeviceForPushAsync_WithoutToken_DoesNotCallUserDeviceService()
+    {
+        // Windows (sin soporte de push) o Firebase que todavía no entregó token: no es un error,
+        // simplemente no hay nada que registrar todavía.
+        var (vm, _, _, _, _, push, devices) = CreateSut();
+        push.TokenToReturn = null;
+
+        await vm.RegisterDeviceForPushAsync();
+
+        Assert.Null(devices.LastCall);
+    }
+
+    [Fact]
+    public async Task RegisterDeviceForPushAsync_WhenUserDeviceServiceThrows_DoesNotPropagate()
+    {
+        // Fire-and-forget de verdad: una excepción aquí nunca debe tumbar el login.
+        var (vm, _, _, _, _, push, _) = CreateSut();
+        push.TokenToReturn = "un-token-fcm";
+        var throwingDevices = new ThrowingUserDeviceService();
+        var throwingViewModel = new LoginViewModel(new FakeAuthService(), new FakeCurrentSession(), new RecordingAlertService(), new RecordingNavigationService(), push, throwingDevices);
+
+        var exception = await Record.ExceptionAsync(() => throwingViewModel.RegisterDeviceForPushAsync());
+
+        Assert.Null(exception);
+    }
+
+    private class ThrowingUserDeviceService : IrrigationMaster.Mobile.Application.Interfaces.IUserDeviceService
+    {
+        public Task<IrrigationMaster.Mobile.Application.Common.Dtos.StructureOperationResult> RegisterDeviceAsync(string deviceToken, string deviceModel, string osVersion) =>
+            throw new InvalidOperationException("Backend caído (simulado)");
     }
 }

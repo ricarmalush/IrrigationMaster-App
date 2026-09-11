@@ -12,6 +12,8 @@ public partial class LoginViewModel : ObservableObject
     private readonly ICurrentSession _currentSession;
     private readonly IAlertService _alertService;
     private readonly INavigationService _navigationService;
+    private readonly IPushNotificationService _pushNotificationService;
+    private readonly IUserDeviceService _userDeviceService;
 
     // Rutas de navegación centralizadas en constantes
     private const string AdminMenuRoute = "//AdminMenuPage";
@@ -30,12 +32,20 @@ public partial class LoginViewModel : ObservableObject
     public ICommand NavigateToRegisterCommand { get; }
     public ICommand NavigateToSettingsCommand { get; }
 
-    public LoginViewModel(IAuthService authService, ICurrentSession currentSession, IAlertService alertService, INavigationService navigationService)
+    public LoginViewModel(
+        IAuthService authService,
+        ICurrentSession currentSession,
+        IAlertService alertService,
+        INavigationService navigationService,
+        IPushNotificationService pushNotificationService,
+        IUserDeviceService userDeviceService)
     {
         _authService = authService;
         _currentSession = currentSession;
         _alertService = alertService;
         _navigationService = navigationService;
+        _pushNotificationService = pushNotificationService;
+        _userDeviceService = userDeviceService;
 
         LoginCommand = new Command(async () => await ExecuteLoginAsync());
         NavigateToRegisterCommand = new Command(async () => await ExecuteNavigateToRegisterAsync());
@@ -67,6 +77,12 @@ public partial class LoginViewModel : ObservableObject
                 await _currentSession.EstablishAsync(loginResult.Data.ToString()!);
             }
 
+            // Fire-and-forget a propósito: el registro del token push no debe bloquear la
+            // navegación ni fallar visible al usuario -- si falla, PushNotificationCoordinator
+            // reintentará en el próximo TokenChanged. Se deja rastro en el log de depuración para
+            // poder diagnosticar en caliente sin molestar al usuario.
+            _ = RegisterDeviceForPushAsync();
+
             await _navigationService.GoToAsync(AdminMenuRoute);
         }
         else
@@ -87,5 +103,30 @@ public partial class LoginViewModel : ObservableObject
     internal async Task ExecuteNavigateToRegisterAsync()
     {
         await _navigationService.GoToAsync(RegisterRoute);
+    }
+
+    // Separado de ExecuteLoginAsync para poder testearlo aparte y para que quede claro que es
+    // fire-and-forget: nunca lanza hacia el llamador, cualquier fallo (sin token, sin red, backend
+    // caído) solo se refleja en el log de depuración.
+    internal async Task RegisterDeviceForPushAsync()
+    {
+        try
+        {
+            var token = await _pushNotificationService.GetTokenAsync();
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                System.Diagnostics.Debug.WriteLine("[Push] Sin token disponible tras login (plataforma sin soporte o Firebase aún no lo entregó).");
+                return;
+            }
+
+            var result = await _userDeviceService.RegisterDeviceAsync(token, DeviceInfo.Model, $"{DeviceInfo.Platform} {DeviceInfo.VersionString}");
+            System.Diagnostics.Debug.WriteLine(result.IsSuccess
+                ? $"[Push] Dispositivo registrado correctamente (Id={result.Data})."
+                : $"[Push] Fallo al registrar dispositivo: {result.Message}");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Push] Excepción registrando dispositivo: {ex.Message}");
+        }
     }
 }

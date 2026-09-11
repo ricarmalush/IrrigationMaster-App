@@ -48,5 +48,6 @@ namespace IrrigationMaster.Mobile.Application.Constants
         public const string NotificationsSend = "Notifications/Send";
         public const string UsersGet = "Users/Get";
         public const string UsersUpdate = "Users/Update";
+        public const string UserDevicesRegister = "UserDevices/Register";
     }
 }
