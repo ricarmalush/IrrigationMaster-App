@@ -1,6 +1,9 @@
 using CommunityToolkit.Maui.Alerts;
 using IrrigationMaster.Mobile.Application.Features.Models.Devices;
 using IrrigationMaster.Mobile.Application.Interfaces;
+#if ANDROID
+using Android.Media;
+#endif
 
 namespace IrrigationMaster.UI.Maui.Services;
 
@@ -64,9 +67,14 @@ public class PushNotificationCoordinator
 
     // App en primer plano: NO se muestra la notificación nativa del sistema (ver
     // FCMNotification.IsSilentInForeground en Plugin.Firebase), así que la única señal para el
-    // usuario es este banner ligero in-app -- nunca una notificación de sistema duplicada.
+    // usuario es este banner ligero in-app -- nunca una notificación de sistema duplicada. El
+    // Snackbar en sí no trae sonido (ningún snackbar/toast de Material Design lo lleva, no es un
+    // fallo nuestro): sin sonido, un banner momentáneo pasa fácilmente desapercibido, así que se
+    // reproduce aparte el sonido de notificación por defecto del propio dispositivo.
     private static async void OnNotificationReceivedInForeground(object? sender, PushNotificationInfo notification)
     {
+        PlayNotificationSound();
+
         try
         {
             var snackbar = new Snackbar
@@ -74,11 +82,28 @@ public class PushNotificationCoordinator
                 Text = string.IsNullOrWhiteSpace(notification.Body) ? notification.Title : $"{notification.Title}: {notification.Body}",
                 Duration = TimeSpan.FromSeconds(4)
             };
+
             await snackbar.Show();
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[Push] No se pudo mostrar el banner in-app: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[Push] No se pudo mostrar el banner in-app: {ex.GetType().Name}: {ex.Message}");
         }
+    }
+
+    private static void PlayNotificationSound()
+    {
+#if ANDROID
+        try
+        {
+            var uri = RingtoneManager.GetDefaultUri(RingtoneType.Notification);
+            var ringtone = RingtoneManager.GetRingtone(Android.App.Application.Context, uri);
+            ringtone?.Play();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Push] No se pudo reproducir el sonido de notificación: {ex.Message}");
+        }
+#endif
     }
 }
