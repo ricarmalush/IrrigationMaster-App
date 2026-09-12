@@ -159,6 +159,9 @@
   <data name="InvitationCodeRegeneratedSuccess" xml:space="preserve">
     <value>Código de invitación regenerado con éxito.</value>
   </data>
+  <data name="InvoiceReceiptDownloadError" xml:space="preserve">
+    <value>No se pudo descargar el comprobante. Inténtalo de nuevo más tarde.</value>
+  </data>
   <data name="UserDeactivatedSuccess" xml:space="preserve">
     <value>Usuario desactivado con éxito.</value>
   </data>

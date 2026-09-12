@@ -2,6 +2,7 @@
 using IrrigationMaster.Mobile.Application.Constants;
 using IrrigationMaster.Mobile.Application.Features.Models.Auth;
 using IrrigationMaster.Mobile.Application.Features.Models.Devices;
+using IrrigationMaster.Mobile.Application.Features.Models.Invoices;
 using IrrigationMaster.Mobile.Application.Features.Models.Irrigation;
 using IrrigationMaster.Mobile.Application.Features.Models.Notifications;
 using IrrigationMaster.Mobile.Application.Features.Models.Structure;
@@ -12,7 +13,7 @@ using System.Net.Http.Json;
 
 namespace IrrigationMaster.Mobile.Infrastructure;
 
-public class ApiService : IAuthService, IStructureService, IRegistrationService, IUserManagementService, IIrrigationService, INotificationService, IUserDeviceService
+public class ApiService : IAuthService, IStructureService, IRegistrationService, IUserManagementService, IIrrigationService, INotificationService, IUserDeviceService, IInvoiceService
 {
     private readonly HttpClient _httpClient;
 
@@ -1030,6 +1031,49 @@ public class ApiService : IAuthService, IStructureService, IRegistrationService,
         {
             System.Diagnostics.Debug.WriteLine($"[API Error - SendNotification]: {ex.Message}");
             return new SendNotificationResult { IsSuccess = false, Message = ServiceMessages.ApiConnectionError };
+        }
+    }
+
+    public async Task<List<InvoiceDto>?> GetMyInvoicesAsync()
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.GetAsync($"{ApiEndpoints.InvoicesMyInvoices}?PageNumber=1&PageSize=100");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var paged = await response.Content.ReadFromJsonAsync<PagedResponse<List<InvoiceDto>>>();
+                return paged?.Data;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - MyInvoices]: {ex.Message}");
+            return null;
+        }
+    }
+
+    public async Task<byte[]?> DownloadReceiptAsync(Guid invoiceId)
+    {
+        try
+        {
+            await AttachAuthHeadersAsync();
+
+            var response = await _httpClient.GetAsync(string.Format(ApiEndpoints.InvoicesReceipt, invoiceId));
+
+            if (response.IsSuccessStatusCode)
+                return await response.Content.ReadAsByteArrayAsync();
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API Error - InvoiceReceipt]: {ex.Message}");
+            return null;
         }
     }
 

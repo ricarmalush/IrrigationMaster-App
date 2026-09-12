@@ -601,6 +601,15 @@ namespace IrrigationMaster.UI.Maui.Common {
         }
 
         /// <summary>
+        ///   Busca una cadena traducida similar a No se pudo descargar el comprobante. Inténtalo de nuevo más tarde..
+        /// </summary>
+        public static string InvoiceReceiptDownloadError {
+            get {
+                return ResourceManager.GetString("InvoiceReceiptDownloadError", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Busca una cadena traducida similar a Usuario desactivado con éxito..
         /// </summary>
         public static string UserDeactivatedSuccess {
