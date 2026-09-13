@@ -12,6 +12,7 @@ using IrrigationMaster.UI.Maui.Features.Level4_Operational.MyIrrigation;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.CommunityBroadcast;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.Notifications;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.ReportIncident;
+using IrrigationMaster.UI.Maui.Features.Level5_Transactions.MyInvoices;
 using IrrigationMaster.UI.Maui.Services;
 using Microsoft.Extensions.Logging;
 
@@ -63,6 +64,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<IAlertService, ShellAlertService>();
         builder.Services.AddSingleton<INavigationService, ShellNavigationService>();
         builder.Services.AddSingleton<IUserDeviceService>(sp => sp.GetRequiredService<ApiService>());
+        builder.Services.AddSingleton<IInvoiceService>(sp => sp.GetRequiredService<ApiService>());
+        builder.Services.AddSingleton<IReceiptOpener, MauiReceiptOpener>();
 
         // Push (Firebase Cloud Messaging). IPushNotificationService: sin implementación real en
         // Windows (ver FirebasePushNotificationService.IsSupportedPlatform). PushNotificationCoordinator
@@ -99,6 +102,8 @@ public static class MauiProgram
         builder.Services.AddTransient<ReportIncidentViewModel>();
         builder.Services.AddTransient<CommunityBroadcastPage>();
         builder.Services.AddTransient<CommunityBroadcastViewModel>();
+        builder.Services.AddTransient<MyInvoicesPage>();
+        builder.Services.AddTransient<MyInvoicesViewModel>();
 
 #if DEBUG
         builder.Logging.AddDebug();

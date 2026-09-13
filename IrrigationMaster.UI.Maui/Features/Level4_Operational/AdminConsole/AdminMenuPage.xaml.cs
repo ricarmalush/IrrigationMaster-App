@@ -7,6 +7,7 @@ using IrrigationMaster.UI.Maui.Features.Level4_Operational.IrrigationStatus;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.MyIrrigation;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.Notifications;
 using IrrigationMaster.UI.Maui.Features.Level4_Operational.ReportIncident;
+using IrrigationMaster.UI.Maui.Features.Level5_Transactions.MyInvoices;
 
 namespace IrrigationMaster.UI.Maui.Features.Level4_Operational.AdminConsole;
 
@@ -252,6 +253,32 @@ public partial class AdminMenuPage : ContentPage
             else
             {
                 await DisplayAlert(AppStrings.SystemErrorTitle, "No se pudo cargar las notificaciones.", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Navigation Error]: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// SECCIÓN: FACTURACIÓN -- Mis Facturas (licencia individual propia), sin gating de rol,
+    /// visible para los 3 (SUPERADMIN/Presidente/Vecino).
+    /// </summary>
+    private async void OnMyInvoicesClicked(object sender, EventArgs e)
+    {
+        try
+        {
+            var myInvoicesPage = Handler?.MauiContext?.Services.GetService<MyInvoicesPage>();
+
+            if (myInvoicesPage != null)
+            {
+                // PushAsync (no PushModalAsync): mismo motivo que OnUserManagementClicked.
+                await Navigation.PushAsync(myInvoicesPage);
+            }
+            else
+            {
+                await DisplayAlert(AppStrings.SystemErrorTitle, "No se pudo cargar Mis Facturas.", "OK");
             }
         }
         catch (Exception ex)

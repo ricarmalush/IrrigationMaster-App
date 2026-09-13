@@ -69,6 +69,15 @@
                         Clicked="OnNotificationsClicked"
                         BackgroundColor="Transparent" TextColor="#8E24AA" BorderColor="#8E24AA" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
 
+                <Label Text="Facturación" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
+
+                <!-- Visible para los 3 roles sin restricción: licencia INDIVIDUAL propia del
+                     usuario, distinta de la factura/licencia colectiva de la organización, que
+                     esta App no expone. -->
+                <Button Text="🧾 Mis Facturas"
+                        Clicked="OnMyInvoicesClicked"
+                        BackgroundColor="Transparent" TextColor="#8E24AA" BorderColor="#8E24AA" BorderWidth="1.5" HeightRequest="48" CornerRadius="8" />
+
                 <Label Text="Incidencias" FontSize="13" FontAttributes="Bold" TextColor="Gray" Margin="5,10,0,0"/>
 
                 <!-- Visible para los 3 roles sin restricción: el caso principal es el Vecino, pero
